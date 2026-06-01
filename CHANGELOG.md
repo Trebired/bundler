@@ -4,6 +4,13 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 0.2.0
+
+- Added built-in entry discovery so the package can walk source directories and generate entry lists itself.
+- Added source-tree watching for discovered entries, including new and removed matching files during watch mode.
+- Added optional manifest writing that records resolved entries and generated outputs.
+- Made `entries` optional when `discover` is configured.
+
 ## 0.1.0
 
 - Added the `bundle()` and `watch()` APIs for fast esbuild-backed bundling.

@@ -6,6 +6,6 @@ export { resolveLogger } from "./logging.js";
 export { buildSourceAnnotation, injectSourceAnnotation, resolveSourceLabel } from "./plugins/source-annotations.js";
 export { createScssPlugin } from "./plugins/scss.js";
 export { runCli } from "./cli/run-cli.js";
-export type { BundlerBuildResult, BundlerGenericLogMethod, BundlerLogEvent, BundlerLogger, BundlerLoggerAdapter, BundlerLogMethod, BundlerOptions, BundlerWatchSession, LoadedBundlerConfig, NormalizedBundlerLogger, } from "./types.js";
+export type { BundlerBuildResult, BundlerDiscoverOptions, BundlerEntryRecord, BundlerEntrySource, BundlerGenericLogMethod, BundlerLogEvent, BundlerLogger, BundlerLoggerAdapter, BundlerLogMethod, BundlerManifestOptions, BundlerOptions, BundlerWatchSession, LoadedBundlerConfig, NormalizedBundlerLogger, } from "./types.js";
 export { bundle as default } from "./core/build.js";
 //# sourceMappingURL=index.d.ts.map

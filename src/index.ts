@@ -9,11 +9,15 @@ export { runCli } from "./cli/run-cli.js";
 
 export type {
   BundlerBuildResult,
+  BundlerDiscoverOptions,
+  BundlerEntryRecord,
+  BundlerEntrySource,
   BundlerGenericLogMethod,
   BundlerLogEvent,
   BundlerLogger,
   BundlerLoggerAdapter,
   BundlerLogMethod,
+  BundlerManifestOptions,
   BundlerOptions,
   BundlerWatchSession,
   LoadedBundlerConfig,

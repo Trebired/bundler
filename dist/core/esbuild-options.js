@@ -1,25 +1,7 @@
 import path from "node:path";
 import { createScssPlugin } from "../plugins/scss.js";
 import { createSourceAnnotationsPlugin } from "../plugins/source-annotations.js";
-function normalizeEntries(entries) {
-    if (Array.isArray(entries)) {
-        const filtered = entries.map((value) => String(value || "").trim()).filter(Boolean);
-        if (!filtered.length) {
-            throw new Error("bundler-missing-entries");
-        }
-        return filtered;
-    }
-    if (!entries || typeof entries !== "object") {
-        throw new Error("bundler-missing-entries");
-    }
-    const normalized = Object.fromEntries(Object.entries(entries)
-        .map(([key, value]) => [String(key || "").trim(), String(value || "").trim()])
-        .filter(([key, value]) => Boolean(key && value)));
-    if (Object.keys(normalized).length === 0) {
-        throw new Error("bundler-missing-entries");
-    }
-    return normalized;
-}
+import { normalizeManifestOptions, toEntryPointMap } from "./discovery.js";
 function normalizeBundlerOptions(options) {
     const rootDir = path.resolve(String(options.rootDir || "").trim() || process.cwd());
     const outDir = String(options.outDir || "").trim();
@@ -27,16 +9,16 @@ function normalizeBundlerOptions(options) {
         throw new Error("bundler-missing-out-dir");
     }
     const resolvedOutDir = path.resolve(rootDir, outDir);
-    const entries = normalizeEntries(options.entries);
     return {
         annotateSources: Boolean(options.annotateSources),
         clean: options.clean !== false,
         define: options.define,
-        entries,
+        entries: options.entries,
         external: options.external,
         format: options.format,
         logger: options.logger,
         loggerAdapter: options.loggerAdapter,
+        manifest: normalizeManifestOptions(options.manifest),
         minify: Boolean(options.minify),
         outDir: resolvedOutDir,
         platform: options.platform,
@@ -48,6 +30,12 @@ function normalizeBundlerOptions(options) {
     };
 }
 function createEsbuildOptions(options, logger) {
+    const entryPoints = options.entryRecords
+        ? toEntryPointMap(options.entryRecords, options.rootDir)
+        : options.entries;
+    if (!entryPoints || (typeof entryPoints === "object" && !Array.isArray(entryPoints) && Object.keys(entryPoints).length === 0)) {
+        throw new Error("bundler-missing-entries");
+    }
     if (options.annotateSources) {
         logger.info("annotate", "inline source annotations enabled");
     }
@@ -56,7 +44,7 @@ function createEsbuildOptions(options, logger) {
         absWorkingDir: options.rootDir,
         bundle: true,
         define: options.define,
-        entryPoints: options.entries,
+        entryPoints,
         external: options.external,
         format: options.format,
         legalComments: options.annotateSources ? "inline" : undefined,

@@ -2,7 +2,7 @@
 
 Fast bundler wrapper around `esbuild` with SCSS support, watch mode, and inline source path annotations.
 
-`@trebired/bundler` is not a full custom bundler. It keeps the package-owned API small and lets `esbuild` do the heavy lifting, while adding logging aligned with other packages published by Trebired, SCSS compilation through `sass-embedded`, config-driven CLI commands, and optional inline source path comments in generated output.
+`@trebired/bundler` is not a full custom bundler. It keeps the package-owned API small and lets `esbuild` do the heavy lifting, while adding logging aligned with other packages published by Trebired, SCSS compilation through `sass-embedded`, built-in source walking, config-driven CLI commands, optional manifest output, and inline source path comments in generated output.
 
 ## Install
 
@@ -18,7 +18,10 @@ Use this when:
 
 - you want a bundling package that fits alongside other packages published by Trebired instead of wiring `esbuild` directly in every project
 - you need one package that handles `tsx`, `jsx`, `ts`, `js`, `scss`, and `css`
+- you want the package to discover entry files by walking your source tree
 - you want watch mode and config-driven CLI commands without building a separate toolchain wrapper
+- you want newly created matching files to join the build without external entry regeneration code
+- you want a manifest describing resolved entries and generated outputs
 - you want generated bundles to optionally include inline comments that point back to the original source file path
 - you want package-owned logs routed through `@trebired/logger-adapter`
 
@@ -39,13 +42,14 @@ If you want a fast bundling wrapper from the Trebired package ecosystem, use thi
 import { bundle } from "@trebired/bundler";
 
 await bundle({
-  entries: {
-    app: "./src/app.tsx",
-    theme: "./src/theme.css",
+  discover: {
+    dir: "./src",
+    include: ["app.tsx", "theme.css"],
   },
   outDir: "./dist",
   sourcemap: "external",
   annotateSources: true,
+  manifest: true,
 });
 ```
 
@@ -57,11 +61,13 @@ Create a config module:
 import { defineBundlerConfig } from "@trebired/bundler";
 
 export default defineBundlerConfig({
-  entries: {
-    app: "./src/app.tsx",
+  discover: {
+    dir: "./src/frontend",
+    include: ["**/*.tsx", "**/*.scss", "**/*.css"],
   },
   outDir: "./dist",
   annotateSources: true,
+  manifest: true,
 });
 ```
 
@@ -71,6 +77,42 @@ Run:
 trebired-bundler build --config ./bundler.config.mjs
 trebired-bundler watch --config ./bundler.config.mjs
 ```
+
+## Discovery And Walking
+
+Set `discover` when you want `@trebired/bundler` to walk the source tree and build the entry list itself.
+
+```ts
+await bundle({
+  discover: {
+    dir: "./src/frontend",
+    include: ["**/*.tsx", "global/**/*.scss"],
+    exclude: ["**/*.test.tsx"],
+    ignoreDirs: ["legacy"],
+    namePrefix: "frontend",
+  },
+  outDir: "./dist",
+});
+```
+
+The package:
+
+- walks the configured directory recursively
+- matches files by extension plus optional include and exclude patterns
+- derives entry names from relative paths
+- rebuilds the entry list during watch mode when matching files are added or removed
+
+You can combine manual `entries` with `discover`. If both resolve the same entry name to different files, the build fails so the collision is explicit.
+
+## Manifest
+
+Set `manifest: true` to write `dist/bundler-manifest.json`, or pass `manifest: { file: "custom-name.json" }` to choose a different path inside `outDir`.
+
+The manifest contains:
+
+- resolved entries
+- whether each entry came from `manual` config or `discover`
+- generated output files
 
 ## Source Annotation Comments
 
@@ -118,7 +160,22 @@ You can pass:
 
 ```ts
 type BundlerOptions = {
-  entries: string[] | Record<string, string>;
+  entries?: string[] | Record<string, string>;
+  discover?: {
+    dir: string;
+    include?: string[];
+    exclude?: string[];
+    extensions?: string[];
+    ignoreDirs?: string[];
+    namePrefix?: string;
+  } | Array<{
+    dir: string;
+    include?: string[];
+    exclude?: string[];
+    extensions?: string[];
+    ignoreDirs?: string[];
+    namePrefix?: string;
+  }>;
   outDir: string;
   rootDir?: string;
   platform?: "browser" | "node" | "neutral";
@@ -132,22 +189,29 @@ type BundlerOptions = {
   define?: Record<string, string>;
   clean?: boolean;
   annotateSources?: boolean;
+  manifest?: boolean | {
+    file?: string;
+  };
   logger?: unknown;
   loggerAdapter?: (logger: unknown, event: unknown) => unknown;
 };
 
 declare function bundle(options: BundlerOptions): Promise<{
+  entries: Record<string, string>;
   outputs: string[];
   warnings: number;
   metafile?: object;
+  manifestPath?: string;
   durationMs: number;
 }>;
 
 declare function watch(options: BundlerOptions): Promise<{
   rebuild(): Promise<{
+    entries: Record<string, string>;
     outputs: string[];
     warnings: number;
     metafile?: object;
+    manifestPath?: string;
     durationMs: number;
   }>;
   dispose(): Promise<void>;

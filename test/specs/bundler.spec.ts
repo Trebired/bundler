@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { bundle, watch } from "../../src/index";
-import { createFixtureProject, exists, readFile, tempDir, writeFile } from "./helpers";
+import { createFixtureProject, exists, readFile, tempDir, waitFor, writeFile } from "./helpers";
 
 describe("@trebired/bundler", () => {
   test("builds mixed tsx, scss, and css entry graphs", async () => {
@@ -160,5 +160,60 @@ export const message = "watch-updated";
 
     expect(adapterRows.some((row) => row.severity === "success" && row.line.includes("bundler.initialize :: @trebired/bundler initialized"))).toBe(true);
     expect(adapterRows.some((row) => row.severity === "info" && row.line.includes("build :: complete :: outputs="))).toBe(true);
+  });
+
+  test("discovers entry files and writes a manifest", async () => {
+    const root = tempDir();
+    createFixtureProject(root);
+
+    const result = await bundle({
+      discover: {
+        dir: "./src",
+        include: ["app.tsx", "theme.css"],
+      },
+      manifest: true,
+      outDir: "./dist",
+      rootDir: root,
+    });
+
+    expect(result.entries).toEqual({
+      app: "src/app.tsx",
+      theme: "src/theme.css",
+    });
+    expect(result.manifestPath?.endsWith("/dist/bundler-manifest.json")).toBe(true);
+
+    const manifest = JSON.parse(readFile(root, "dist/bundler-manifest.json"));
+    expect(manifest.entries.app.path).toBe("src/app.tsx");
+    expect(manifest.entries.app.source).toBe("discover");
+    expect(manifest.outputs.some((value: string) => value === "dist/app.js")).toBe(true);
+  });
+
+  test("watch mode picks up new discovered entry files", async () => {
+    const root = tempDir();
+    createFixtureProject(root);
+
+    const session = await watch({
+      discover: {
+        dir: "./src/pages",
+        include: ["**/*.tsx"],
+      },
+      manifest: true,
+      outDir: "./dist",
+      rootDir: root,
+    });
+
+    expect(exists(root, "dist/home.js")).toBe(false);
+
+    writeFile(root, "src/pages/home.tsx", `
+export const page = "home";
+console.log(page);
+`);
+
+    await waitFor(() => exists(root, "dist/home.js"));
+    await waitFor(() => readFile(root, "dist/bundler-manifest.json").includes("\"home\""));
+
+    expect(readFile(root, "dist/home.js")).toContain("home");
+
+    await session.dispose();
   });
 });

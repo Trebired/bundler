@@ -3,17 +3,20 @@ import type { BuildOptions } from "esbuild";
 
 import { createScssPlugin } from "../plugins/scss.js";
 import { createSourceAnnotationsPlugin } from "../plugins/source-annotations.js";
-import type { BundlerOptions, NormalizedBundlerLogger } from "../types.js";
+import type { BundlerOptions, BundlerEntryRecord, NormalizedBundlerLogger } from "../types.js";
+import { normalizeManifestOptions, toEntryPointMap } from "./discovery.js";
 
 type NormalizedBundlerOptions = {
   annotateSources: boolean;
   clean: boolean;
   define?: Record<string, string>;
-  entries: string[] | Record<string, string>;
+  entries?: string[] | Record<string, string>;
+  entryRecords?: BundlerEntryRecord[];
   external?: string[];
   format?: BundlerOptions["format"];
   logger?: BundlerOptions["logger"];
   loggerAdapter?: BundlerOptions["loggerAdapter"];
+  manifest: ReturnType<typeof normalizeManifestOptions>;
   minify: boolean;
   outDir: string;
   platform?: BundlerOptions["platform"];
@@ -24,32 +27,6 @@ type NormalizedBundlerOptions = {
   target?: string | string[];
 };
 
-function normalizeEntries(entries: BundlerOptions["entries"]): BundlerOptions["entries"] {
-  if (Array.isArray(entries)) {
-    const filtered = entries.map((value) => String(value || "").trim()).filter(Boolean);
-    if (!filtered.length) {
-      throw new Error("bundler-missing-entries");
-    }
-    return filtered;
-  }
-
-  if (!entries || typeof entries !== "object") {
-    throw new Error("bundler-missing-entries");
-  }
-
-  const normalized = Object.fromEntries(
-    Object.entries(entries)
-      .map(([key, value]) => [String(key || "").trim(), String(value || "").trim()])
-      .filter(([key, value]) => Boolean(key && value)),
-  );
-
-  if (Object.keys(normalized).length === 0) {
-    throw new Error("bundler-missing-entries");
-  }
-
-  return normalized;
-}
-
 function normalizeBundlerOptions(options: BundlerOptions): NormalizedBundlerOptions {
   const rootDir = path.resolve(String(options.rootDir || "").trim() || process.cwd());
   const outDir = String(options.outDir || "").trim();
@@ -59,17 +36,16 @@ function normalizeBundlerOptions(options: BundlerOptions): NormalizedBundlerOpti
   }
 
   const resolvedOutDir = path.resolve(rootDir, outDir);
-  const entries = normalizeEntries(options.entries);
-
   return {
     annotateSources: Boolean(options.annotateSources),
     clean: options.clean !== false,
     define: options.define,
-    entries,
+    entries: options.entries,
     external: options.external,
     format: options.format,
     logger: options.logger,
     loggerAdapter: options.loggerAdapter,
+    manifest: normalizeManifestOptions(options.manifest),
     minify: Boolean(options.minify),
     outDir: resolvedOutDir,
     platform: options.platform,
@@ -85,6 +61,14 @@ function createEsbuildOptions(
   options: NormalizedBundlerOptions,
   logger: NormalizedBundlerLogger,
 ): BuildOptions {
+  const entryPoints = options.entryRecords
+    ? toEntryPointMap(options.entryRecords, options.rootDir)
+    : options.entries;
+
+  if (!entryPoints || (typeof entryPoints === "object" && !Array.isArray(entryPoints) && Object.keys(entryPoints).length === 0)) {
+    throw new Error("bundler-missing-entries");
+  }
+
   if (options.annotateSources) {
     logger.info("annotate", "inline source annotations enabled");
   }
@@ -95,7 +79,7 @@ function createEsbuildOptions(
     absWorkingDir: options.rootDir,
     bundle: true,
     define: options.define,
-    entryPoints: options.entries,
+    entryPoints,
     external: options.external,
     format: options.format,
     legalComments: options.annotateSources ? "inline" : undefined,

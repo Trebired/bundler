@@ -2,7 +2,10 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { BuildResult, Message } from "esbuild";
 
-import type { BundlerBuildResult, NormalizedBundlerLogger } from "../types.js";
+import type { BundlerBuildResult, BundlerEntryRecord, NormalizedBundlerLogger } from "../types.js";
+import { toEntryPointMap } from "./discovery.js";
+import { writeBundlerManifest } from "./manifest.js";
+import type { NormalizedManifestOptions } from "./discovery.js";
 
 function formatEsbuildMessage(message: Partial<Message>): string {
   const location = message.location
@@ -26,15 +29,29 @@ function resolveOutputs(result: BuildResult<any>, rootDir: string): string[] {
     .sort();
 }
 
-function toBuildResult(args: {
+async function toBuildResult(args: {
+  entries: BundlerEntryRecord[];
+  manifest: NormalizedManifestOptions;
+  outDir: string;
   result: BuildResult<any>;
   rootDir: string;
   startedAt: number;
-}): BundlerBuildResult {
+}): Promise<BundlerBuildResult> {
+  const outputs = resolveOutputs(args.result, args.rootDir);
+  const manifestWrite = await writeBundlerManifest({
+    entries: args.entries,
+    manifest: args.manifest,
+    outDir: args.outDir,
+    outputs,
+    rootDir: args.rootDir,
+  });
+
   return {
-    outputs: resolveOutputs(args.result, args.rootDir),
+    entries: toEntryPointMap(args.entries, args.rootDir),
+    outputs,
     warnings: args.result.warnings.length,
     metafile: args.result.metafile,
+    manifestPath: manifestWrite.manifestPath,
     durationMs: Date.now() - args.startedAt,
   };
 }

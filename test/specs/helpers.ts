@@ -59,4 +59,15 @@ $brand: blue;
 `);
 }
 
-export { createFixtureProject, exists, readFile, tempDir, writeFile };
+async function waitFor(predicate: () => boolean, timeoutMs = 2000): Promise<void> {
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < timeoutMs) {
+    if (predicate()) return;
+    await new Promise((resolve) => setTimeout(resolve, 40));
+  }
+
+  throw new Error("wait-timeout");
+}
+
+export { createFixtureProject, exists, readFile, tempDir, waitFor, writeFile };

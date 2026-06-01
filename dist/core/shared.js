@@ -1,5 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { toEntryPointMap } from "./discovery.js";
+import { writeBundlerManifest } from "./manifest.js";
 function formatEsbuildMessage(message) {
     const location = message.location
         ? `${message.location.file}:${message.location.line}:${message.location.column}`
@@ -19,11 +21,21 @@ function resolveOutputs(result, rootDir) {
         .map((value) => path.isAbsolute(value) ? value : path.resolve(rootDir, value))
         .sort();
 }
-function toBuildResult(args) {
+async function toBuildResult(args) {
+    const outputs = resolveOutputs(args.result, args.rootDir);
+    const manifestWrite = await writeBundlerManifest({
+        entries: args.entries,
+        manifest: args.manifest,
+        outDir: args.outDir,
+        outputs,
+        rootDir: args.rootDir,
+    });
     return {
-        outputs: resolveOutputs(args.result, args.rootDir),
+        entries: toEntryPointMap(args.entries, args.rootDir),
+        outputs,
         warnings: args.result.warnings.length,
         metafile: args.result.metafile,
+        manifestPath: manifestWrite.manifestPath,
         durationMs: Date.now() - args.startedAt,
     };
 }

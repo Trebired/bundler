@@ -3,6 +3,8 @@ import { logPackageInitialized } from "@trebired/logger-adapter";
 import { BUNDLER_LOG_GROUP, BUNDLER_PACKAGE_NAME } from "../constants.js";
 import { resolveLogger } from "../logging.js";
 import { createEsbuildOptions, normalizeBundlerOptions } from "./esbuild-options.js";
+import { resolveBundlerEntries, normalizeDiscoverRoots } from "./discovery.js";
+import { createDiscoveryWatcher } from "./discovery-watch.js";
 import { cleanOutDir, formatFailure, logWarnings, toBuildResult } from "./shared.js";
 async function watch(options) {
     const normalized = normalizeBundlerOptions(options || {});
@@ -18,12 +20,37 @@ async function watch(options) {
         logger.info("watch", `clean :: ${normalized.outDir}`);
         await cleanOutDir(normalized.outDir);
     }
-    const context = await createContext(createEsbuildOptions(normalized, logger));
+    let disposed = false;
+    let currentEntries = await resolveBundlerEntries(options || {}, normalized.rootDir, {
+        allowEmpty: true,
+    });
+    let currentContext = null;
+    let queued = Promise.resolve();
+    const createWatchedContext = async (records = currentEntries.records) => {
+        const context = await createContext(createEsbuildOptions({
+            ...normalized,
+            entryRecords: records,
+        }, logger));
+        await context.watch();
+        return context;
+    };
     const executeRebuild = async () => {
+        if (!currentContext) {
+            return {
+                entries: {},
+                outputs: [],
+                warnings: 0,
+                manifestPath: undefined,
+                durationMs: 0,
+            };
+        }
         const startedAt = Date.now();
-        const result = await context.rebuild();
+        const result = await currentContext.rebuild();
         logWarnings(logger, result.warnings);
-        const summary = toBuildResult({
+        const summary = await toBuildResult({
+            entries: currentEntries.records,
+            manifest: normalized.manifest,
+            outDir: normalized.outDir,
             result,
             rootDir: normalized.rootDir,
             startedAt,
@@ -31,29 +58,86 @@ async function watch(options) {
         logger.info("watch", `rebuilt :: outputs=${summary.outputs.length} warnings=${summary.warnings}`);
         return summary;
     };
+    const refreshDiscovery = async () => {
+        const nextEntries = await resolveBundlerEntries(options || {}, normalized.rootDir, {
+            allowEmpty: true,
+        });
+        if (nextEntries.signature === currentEntries.signature)
+            return;
+        logger.info("watch", `entry-set-changed :: count=${nextEntries.records.length}`);
+        currentEntries = nextEntries;
+        if (currentContext) {
+            await currentContext.dispose();
+            currentContext = null;
+        }
+        await cleanOutDir(normalized.outDir);
+        if (currentEntries.records.length === 0) {
+            logger.info("watch", "entry-set-empty");
+            return;
+        }
+        currentContext = await createWatchedContext(currentEntries.records);
+        await executeRebuild();
+    };
+    const runExclusive = (task) => {
+        const next = queued.then(task, task);
+        queued = next.then(() => undefined, () => undefined);
+        return next;
+    };
+    const discoveryRoots = normalizeDiscoverRoots(normalized.rootDir, options.discover);
+    const discoveryWatcher = discoveryRoots.length
+        ? createDiscoveryWatcher({
+            dirs: discoveryRoots,
+            onChange() {
+                void runExclusive(async () => {
+                    if (disposed)
+                        return;
+                    try {
+                        await refreshDiscovery();
+                    }
+                    catch (error) {
+                        logger.fail("watch", `discovery-refresh-failed :: ${formatFailure(error)}`);
+                    }
+                });
+            },
+        })
+        : null;
     try {
         logger.info("watch", "start");
-        await executeRebuild();
-        await context.watch();
+        logger.info("watch", `entries :: count=${currentEntries.records.length}`);
+        if (currentEntries.records.length > 0) {
+            currentContext = await createWatchedContext(currentEntries.records);
+            await executeRebuild();
+        }
         return {
             async rebuild() {
-                try {
-                    return await executeRebuild();
-                }
-                catch (error) {
-                    logger.fail("watch", `rebuild-failed :: ${formatFailure(error)}`);
-                    throw error;
-                }
+                return runExclusive(async () => {
+                    try {
+                        await refreshDiscovery();
+                        return await executeRebuild();
+                    }
+                    catch (error) {
+                        logger.fail("watch", `rebuild-failed :: ${formatFailure(error)}`);
+                        throw error;
+                    }
+                });
             },
             async dispose() {
                 logger.info("watch", "dispose");
-                await context.dispose();
+                disposed = true;
+                discoveryWatcher?.close();
+                if (currentContext) {
+                    await currentContext.dispose();
+                }
             },
         };
     }
     catch (error) {
         logger.fail("watch", `failed :: ${formatFailure(error)}`);
-        await context.dispose();
+        disposed = true;
+        discoveryWatcher?.close();
+        if (currentContext) {
+            await currentContext.dispose();
+        }
         throw error;
     }
 }
