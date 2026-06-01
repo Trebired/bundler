@@ -14,6 +14,7 @@ type NormalizedBundlerOptions = {
     annotateSources: boolean;
     clean: boolean;
     define?: Record<string, string>;
+    environment?: BundlerOptions["environment"];
     entries?: string[] | Record<string, string>;
     entryRecords?: BundlerEntryRecord[];
     external?: string[];
@@ -27,7 +28,6 @@ type NormalizedBundlerOptions = {
     onEntrySetChanged?: BundlerOptions["onEntrySetChanged"];
     onRebuilt?: BundlerOptions["onRebuilt"];
     outDir: string;
-    platform?: BundlerOptions["platform"];
     publicPath?: string;
     rootDir: string;
     sourcemap?: BundlerOptions["sourcemap"];

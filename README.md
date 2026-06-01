@@ -336,7 +336,7 @@ type BundlerOptions = {
   outDir: string;
   rootDir?: string;
   mode?: "debug" | "compact" | "extreme";
-  platform?: "browser" | "node" | "neutral";
+  environment?: "browser" | "node" | "neutral";
   format?: "esm" | "cjs" | "iife";
   target?: string | string[];
   minify?: boolean;

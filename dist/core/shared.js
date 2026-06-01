@@ -14,6 +14,23 @@ function logWarnings(logger, warnings) {
         logger.warn("build", formatEsbuildMessage(warning));
     }
 }
+function formatEntryPath(record, rootDir) {
+    return record.source === "virtual"
+        ? `virtual:${record.name}`
+        : toPublicEntryMap([record], rootDir)[record.name] || record.path;
+}
+function logDuplicateEntries(args) {
+    for (const duplicate of args.duplicates) {
+        args.logger.warn("entries", "duplicate-entry-pruned", {
+            dropped_entry: duplicate.dropped.name,
+            dropped_path: formatEntryPath(duplicate.dropped, args.rootDir),
+            dropped_source: duplicate.dropped.source,
+            kept_entry: duplicate.kept.name,
+            kept_path: formatEntryPath(duplicate.kept, args.rootDir),
+            kept_source: duplicate.kept.source,
+        });
+    }
+}
 function resolveOutputs(result, rootDir) {
     if (!result.metafile)
         return [];
@@ -49,5 +66,5 @@ function formatFailure(error) {
     }
     return error instanceof Error ? error.message : String(error);
 }
-export { cleanOutDir, formatFailure, logWarnings, toBuildResult };
+export { cleanOutDir, formatFailure, logDuplicateEntries, logWarnings, toBuildResult };
 //# sourceMappingURL=shared.js.map

@@ -441,7 +441,9 @@ function joinClassNames(...values: Array<string | Record<string, boolean>>) {
 }
 
 const og = joinClassNames;
+const h = (tag: string, props: Record<string, unknown>, ...children: unknown[]) => ({ tag, props, children });
 const tone = "tone-info";
+const progressClass = true ? "loader-circle" : "select-card";
 const html = "<div class=\\"select-card inline-row gap-sm ver-center\\"></div>";
 const htmlTemplate = \`<span class="pill \${tone} loader-circle"></span>\`;
 const classes = og(
@@ -450,12 +452,19 @@ const classes = og(
   \`pill \${tone}\`,
   { "loader-circle": true, "column gap-xs flex-1": true },
 );
+const stackedClassName = ["column", "gap-xs", "flex-1"].filter(Boolean).join(" ");
+const renderTree = h(
+  "div",
+  { className: "inline-row gap-sm ver-center" },
+  h("div", { className: stackedClassName, contentClassName: "column gap-xs flex-1" }),
+  h("span", { className: \`pill \${progressClass}\` }),
+);
 
 document.body.className = og("select-card", "loader-circle");
 document.body.setAttribute("class", og("inline-row", "gap-sm"));
 document.querySelector(\`.select-card\`);
 
-export const view = <div className={classes} data-html={html} data-template={htmlTemplate}></div>;
+export const view = <div className={classes} data-html={html} data-template={htmlTemplate} data-tree={JSON.stringify(renderTree)}></div>;
 `);
 
     const result = await bundle({

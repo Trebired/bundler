@@ -4,6 +4,11 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 1.4.0
+
+- Fixed `extreme` mode class obfuscation so emitted JS, TS, JSX, and TSX class usage stays aligned with obfuscated CSS output across bound identifiers, class-bearing object props, helper aliases, template literals, and HTML fragments.
+- Renamed the public esbuild target option from `platform` to `environment` in the package API and docs.
+
 ## 1.3.0
 
 - Grouped package-owned logs under stable `bundler.*` scopes so Trebired logger output composes cleanly.

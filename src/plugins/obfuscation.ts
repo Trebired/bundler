@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import generate from "@babel/generator";
 import { parse, type ParserPlugin } from "@babel/parser";
-import traverse from "@babel/traverse";
+import traverse, { type NodePath } from "@babel/traverse";
 import type {
   Expression,
   File,
@@ -31,6 +31,11 @@ const CLASS_NAME_HELPERS = new Set([
 ]);
 
 type ClassNameMap = Map<string, string>;
+type RewriteContext = {
+  classNameMap: ClassNameMap;
+  helperAliases: Set<string>;
+  visitedBindings: WeakSet<object>;
+};
 
 function createClassNameMap(rootDir: string): ClassNameMap {
   const classNames = new Set<string>();
@@ -272,6 +277,11 @@ function looksLikeClassHelperName(value: string | null | undefined): boolean {
   return /class(?:name|names|es)?/i.test(value);
 }
 
+function looksLikeClassPropertyName(value: string | null | undefined): boolean {
+  if (!value) return false;
+  return /class(?:name)?$/i.test(value);
+}
+
 function isExpressionNode(value: unknown): value is Expression {
   if (!value || typeof value !== "object" || !("type" in value)) return false;
 
@@ -345,6 +355,13 @@ function collectHelperAliases(ast: File): Set<string> {
   return aliases;
 }
 
+function readObjectPropertyName(property: ObjectProperty): string | null {
+  if (property.computed) return null;
+  if (property.key.type === "Identifier") return property.key.name;
+  if (property.key.type === "StringLiteral") return property.key.value;
+  return null;
+}
+
 function rewritePropertyKeyAsClassName(
   property: ObjectProperty,
   classNameMap: ClassNameMap,
@@ -365,124 +382,160 @@ function rewritePropertyKeyAsClassName(
   return false;
 }
 
-function rewriteExpressionAsClassList(args: {
-  classNameMap: ClassNameMap;
-  expression: Expression;
-  helperAliases: Set<string>;
-}): boolean {
-  const { classNameMap, expression, helperAliases } = args;
+function rewriteBoundIdentifier(path: NodePath<Expression>, context: RewriteContext): boolean {
+  if (!path.isIdentifier()) return false;
+
+  const binding = path.scope.getBinding(path.node.name);
+  if (!binding || context.visitedBindings.has(binding.path.node)) return false;
+  context.visitedBindings.add(binding.path.node);
+
+  try {
+    if (binding.path.isVariableDeclarator()) {
+      const initPath = binding.path.get("init");
+      if (initPath && initPath.node && isExpressionNode(initPath.node)) {
+        return rewriteExpressionAsClassList(initPath as NodePath<Expression>, context);
+      }
+    }
+
+    return false;
+  } finally {
+    context.visitedBindings.delete(binding.path.node);
+  }
+}
+
+function rewriteClassBearingProperty(
+  path: NodePath<ObjectProperty>,
+  context: RewriteContext,
+): boolean {
+  const propertyName = readObjectPropertyName(path.node);
+  if (!looksLikeClassPropertyName(propertyName)) return false;
+
+  const valuePath = path.get("value");
+  if (!valuePath.node || !isExpressionNode(valuePath.node)) return false;
+
+  return rewriteExpressionAsClassList(valuePath as NodePath<Expression>, context);
+}
+
+function rewriteExpressionAsClassList(
+  path: NodePath<Expression>,
+  context: RewriteContext,
+): boolean {
+  const { classNameMap, helperAliases } = context;
+  const expression = path.node;
 
   switch (expression.type) {
-    case "ArrayExpression":
-      return expression.elements.reduce((changed, element) => {
-        if (!element || element.type === "SpreadElement" || !("type" in element)) return changed;
-        return rewriteExpressionAsClassList({
-          classNameMap,
-          expression: element as Expression,
-          helperAliases,
-        }) || changed;
-      }, false);
+    case "ArrayExpression": {
+      let changed = false;
+
+      for (const elementPath of path.get("elements")) {
+        if (!elementPath.node || elementPath.isSpreadElement() || !isExpressionNode(elementPath.node)) continue;
+        changed = rewriteExpressionAsClassList(elementPath as NodePath<Expression>, context) || changed;
+      }
+
+      return changed;
+    }
     case "AssignmentExpression":
-      return expression.right.type === "Identifier"
-        ? false
-        : rewriteExpressionAsClassList({
-          classNameMap,
-          expression: expression.right,
-          helperAliases,
-        });
-    case "BinaryExpression":
-      return (expression.left.type === "PrivateName"
-        ? false
-        : rewriteExpressionAsClassList({
-        classNameMap,
-        expression: expression.left,
-        helperAliases,
-      })) || rewriteExpressionAsClassList({
-        classNameMap,
-        expression: expression.right,
-        helperAliases,
-      });
+      return rewriteExpressionAsClassList(path.get("right") as NodePath<Expression>, context);
+    case "BinaryExpression": {
+      let changed = false;
+
+      if (expression.left.type !== "PrivateName") {
+        changed = rewriteExpressionAsClassList(path.get("left") as NodePath<Expression>, context) || changed;
+      }
+
+      changed = rewriteExpressionAsClassList(path.get("right") as NodePath<Expression>, context) || changed;
+      return changed;
+    }
     case "CallExpression": {
-      const calleeName = resolveExpressionName(expression.callee as Expression);
+      const calleePath = path.get("callee");
+      const calleeName = isExpressionNode(calleePath.node) ? resolveExpressionName(calleePath.node) : null;
       if (!calleeName || (!helperAliases.has(calleeName) && !looksLikeClassHelperName(calleeName))) {
+        if (calleePath.isMemberExpression()) {
+          const objectPath = calleePath.get("object");
+          if (objectPath.node && isExpressionNode(objectPath.node)) {
+            return rewriteExpressionAsClassList(objectPath as NodePath<Expression>, context);
+          }
+        }
         return false;
       }
 
-      return expression.arguments.reduce((changed, argument) => {
-        if (argument.type === "SpreadElement" || !("type" in argument)) return changed;
-        return rewriteExpressionAsClassList({
-          classNameMap,
-          expression: argument as Expression,
-          helperAliases,
-        }) || changed;
-      }, false);
+      let changed = false;
+      for (const argumentPath of path.get("arguments")) {
+        if (!argumentPath.node || argumentPath.isSpreadElement() || !isExpressionNode(argumentPath.node)) continue;
+        changed = rewriteExpressionAsClassList(argumentPath as NodePath<Expression>, context) || changed;
+      }
+      return changed;
     }
-    case "ConditionalExpression":
-      return rewriteExpressionAsClassList({
-        classNameMap,
-        expression: expression.consequent,
-        helperAliases,
-      }) || rewriteExpressionAsClassList({
-        classNameMap,
-        expression: expression.alternate,
-        helperAliases,
-      });
-    case "LogicalExpression":
-      return rewriteExpressionAsClassList({
-        classNameMap,
-        expression: expression.left,
-        helperAliases,
-      }) || rewriteExpressionAsClassList({
-        classNameMap,
-        expression: expression.right,
-        helperAliases,
-      });
-    case "ObjectExpression":
-      return expression.properties.reduce((changed, property) => {
-        if (property.type !== "ObjectProperty") return changed;
-        if (!isExpressionNode(property.value)) {
-          return rewritePropertyKeyAsClassName(property, classNameMap) || changed;
+    case "ConditionalExpression": {
+      const changedConsequent = rewriteExpressionAsClassList(path.get("consequent") as NodePath<Expression>, context);
+      const changedAlternate = rewriteExpressionAsClassList(path.get("alternate") as NodePath<Expression>, context);
+      return changedConsequent || changedAlternate;
+    }
+    case "Identifier":
+      return rewriteBoundIdentifier(path, context);
+    case "LogicalExpression": {
+      const changedLeft = rewriteExpressionAsClassList(path.get("left") as NodePath<Expression>, context);
+      const changedRight = rewriteExpressionAsClassList(path.get("right") as NodePath<Expression>, context);
+      return changedLeft || changedRight;
+    }
+    case "ObjectExpression": {
+      let changed = false;
+
+      for (const propertyPath of path.get("properties")) {
+        if (!propertyPath.isObjectProperty()) continue;
+        const property = propertyPath.node;
+
+        if (looksLikeClassPropertyName(readObjectPropertyName(property))) {
+          changed = rewriteClassBearingProperty(propertyPath, context) || changed;
+          continue;
         }
 
-        return rewritePropertyKeyAsClassName(property, classNameMap) || (
-          property.value.type === "Identifier"
-            ? changed
-            : rewriteExpressionAsClassList({
-              classNameMap,
-              expression: property.value,
-              helperAliases,
-            }) || changed
-        );
-      }, false);
+        if (!isExpressionNode(property.value)) {
+          changed = rewritePropertyKeyAsClassName(property, classNameMap) || changed;
+          continue;
+        }
+
+        changed = rewritePropertyKeyAsClassName(property, classNameMap) || changed;
+        changed = rewriteExpressionAsClassList(propertyPath.get("value") as NodePath<Expression>, context) || changed;
+      }
+      return changed;
+    }
     case "ParenthesizedExpression":
-      return rewriteExpressionAsClassList({
-        classNameMap,
-        expression: expression.expression,
-        helperAliases,
-      });
-    case "SequenceExpression":
-      return expression.expressions.reduce((changed, item) => {
-        return rewriteExpressionAsClassList({
-          classNameMap,
-          expression: item,
-          helperAliases,
-        }) || changed;
-      }, false);
+      return rewriteExpressionAsClassList(path.get("expression") as NodePath<Expression>, context);
+    case "SequenceExpression": {
+      let changed = false;
+
+      for (const itemPath of path.get("expressions")) {
+        if (!itemPath.node) continue;
+        changed = rewriteExpressionAsClassList(itemPath as NodePath<Expression>, context) || changed;
+      }
+      return changed;
+    }
     case "StringLiteral":
       return updateStringLiteral(expression, (value) => rewriteClassListValue(value, classNameMap));
-    case "TemplateLiteral":
-      return updateClassListTemplateLiteral(expression, classNameMap);
+    case "TemplateLiteral": {
+      let changed = updateClassListTemplateLiteral(expression, classNameMap);
+
+      for (const expressionPath of path.get("expressions")) {
+        if (!expressionPath.node || !isExpressionNode(expressionPath.node)) continue;
+        changed = rewriteExpressionAsClassList(expressionPath as NodePath<Expression>, context) || changed;
+      }
+
+      return changed;
+    }
     default:
       return false;
   }
 }
 
-function rewriteClassAttributeValue(args: {
+function rewriteClassAttributeValuePath(args: {
   classNameMap: ClassNameMap;
   helperAliases: Set<string>;
-  value: JSXAttribute["value"];
+  visitedBindings: WeakSet<object>;
+  valuePath: NodePath<JSXAttribute["value"]>;
 }): boolean {
-  const { classNameMap, helperAliases, value } = args;
+  const { classNameMap, helperAliases, valuePath, visitedBindings } = args;
+  const value = valuePath.node;
   if (!value) return false;
 
   if (value.type === "StringLiteral") {
@@ -490,13 +543,13 @@ function rewriteClassAttributeValue(args: {
   }
 
   if (value.type === "JSXExpressionContainer") {
-    const expression = value.expression;
-    if (expression.type === "JSXEmptyExpression") return false;
+    const expressionPath = valuePath.get("expression");
+    if (!expressionPath.node || expressionPath.isJSXEmptyExpression() || !isExpressionNode(expressionPath.node)) return false;
 
-    return rewriteExpressionAsClassList({
+    return rewriteExpressionAsClassList(expressionPath as NodePath<Expression>, {
       classNameMap,
-      expression,
       helperAliases,
+      visitedBindings,
     });
   }
 
@@ -512,6 +565,7 @@ function rewriteCodeClassTokens(args: {
 
   const ast = parseCodeFile(args.contents, args.filePath);
   const helperAliases = collectHelperAliases(ast);
+  const visitedBindings = new WeakSet<object>();
   let changed = false;
 
   traverse(ast, {
@@ -520,12 +574,12 @@ function rewriteCodeClassTokens(args: {
 
       if (left.type !== "MemberExpression") return;
       if (readMemberPropertyName(left) !== "className") return;
-      if (path.node.right.type === "Identifier") return;
+      if (!isExpressionNode(path.node.right)) return;
 
-      changed = rewriteExpressionAsClassList({
+      changed = rewriteExpressionAsClassList(path.get("right") as NodePath<Expression>, {
         classNameMap: args.classNameMap,
-        expression: path.node.right,
         helperAliases,
+        visitedBindings,
       }) || changed;
     },
     CallExpression(path) {
@@ -533,13 +587,13 @@ function rewriteCodeClassTokens(args: {
       const calleeName = resolveExpressionName(callee as Expression);
 
       if (calleeName && (helperAliases.has(calleeName) || looksLikeClassHelperName(calleeName))) {
-        for (const argument of path.node.arguments) {
-          if (argument.type === "SpreadElement" || !("type" in argument)) continue;
+        for (const argumentPath of path.get("arguments")) {
+          if (!argumentPath.node || argumentPath.isSpreadElement() || !isExpressionNode(argumentPath.node)) continue;
 
-          changed = rewriteExpressionAsClassList({
+          changed = rewriteExpressionAsClassList(argumentPath as NodePath<Expression>, {
             classNameMap: args.classNameMap,
-            expression: argument as Expression,
             helperAliases,
+            visitedBindings,
           }) || changed;
         }
         return;
@@ -575,15 +629,19 @@ function rewriteCodeClassTokens(args: {
 
       if (methodName === "setAttribute" || methodName === "setAttributeNS") {
         const nameArg = path.node.arguments[methodName === "setAttributeNS" ? 1 : 0];
-        const valueArg = path.node.arguments[methodName === "setAttributeNS" ? 2 : 1];
+        const valueArgIndex = methodName === "setAttributeNS" ? 2 : 1;
+        const valueArg = path.node.arguments[valueArgIndex];
         if (!nameArg || nameArg.type !== "StringLiteral") return;
         if (nameArg.value !== "class" && nameArg.value !== "className") return;
         if (!valueArg || valueArg.type === "SpreadElement" || !("type" in valueArg)) return;
 
-        changed = rewriteExpressionAsClassList({
+        const valuePath = path.get(`arguments.${valueArgIndex}`);
+        if (!valuePath.node || !isExpressionNode(valuePath.node)) return;
+
+        changed = rewriteExpressionAsClassList(valuePath as NodePath<Expression>, {
           classNameMap: args.classNameMap,
-          expression: valueArg as Expression,
           helperAliases,
+          visitedBindings,
         }) || changed;
         return;
       }
@@ -607,10 +665,18 @@ function rewriteCodeClassTokens(args: {
       if (name.type !== "JSXIdentifier") return;
       if (!isJsxIdentifierName(name, "class") && !isJsxIdentifierName(name, "className")) return;
 
-      changed = rewriteClassAttributeValue({
+      changed = rewriteClassAttributeValuePath({
         classNameMap: args.classNameMap,
         helperAliases,
-        value: path.node.value,
+        valuePath: path.get("value"),
+        visitedBindings,
+      }) || changed;
+    },
+    ObjectProperty(path) {
+      changed = rewriteClassBearingProperty(path, {
+        classNameMap: args.classNameMap,
+        helperAliases,
+        visitedBindings,
       }) || changed;
     },
     StringLiteral(path) {

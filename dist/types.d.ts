@@ -1,4 +1,4 @@
-import type { Metafile, Format, Platform } from "esbuild";
+import type { Metafile, Format } from "esbuild";
 import type { LoggerAdapterEvent, LoggerAdapterGenericLogMethod, LoggerAdapterLogger, LoggerAdapterLogMethod, LoggerAdapterWriter, NormalizedLoggerAdapter } from "@trebired/logger-adapter";
 type BundlerLogger = LoggerAdapterLogger;
 type BundlerLoggerAdapter = LoggerAdapterWriter;
@@ -19,6 +19,7 @@ type BundlerManifestOptions = boolean | {
 };
 type BundlerVirtualEntries = Record<string, string>;
 type BundlerMode = "debug" | "compact" | "extreme";
+type BundlerEnvironment = "browser" | "node" | "neutral";
 type BundlerObfuscationOptions = boolean | {
     assetNames?: string;
     chunkNames?: string;
@@ -71,7 +72,7 @@ type BundlerOptions = {
     outDir: string;
     rootDir?: string;
     mode?: BundlerMode;
-    platform?: Platform;
+    environment?: BundlerEnvironment;
     format?: Format;
     target?: string | string[];
     minify?: boolean;
@@ -106,5 +107,5 @@ type LoadedBundlerConfig = {
     config: BundlerOptions;
     configPath: string;
 };
-export type { BundlerBuildResult, BundlerDiscoverOptions, BundlerDerivedManifest, BundlerDerivedManifestChunk, BundlerDerivedManifestEntry, BundlerDerivedManifestOutput, BundlerDerivedManifestOutputKind, BundlerEntryRecord, BundlerEntrySource, BundlerGenericLogMethod, BundlerLogEvent, BundlerLogger, BundlerLoggerAdapter, BundlerLogMethod, BundlerManifestOptions, BundlerMode, BundlerObfuscationOptions, BundlerOptions, BundlerVirtualEntries, BundlerWatchSession, LoadedBundlerConfig, NormalizedBundlerLogger, };
+export type { BundlerBuildResult, BundlerDiscoverOptions, BundlerDerivedManifest, BundlerDerivedManifestChunk, BundlerDerivedManifestEntry, BundlerDerivedManifestOutput, BundlerDerivedManifestOutputKind, BundlerEnvironment, BundlerEntryRecord, BundlerEntrySource, BundlerGenericLogMethod, BundlerLogEvent, BundlerLogger, BundlerLoggerAdapter, BundlerLogMethod, BundlerManifestOptions, BundlerMode, BundlerObfuscationOptions, BundlerOptions, BundlerVirtualEntries, BundlerWatchSession, LoadedBundlerConfig, NormalizedBundlerLogger, };
 //# sourceMappingURL=types.d.ts.map

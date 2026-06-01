@@ -5,7 +5,7 @@ import { resolveLogger } from "../logging.js";
 import { createEsbuildOptions, normalizeBundlerOptions } from "./esbuild-options.js";
 import { resolveBundlerEntries, normalizeDiscoverRoots, toPublicEntryMap } from "./discovery.js";
 import { createDiscoveryWatcher } from "./discovery-watch.js";
-import { cleanOutDir, formatFailure, logWarnings, toBuildResult } from "./shared.js";
+import { cleanOutDir, formatFailure, logDuplicateEntries, logWarnings, toBuildResult } from "./shared.js";
 async function watch(options) {
     const normalized = normalizeBundlerOptions(options || {});
     const logger = resolveLogger(normalized.logger, normalized.loggerAdapter);
@@ -24,6 +24,14 @@ async function watch(options) {
     let currentEntries = await resolveBundlerEntries(options || {}, normalized.rootDir, {
         allowEmpty: true,
     });
+    let duplicateSignature = JSON.stringify(currentEntries.duplicates);
+    if (currentEntries.duplicates.length > 0) {
+        logDuplicateEntries({
+            duplicates: currentEntries.duplicates,
+            logger,
+            rootDir: normalized.rootDir,
+        });
+    }
     let currentContext = null;
     let queued = Promise.resolve();
     const callHook = async (args) => {
@@ -84,6 +92,15 @@ async function watch(options) {
         const nextEntries = await resolveBundlerEntries(options || {}, normalized.rootDir, {
             allowEmpty: true,
         });
+        const nextDuplicateSignature = JSON.stringify(nextEntries.duplicates);
+        if (nextEntries.duplicates.length > 0 && nextDuplicateSignature !== duplicateSignature) {
+            logDuplicateEntries({
+                duplicates: nextEntries.duplicates,
+                logger,
+                rootDir: normalized.rootDir,
+            });
+        }
+        duplicateSignature = nextDuplicateSignature;
         if (nextEntries.signature === currentEntries.signature)
             return;
         logger.info("watch", `entry-set-changed :: count=${nextEntries.records.length}`);

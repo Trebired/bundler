@@ -1,4 +1,4 @@
-import type { Metafile, Format, Platform } from "esbuild";
+import type { Metafile, Format } from "esbuild";
 import type {
   LoggerAdapterEvent,
   LoggerAdapterGenericLogMethod,
@@ -30,6 +30,7 @@ type BundlerManifestOptions = boolean | {
 
 type BundlerVirtualEntries = Record<string, string>;
 type BundlerMode = "debug" | "compact" | "extreme";
+type BundlerEnvironment = "browser" | "node" | "neutral";
 
 type BundlerObfuscationOptions = boolean | {
   assetNames?: string;
@@ -91,7 +92,7 @@ type BundlerOptions = {
   outDir: string;
   rootDir?: string;
   mode?: BundlerMode;
-  platform?: Platform;
+  environment?: BundlerEnvironment;
   format?: Format;
   target?: string | string[];
   minify?: boolean;
@@ -138,6 +139,7 @@ export type {
   BundlerDerivedManifestEntry,
   BundlerDerivedManifestOutput,
   BundlerDerivedManifestOutputKind,
+  BundlerEnvironment,
   BundlerEntryRecord,
   BundlerEntrySource,
   BundlerGenericLogMethod,

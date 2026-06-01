@@ -13,10 +13,9 @@ function createDiscoveryWatcher(args: {
   let closed = false;
   let timer: ReturnType<typeof setTimeout> | null = null;
   const interval = setInterval(() => {
-    for (const dir of args.dirs) {
-      refresh(dir);
+    if (refreshAll()) {
+      emitChange();
     }
-    emitChange();
   }, 250);
 
   const emitChange = () => {
@@ -28,12 +27,20 @@ function createDiscoveryWatcher(args: {
     }, 80);
   };
 
-  const ensureWatch = (dir: string): void => {
-    if (closed || watchers.has(dir) || !fs.existsSync(dir)) return;
-    if (!fs.statSync(dir).isDirectory()) return;
+  const ensureWatch = (dir: string): boolean => {
+    if (closed || watchers.has(dir) || !fs.existsSync(dir)) return false;
+
+    let stats: fs.Stats;
+    try {
+      stats = fs.statSync(dir);
+    } catch {
+      return false;
+    }
+
+    if (!stats.isDirectory()) return false;
 
     const watcher = fs.watch(dir, () => {
-      refresh(dir);
+      refreshAll();
       emitChange();
     });
 
@@ -42,29 +49,55 @@ function createDiscoveryWatcher(args: {
     });
 
     watchers.set(dir, watcher);
+    return true;
   };
 
-  const refresh = (startDir: string): void => {
+  const collectDirs = (startDir: string, found: Set<string>): void => {
     if (closed || !fs.existsSync(startDir)) return;
 
     const stack = [startDir];
     while (stack.length) {
       const current = stack.pop()!;
-      ensureWatch(current);
+      if (!fs.existsSync(current)) continue;
+      found.add(current);
 
-      for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
-        if (!entry.isDirectory()) continue;
-        const child = path.join(current, entry.name);
-        if (!watchers.has(child)) {
+      try {
+        for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+          if (!entry.isDirectory()) continue;
+          const child = path.join(current, entry.name);
           stack.push(child);
         }
+      } catch {
+        continue;
       }
     }
   };
 
-  for (const dir of args.dirs) {
-    refresh(dir);
-  }
+  const refreshAll = (): boolean => {
+    let changed = false;
+    const found = new Set<string>();
+
+    for (const dir of args.dirs) {
+      collectDirs(dir, found);
+    }
+
+    for (const dir of found) {
+      if (ensureWatch(dir)) {
+        changed = true;
+      }
+    }
+
+    for (const [dir, watcher] of watchers.entries()) {
+      if (found.has(dir)) continue;
+      watcher.close();
+      watchers.delete(dir);
+      changed = true;
+    }
+
+    return changed;
+  };
+
+  refreshAll();
 
   return {
     close() {

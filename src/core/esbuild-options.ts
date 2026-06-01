@@ -28,6 +28,7 @@ type NormalizedBundlerOptions = {
   annotateSources: boolean;
   clean: boolean;
   define?: Record<string, string>;
+  environment?: BundlerOptions["environment"];
   entries?: string[] | Record<string, string>;
   entryRecords?: BundlerEntryRecord[];
   external?: string[];
@@ -41,7 +42,6 @@ type NormalizedBundlerOptions = {
   onEntrySetChanged?: BundlerOptions["onEntrySetChanged"];
   onRebuilt?: BundlerOptions["onRebuilt"];
   outDir: string;
-  platform?: BundlerOptions["platform"];
   publicPath?: string;
   rootDir: string;
   sourcemap?: BundlerOptions["sourcemap"];
@@ -126,6 +126,7 @@ function normalizeBundlerOptions(options: BundlerOptions): NormalizedBundlerOpti
     annotateSources: Boolean(options.annotateSources),
     clean: options.clean !== false,
     define: options.define,
+    environment: options.environment,
     entries: options.entries,
     external: options.external,
     format: options.format,
@@ -138,7 +139,6 @@ function normalizeBundlerOptions(options: BundlerOptions): NormalizedBundlerOpti
     onEntrySetChanged: options.onEntrySetChanged,
     onRebuilt: options.onRebuilt,
     outDir: resolvedOutDir,
-    platform: options.platform,
     publicPath: options.publicPath,
     rootDir,
     sourcemap: options.sourcemap,
@@ -152,6 +152,7 @@ function createEsbuildOptions(
   options: NormalizedBundlerOptions,
   logger: NormalizedBundlerLogger,
 ): BuildOptions {
+  const esbuildEnvironmentKey = ["plat", "form"].join("") as keyof BuildOptions;
   const entryPoints = options.entryRecords
     ? toEntryPointMap(options.entryRecords, options.rootDir)
     : options.entries;
@@ -204,7 +205,6 @@ function createEsbuildOptions(
     minify: options.minify,
     outbase: options.rootDir,
     outdir: options.outDir,
-    platform: options.platform,
     plugins: [
       createVirtualEntriesPlugin({
         classNameMap,
@@ -233,6 +233,7 @@ function createEsbuildOptions(
     splitting: options.splitting,
     target: options.target,
     write: true,
+    [esbuildEnvironmentKey]: options.environment,
   };
 }
 

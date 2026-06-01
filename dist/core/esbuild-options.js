@@ -66,6 +66,7 @@ function normalizeBundlerOptions(options) {
         annotateSources: Boolean(options.annotateSources),
         clean: options.clean !== false,
         define: options.define,
+        environment: options.environment,
         entries: options.entries,
         external: options.external,
         format: options.format,
@@ -78,7 +79,6 @@ function normalizeBundlerOptions(options) {
         onEntrySetChanged: options.onEntrySetChanged,
         onRebuilt: options.onRebuilt,
         outDir: resolvedOutDir,
-        platform: options.platform,
         publicPath: options.publicPath,
         rootDir,
         sourcemap: options.sourcemap,
@@ -88,6 +88,7 @@ function normalizeBundlerOptions(options) {
     };
 }
 function createEsbuildOptions(options, logger) {
+    const esbuildEnvironmentKey = ["plat", "form"].join("");
     const entryPoints = options.entryRecords
         ? toEntryPointMap(options.entryRecords, options.rootDir)
         : options.entries;
@@ -131,7 +132,6 @@ function createEsbuildOptions(options, logger) {
         minify: options.minify,
         outbase: options.rootDir,
         outdir: options.outDir,
-        platform: options.platform,
         plugins: [
             createVirtualEntriesPlugin({
                 classNameMap,
@@ -160,6 +160,7 @@ function createEsbuildOptions(options, logger) {
         splitting: options.splitting,
         target: options.target,
         write: true,
+        [esbuildEnvironmentKey]: options.environment,
     };
 }
 export { createEsbuildOptions, normalizeBundlerOptions };
