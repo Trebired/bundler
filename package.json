@@ -1,6 +1,6 @@
 {
   "name": "@trebired/bundler",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "description": "Fast esbuild-based bundler wrapper with SCSS support, watch mode, and inline source path annotations.",
   "license": "AGPL-3.0-only",
   "keywords": [

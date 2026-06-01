@@ -4,7 +4,7 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
-## 0.3.0
+## 1.0.0
 
 - Changed inline source annotations from `@trebired/source:` to neutral `source:` comments.
 - Added `virtualEntries` for in-memory generated entry modules.
