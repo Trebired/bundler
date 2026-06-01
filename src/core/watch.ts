@@ -8,7 +8,7 @@ import type { BundlerBuildResult, BundlerOptions, BundlerWatchSession } from "..
 import { createEsbuildOptions, normalizeBundlerOptions } from "./esbuild-options.js";
 import { resolveBundlerEntries, normalizeDiscoverRoots, toPublicEntryMap } from "./discovery.js";
 import { createDiscoveryWatcher } from "./discovery-watch.js";
-import { cleanOutDir, formatFailure, logWarnings, toBuildResult } from "./shared.js";
+import { cleanOutDir, formatFailure, logDuplicateEntries, logWarnings, toBuildResult } from "./shared.js";
 
 async function watch(options: BundlerOptions): Promise<BundlerWatchSession> {
   const normalized = normalizeBundlerOptions(options || {} as BundlerOptions);
@@ -31,6 +31,14 @@ async function watch(options: BundlerOptions): Promise<BundlerWatchSession> {
   let currentEntries = await resolveBundlerEntries(options || {} as BundlerOptions, normalized.rootDir, {
     allowEmpty: true,
   });
+  let duplicateSignature = JSON.stringify(currentEntries.duplicates);
+  if (currentEntries.duplicates.length > 0) {
+    logDuplicateEntries({
+      duplicates: currentEntries.duplicates,
+      logger,
+      rootDir: normalized.rootDir,
+    });
+  }
   let currentContext: BuildContext<any> | null = null;
   let queued = Promise.resolve();
 
@@ -98,6 +106,17 @@ async function watch(options: BundlerOptions): Promise<BundlerWatchSession> {
     const nextEntries = await resolveBundlerEntries(options || {} as BundlerOptions, normalized.rootDir, {
       allowEmpty: true,
     });
+    const nextDuplicateSignature = JSON.stringify(nextEntries.duplicates);
+
+    if (nextEntries.duplicates.length > 0 && nextDuplicateSignature !== duplicateSignature) {
+      logDuplicateEntries({
+        duplicates: nextEntries.duplicates,
+        logger,
+        rootDir: normalized.rootDir,
+      });
+    }
+
+    duplicateSignature = nextDuplicateSignature;
     if (nextEntries.signature === currentEntries.signature) return;
 
     logger.info("watch", `entry-set-changed :: count=${nextEntries.records.length}`);

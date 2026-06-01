@@ -4,6 +4,7 @@ import type { BuildResult, Message } from "esbuild";
 
 import type { BundlerBuildResult, BundlerEntryRecord, NormalizedBundlerLogger } from "../types.js";
 import { toPublicEntryMap } from "./discovery.js";
+import type { DuplicateBundlerEntryRecord } from "./discovery.js";
 import { writeBundlerManifest } from "./manifest.js";
 import type { NormalizedManifestOptions } from "./discovery.js";
 
@@ -18,6 +19,29 @@ function formatEsbuildMessage(message: Partial<Message>): string {
 function logWarnings(logger: NormalizedBundlerLogger, warnings: Message[]): void {
   for (const warning of warnings) {
     logger.warn("build", formatEsbuildMessage(warning));
+  }
+}
+
+function formatEntryPath(record: BundlerEntryRecord, rootDir: string): string {
+  return record.source === "virtual"
+    ? `virtual:${record.name}`
+    : toPublicEntryMap([record], rootDir)[record.name] || record.path;
+}
+
+function logDuplicateEntries(args: {
+  duplicates: DuplicateBundlerEntryRecord[];
+  logger: NormalizedBundlerLogger;
+  rootDir: string;
+}): void {
+  for (const duplicate of args.duplicates) {
+    args.logger.warn("entries", "duplicate-entry-pruned", {
+      dropped_entry: duplicate.dropped.name,
+      dropped_path: formatEntryPath(duplicate.dropped, args.rootDir),
+      dropped_source: duplicate.dropped.source,
+      kept_entry: duplicate.kept.name,
+      kept_path: formatEntryPath(duplicate.kept, args.rootDir),
+      kept_source: duplicate.kept.source,
+    });
   }
 }
 
@@ -69,4 +93,4 @@ function formatFailure(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-export { cleanOutDir, formatFailure, logWarnings, toBuildResult };
+export { cleanOutDir, formatFailure, logDuplicateEntries, logWarnings, toBuildResult };

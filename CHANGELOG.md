@@ -4,6 +4,12 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 1.3.0
+
+- Grouped package-owned logs under stable `bundler.*` scopes so Trebired logger output composes cleanly.
+- Added duplicate entry-path pruning with warning logs when the same source file is bundled more than once.
+- Fixed `extreme` mode class obfuscation for helper aliases, template literals with expressions, `setAttribute("class", ...)`, and HTML/template string assembly.
+
 ## 1.2.0
 
 - Added `mode` with `debug`, `compact`, and `extreme` build profiles.

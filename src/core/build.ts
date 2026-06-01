@@ -6,7 +6,7 @@ import { resolveLogger } from "../logging.js";
 import type { BundlerBuildResult, BundlerOptions } from "../types.js";
 import { createEsbuildOptions, normalizeBundlerOptions } from "./esbuild-options.js";
 import { resolveBundlerEntries } from "./discovery.js";
-import { cleanOutDir, formatFailure, logWarnings, toBuildResult } from "./shared.js";
+import { cleanOutDir, formatFailure, logDuplicateEntries, logWarnings, toBuildResult } from "./shared.js";
 
 async function bundle(options: BundlerOptions): Promise<BundlerBuildResult> {
   const normalized = normalizeBundlerOptions(options || {} as BundlerOptions);
@@ -30,6 +30,11 @@ async function bundle(options: BundlerOptions): Promise<BundlerBuildResult> {
 
   try {
     const resolvedEntries = await resolveBundlerEntries(options || {} as BundlerOptions, normalized.rootDir);
+    logDuplicateEntries({
+      duplicates: resolvedEntries.duplicates,
+      logger,
+      rootDir: normalized.rootDir,
+    });
     logger.info("build", `entries :: count=${resolvedEntries.records.length}`);
     const result = await runEsbuild(createEsbuildOptions({
       ...normalized,

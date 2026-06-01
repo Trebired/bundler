@@ -25,8 +25,14 @@ type NormalizedDiscoverOptions = {
 };
 
 type ResolvedEntries = {
+  duplicates: DuplicateBundlerEntryRecord[];
   records: BundlerEntryRecord[];
   signature: string;
+};
+
+type DuplicateBundlerEntryRecord = {
+  dropped: BundlerEntryRecord;
+  kept: BundlerEntryRecord;
 };
 
 type NormalizedManifestOptions = {
@@ -183,6 +189,54 @@ function normalizeVirtualEntries(virtualEntries: BundlerVirtualEntries | undefin
     .filter((entry) => Boolean(entry.name));
 }
 
+function resolveEntryPriority(record: BundlerEntryRecord): number {
+  if (record.source === "manual") return 0;
+  if (record.source === "virtual") return 1;
+  return 2;
+}
+
+function compareEntries(a: BundlerEntryRecord, b: BundlerEntryRecord): number {
+  return resolveEntryPriority(a) - resolveEntryPriority(b)
+    || a.name.localeCompare(b.name)
+    || a.path.localeCompare(b.path);
+}
+
+function dedupeEntriesBySourcePath(records: BundlerEntryRecord[]): {
+  duplicates: DuplicateBundlerEntryRecord[];
+  records: BundlerEntryRecord[];
+} {
+  const duplicates: DuplicateBundlerEntryRecord[] = [];
+  const keptByPath = new Map<string, BundlerEntryRecord>();
+
+  for (const record of [...records].sort(compareEntries)) {
+    if (record.source === "virtual") {
+      const virtualKey = `virtual:${record.name}`;
+      if (!keptByPath.has(virtualKey)) {
+        keptByPath.set(virtualKey, record);
+      }
+      continue;
+    }
+
+    const key = toPosixPath(path.resolve(record.path));
+    const existing = keptByPath.get(key);
+
+    if (!existing) {
+      keptByPath.set(key, record);
+      continue;
+    }
+
+    duplicates.push({
+      dropped: record,
+      kept: existing,
+    });
+  }
+
+  return {
+    duplicates: duplicates.sort((a, b) => compareEntries(a.dropped, b.dropped)),
+    records: Array.from(keptByPath.values()).sort((a, b) => a.name.localeCompare(b.name) || a.path.localeCompare(b.path)),
+  };
+}
+
 function buildDiscoveredEntryName(args: {
   config: NormalizedDiscoverOptions;
   relativePath: string;
@@ -244,7 +298,8 @@ async function resolveBundlerEntries(
   const virtual = normalizeVirtualEntries(options.virtualEntries);
   const discoveredGroups = await Promise.all(normalizeDiscoverOptions(rootDir, options.discover).map(walkDiscoveredEntries));
   const discovered = discoveredGroups.flat();
-  const all = [...manual, ...virtual, ...discovered];
+  const deduped = dedupeEntriesBySourcePath([...manual, ...virtual, ...discovered]);
+  const all = deduped.records;
 
   if (!all.length && !settings.allowEmpty) {
     throw new Error("bundler-missing-entries");
@@ -274,6 +329,7 @@ async function resolveBundlerEntries(
   })));
 
   return {
+    duplicates: deduped.duplicates,
     records,
     signature,
   };
@@ -344,4 +400,9 @@ export {
   toPosixPath,
   VIRTUAL_ENTRY_PREFIX,
 };
-export type { NormalizedDiscoverOptions, NormalizedManifestOptions, ResolvedEntries };
+export type {
+  DuplicateBundlerEntryRecord,
+  NormalizedDiscoverOptions,
+  NormalizedManifestOptions,
+  ResolvedEntries,
+};

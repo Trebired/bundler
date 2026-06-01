@@ -238,7 +238,7 @@ export const message = "watch-updated";
 
     expect(sinkRows.some((row) => row.group === "bundler.initialize" && row.level === "success")).toBe(true);
     expect(sinkRows.find((row) => row.group === "bundler.initialize")?.metadata).toBeUndefined();
-    expect(sinkRows.some((row) => row.group === "build" && row.message === "start")).toBe(true);
+    expect(sinkRows.some((row) => row.group === "bundler.build" && row.message === "start")).toBe(true);
 
     const adapterRows: Array<{ severity: string; line: string }> = [];
 
@@ -258,7 +258,41 @@ export const message = "watch-updated";
     } as any);
 
     expect(adapterRows.some((row) => row.severity === "success" && row.line.includes("bundler.initialize :: @trebired/bundler initialized"))).toBe(true);
-    expect(adapterRows.some((row) => row.severity === "info" && row.line.includes("build :: complete :: outputs="))).toBe(true);
+    expect(adapterRows.some((row) => row.severity === "info" && row.line.includes("bundler.build :: complete :: outputs="))).toBe(true);
+  });
+
+  test("prunes duplicate entry paths and keeps the first highest-priority entry", async () => {
+    const root = tempDir();
+    createFixtureProject(root);
+
+    const sinkRows: Array<{ group: string; level: string; message: string; metadata?: Record<string, unknown> }> = [];
+
+    const result = await bundle({
+      entries: {
+        app: "./src/app.tsx",
+        "app-copy": "./src/app.tsx",
+      },
+      logger(event) {
+        sinkRows.push(event as typeof sinkRows[number]);
+      },
+      outDir: "./dist",
+      rootDir: root,
+    });
+
+    expect(result.entries).toEqual({
+      app: "src/app.tsx",
+    });
+    expect(result.outputs.some((filePath) => filePath.endsWith("/dist/app.js"))).toBe(true);
+    expect(result.outputs.some((filePath) => filePath.endsWith("/dist/app-copy.js"))).toBe(false);
+
+    const duplicateLog = sinkRows.find((row) => row.group === "bundler.entries" && row.message === "duplicate-entry-pruned");
+    expect(duplicateLog?.level).toBe("warn");
+    expect(duplicateLog?.metadata).toMatchObject({
+      dropped_entry: "app-copy",
+      dropped_path: "src/app.tsx",
+      kept_entry: "app",
+      kept_path: "src/app.tsx",
+    });
   });
 
   test("discovers entry files and writes a manifest", async () => {
@@ -374,6 +408,87 @@ console.log(model._secretValue);
     const jsPath = result.outputs.find((filePath) => filePath.endsWith(".js") && !filePath.endsWith(".js.map"));
     expect(jsPath?.includes("/dist/x/")).toBe(true);
     expect(fs.readFileSync(jsPath!, "utf8")).not.toContain("_secretValue");
+  });
+
+  test("rewrites helper aliases, template literals, and html class strings in extreme mode", async () => {
+    const root = tempDir();
+    createFixtureProject(root);
+
+    writeFile(root, "src/styles/patterns.scss", `
+.select-card { display: flex; }
+.inline-row { display: flex; }
+.gap-sm { gap: 8px; }
+.ver-center { align-items: center; }
+.column { display: flex; flex-direction: column; }
+.gap-xs { gap: 4px; }
+.flex-1 { flex: 1; }
+.pill { border-radius: 999px; }
+.loader-circle { border-radius: 999px; }
+`);
+
+    writeFile(root, "src/patterns.tsx", `
+import "./styles/patterns.scss";
+
+function joinClassNames(...values: Array<string | Record<string, boolean>>) {
+  return values
+    .flatMap((value) => {
+      if (typeof value === "string") return [value];
+      return Object.entries(value)
+        .filter(([, enabled]) => enabled)
+        .map(([key]) => key);
+    })
+    .join(" ");
+}
+
+const og = joinClassNames;
+const tone = "tone-info";
+const html = "<div class=\\"select-card inline-row gap-sm ver-center\\"></div>";
+const htmlTemplate = \`<span class="pill \${tone} loader-circle"></span>\`;
+const classes = og(
+  "select-card",
+  "inline-row gap-sm ver-center",
+  \`pill \${tone}\`,
+  { "loader-circle": true, "column gap-xs flex-1": true },
+);
+
+document.body.className = og("select-card", "loader-circle");
+document.body.setAttribute("class", og("inline-row", "gap-sm"));
+document.querySelector(\`.select-card\`);
+
+export const view = <div className={classes} data-html={html} data-template={htmlTemplate}></div>;
+`);
+
+    const result = await bundle({
+      entries: {
+        patterns: "./src/patterns.tsx",
+      },
+      mode: "extreme",
+      outDir: "./dist",
+      rootDir: root,
+    });
+
+    const jsPath = result.outputs.find((filePath) => filePath.endsWith(".js") && !filePath.endsWith(".js.map"));
+    const cssPath = result.outputs.find((filePath) => filePath.endsWith(".css") && !filePath.endsWith(".css.map"));
+
+    expect(jsPath).toBeDefined();
+    expect(cssPath).toBeDefined();
+
+    const js = fs.readFileSync(jsPath!, "utf8");
+    const css = fs.readFileSync(cssPath!, "utf8");
+
+    expect(css).not.toContain(".select-card");
+    expect(js).not.toContain("select-card");
+    expect(js).not.toContain("inline-row gap-sm ver-center");
+    expect(js).not.toContain("column gap-xs flex-1");
+    expect(js).not.toContain("loader-circle");
+    expect(js).not.toContain('class="pill ');
+
+    const obfuscatedTokens = Array.from(new Set(
+      [...css.matchAll(/\.([a-z][a-z0-9]*)/ig)].map((match) => match[1]),
+    ));
+
+    expect(obfuscatedTokens.length).toBeGreaterThan(0);
+    expect(obfuscatedTokens.some((token) => js.includes(token))).toBe(true);
   });
 
   test("fails when virtual and manual entries collide on the same name", async () => {
