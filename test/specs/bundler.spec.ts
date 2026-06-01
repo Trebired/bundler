@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, test } from "bun:test";
 
@@ -59,6 +60,77 @@ describe("@trebired/bundler", () => {
     expect(appCss).not.toContain("site stylesheet comment");
     expect(themeCss).not.toContain("theme stylesheet comment");
     expect(themeCss).not.toContain("source:");
+  });
+
+  test("uses extreme mode for denser and obfuscated output", async () => {
+    const root = tempDir();
+    createFixtureProject(root);
+
+    const debugResult = await bundle({
+      entries: {
+        app: "./src/app.tsx",
+      },
+      mode: "debug",
+      outDir: "./dist-debug",
+      rootDir: root,
+    });
+
+    const extremeResult = await bundle({
+      entries: {
+        app: "./src/app.tsx",
+      },
+      mode: "extreme",
+      outDir: "./dist-extreme",
+      rootDir: root,
+    });
+
+    const debugJsPath = debugResult.outputs.find((filePath) => filePath.endsWith("/dist-debug/app.js"));
+    const extremeJsPath = extremeResult.outputs.find((filePath) => filePath.endsWith(".js") && !filePath.endsWith(".js.map"));
+
+    expect(debugJsPath).toBeDefined();
+    expect(extremeJsPath).toBeDefined();
+    expect(extremeJsPath?.endsWith("/dist-extreme/app.js")).toBe(false);
+    expect(path.basename(extremeJsPath!)).toMatch(/^[A-Z0-9]+\.[a-z]+$/);
+    expect(fs.readFileSync(extremeJsPath!, "utf8").length).toBeLessThan(fs.readFileSync(debugJsPath!, "utf8").length);
+  });
+
+  test("rewrites js and tsx class usage to the same obfuscated css class names", async () => {
+    const root = tempDir();
+    createFixtureProject(root);
+
+    writeFile(root, "src/client.ts", `
+import "./styles/site.scss";
+
+document.body.className = "app";
+document.body.classList.add("app");
+document.querySelector(".app");
+`);
+
+    const result = await bundle({
+      entries: {
+        client: "./src/client.ts",
+      },
+      mode: "extreme",
+      outDir: "./dist",
+      rootDir: root,
+    });
+
+    const jsPath = result.outputs.find((filePath) => filePath.endsWith(".js") && !filePath.endsWith(".js.map"));
+    const cssPath = result.outputs.find((filePath) => filePath.endsWith(".css") && !filePath.endsWith(".css.map"));
+
+    expect(jsPath).toBeDefined();
+    expect(cssPath).toBeDefined();
+
+    const js = fs.readFileSync(jsPath!, "utf8");
+    const css = fs.readFileSync(cssPath!, "utf8");
+    const cssClassMatch = css.match(/\.([a-z][a-z0-9]*)/i);
+
+    expect(css).not.toContain(".app");
+    expect(js).not.toContain("\"app\"");
+    expect(js).not.toContain(".app");
+    expect(cssClassMatch?.[1]).toBeDefined();
+    expect(js).toContain(`"${cssClassMatch![1]}"`);
+    expect(js).toContain(`".${cssClassMatch![1]}"`);
   });
 
   test("omits source annotations when annotateSources is disabled", async () => {
@@ -276,6 +348,32 @@ console.log("global-client");
     expect(readFile(root, "dist/entry-server.js")).toContain("toUpperCase");
     expect(readFile(root, "dist/global.client.js")).toContain("global-client");
     expect(readFile(root, "dist/global.client.css")).toContain(".app");
+  });
+
+  test("supports explicit obfuscation options", async () => {
+    const root = tempDir();
+    createFixtureProject(root);
+
+    writeFile(root, "src/props.ts", `
+const model = { _secretValue: "secret" };
+console.log(model._secretValue);
+`);
+
+    const result = await bundle({
+      entries: {
+        props: "./src/props.ts",
+      },
+      obfuscate: {
+        entryNames: "x/[hash]",
+        mangleProps: "^_",
+      },
+      outDir: "./dist",
+      rootDir: root,
+    });
+
+    const jsPath = result.outputs.find((filePath) => filePath.endsWith(".js") && !filePath.endsWith(".js.map"));
+    expect(jsPath?.includes("/dist/x/")).toBe(true);
+    expect(fs.readFileSync(jsPath!, "utf8")).not.toContain("_secretValue");
   });
 
   test("fails when virtual and manual entries collide on the same name", async () => {

@@ -29,6 +29,16 @@ type BundlerManifestOptions = boolean | {
 };
 
 type BundlerVirtualEntries = Record<string, string>;
+type BundlerMode = "debug" | "compact" | "extreme";
+
+type BundlerObfuscationOptions = boolean | {
+  assetNames?: string;
+  chunkNames?: string;
+  entryNames?: string;
+  keepNames?: boolean;
+  mangleProps?: RegExp | string;
+  mangleQuoted?: boolean;
+};
 
 type BundlerEntrySource = "manual" | "discover" | "virtual";
 
@@ -80,11 +90,13 @@ type BundlerOptions = {
   virtualEntries?: BundlerVirtualEntries;
   outDir: string;
   rootDir?: string;
+  mode?: BundlerMode;
   platform?: Platform;
   format?: Format;
   target?: string | string[];
   minify?: boolean;
   stripComments?: boolean;
+  obfuscate?: BundlerObfuscationOptions;
   sourcemap?: boolean | "inline" | "external";
   splitting?: boolean;
   publicPath?: string;
@@ -134,6 +146,8 @@ export type {
   BundlerLoggerAdapter,
   BundlerLogMethod,
   BundlerManifestOptions,
+  BundlerMode,
+  BundlerObfuscationOptions,
   BundlerOptions,
   BundlerVirtualEntries,
   BundlerWatchSession,

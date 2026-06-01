@@ -1,6 +1,7 @@
 import path from "node:path";
 import { compileAsync } from "sass-embedded";
 import { injectSourceAnnotation } from "./source-annotations.js";
+import { rewriteCssClassTokens } from "./obfuscation.js";
 function createScssPlugin(options) {
     return {
         name: "trebired-scss",
@@ -13,14 +14,17 @@ function createScssPlugin(options) {
                         sourceMapIncludeSources: options.sourcemapEnabled,
                         style: "expanded",
                     });
+                    const transformedCss = options.classNameMap && options.classNameMap.size > 0
+                        ? rewriteCssClassTokens(result.css, options.classNameMap)
+                        : result.css;
                     const contents = options.annotateSources
                         ? injectSourceAnnotation({
-                            contents: result.css,
+                            contents: transformedCss,
                             filePath: args.path,
                             kind: "css",
                             rootDir: options.rootDir,
                         })
-                        : result.css;
+                        : transformedCss;
                     return {
                         contents,
                         loader: "css",

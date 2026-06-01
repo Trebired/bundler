@@ -1,10 +1,10 @@
 # @trebired/bundler
 
-Fast bundler wrapper around `esbuild` with SCSS support, production-first minification, watch mode, and inline source path annotations.
+Fast bundler wrapper around `esbuild` with SCSS support, compact build modes, watch mode, and inline source path annotations.
 
 `@trebired/bundler` is not a full custom bundler. It keeps the package-owned API small and lets `esbuild` do the heavy lifting, while adding logging aligned with other packages published by Trebired, SCSS compilation through `sass-embedded`, built-in source walking, config-driven CLI commands, virtual entry modules, derived manifest helpers, and inline source path comments in generated output.
 
-Minification is enabled by default. Comment stripping is also enabled by default unless you turn on source annotations.
+The default build mode is `compact`. It enables minification and comment stripping unless you turn on source annotations.
 
 ## Install
 
@@ -29,6 +29,7 @@ Use this when:
 - you want rebuild hooks instead of scraping logger text
 - you want generated bundles to optionally include inline comments that point back to the original source file path
 - you want production-lean defaults with minified output and stripped comments
+- you want a stronger `extreme` mode for denser output and hashed artifact names
 - you want package-owned logs routed through `@trebired/logger-adapter`
 
 ## What It Does Not Do
@@ -199,11 +200,18 @@ await watch({
 
 ## Optimization Defaults
 
-`@trebired/bundler` now defaults to production-lean output:
+`@trebired/bundler` now defaults to production-lean output through `mode: "compact"`:
 
+- `mode` defaults to `"compact"`
 - `minify` defaults to `true`
 - `stripComments` defaults to `true`
 - source annotations stay opt-in through `annotateSources: true`
+
+Available modes:
+
+- `debug`: readable output, no minification, no obfuscation, no comment stripping by default
+- `compact`: minified output with stripped preserved comments by default
+- `extreme`: compact mode plus hashed output names and obfuscation defaults
 
 If you want a more readable debug build:
 
@@ -212,11 +220,55 @@ await bundle({
   entries: {
     app: "./src/app.tsx",
   },
+  mode: "debug",
   minify: false,
   outDir: "./dist",
   stripComments: false,
 });
 ```
+
+## Extreme Mode
+
+Use `mode: "extreme"` when you want the package to pack output as tightly as its current esbuild-based pipeline can:
+
+```ts
+await bundle({
+  entries: {
+    app: "./src/app.tsx",
+  },
+  mode: "extreme",
+  outDir: "./dist",
+});
+```
+
+This mode enables:
+
+- minification
+- stripped preserved comments
+- hashed entry, chunk, and asset names
+- static class-name rewriting across CSS plus JS/TS/JSX/TSX class usage
+- no kept function/class names unless you override that behavior
+
+## Obfuscation
+
+Use `obfuscate` when you want hashed output names without switching the full build mode, or when you want custom esbuild property mangling patterns:
+
+```ts
+await bundle({
+  entries: {
+    app: "./src/app.tsx",
+  },
+  obfuscate: {
+    entryNames: "x/[hash]",
+    chunkNames: "x/[hash]",
+    assetNames: "x/[hash]",
+    mangleProps: "^_",
+  },
+  outDir: "./dist",
+});
+```
+
+This obfuscation layer covers emitted artifact names, esbuild-supported JS property mangling, and coordinated rewriting of static CSS class usage across CSS plus JS/TS/JSX/TSX code. Dynamic class construction still stays outside the package-owned rewrite layer.
 
 ## Source Annotation Comments
 
@@ -283,11 +335,20 @@ type BundlerOptions = {
   virtualEntries?: Record<string, string>;
   outDir: string;
   rootDir?: string;
+  mode?: "debug" | "compact" | "extreme";
   platform?: "browser" | "node" | "neutral";
   format?: "esm" | "cjs" | "iife";
   target?: string | string[];
   minify?: boolean;
   stripComments?: boolean;
+  obfuscate?: boolean | {
+    assetNames?: string;
+    chunkNames?: string;
+    entryNames?: string;
+    keepNames?: boolean;
+    mangleProps?: RegExp | string;
+    mangleQuoted?: boolean;
+  };
   sourcemap?: boolean | "inline" | "external";
   splitting?: boolean;
   publicPath?: string;

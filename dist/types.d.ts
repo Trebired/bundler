@@ -18,6 +18,15 @@ type BundlerManifestOptions = boolean | {
     file?: string;
 };
 type BundlerVirtualEntries = Record<string, string>;
+type BundlerMode = "debug" | "compact" | "extreme";
+type BundlerObfuscationOptions = boolean | {
+    assetNames?: string;
+    chunkNames?: string;
+    entryNames?: string;
+    keepNames?: boolean;
+    mangleProps?: RegExp | string;
+    mangleQuoted?: boolean;
+};
 type BundlerEntrySource = "manual" | "discover" | "virtual";
 type BundlerEntryRecord = {
     contents?: string;
@@ -61,11 +70,13 @@ type BundlerOptions = {
     virtualEntries?: BundlerVirtualEntries;
     outDir: string;
     rootDir?: string;
+    mode?: BundlerMode;
     platform?: Platform;
     format?: Format;
     target?: string | string[];
     minify?: boolean;
     stripComments?: boolean;
+    obfuscate?: BundlerObfuscationOptions;
     sourcemap?: boolean | "inline" | "external";
     splitting?: boolean;
     publicPath?: string;
@@ -95,5 +106,5 @@ type LoadedBundlerConfig = {
     config: BundlerOptions;
     configPath: string;
 };
-export type { BundlerBuildResult, BundlerDiscoverOptions, BundlerDerivedManifest, BundlerDerivedManifestChunk, BundlerDerivedManifestEntry, BundlerDerivedManifestOutput, BundlerDerivedManifestOutputKind, BundlerEntryRecord, BundlerEntrySource, BundlerGenericLogMethod, BundlerLogEvent, BundlerLogger, BundlerLoggerAdapter, BundlerLogMethod, BundlerManifestOptions, BundlerOptions, BundlerVirtualEntries, BundlerWatchSession, LoadedBundlerConfig, NormalizedBundlerLogger, };
+export type { BundlerBuildResult, BundlerDiscoverOptions, BundlerDerivedManifest, BundlerDerivedManifestChunk, BundlerDerivedManifestEntry, BundlerDerivedManifestOutput, BundlerDerivedManifestOutputKind, BundlerEntryRecord, BundlerEntrySource, BundlerGenericLogMethod, BundlerLogEvent, BundlerLogger, BundlerLoggerAdapter, BundlerLogMethod, BundlerManifestOptions, BundlerMode, BundlerObfuscationOptions, BundlerOptions, BundlerVirtualEntries, BundlerWatchSession, LoadedBundlerConfig, NormalizedBundlerLogger, };
 //# sourceMappingURL=types.d.ts.map

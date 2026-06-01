@@ -1,6 +1,15 @@
 import type { BuildOptions } from "esbuild";
-import type { BundlerOptions, BundlerEntryRecord, NormalizedBundlerLogger } from "../types.js";
+import type { BundlerEntryRecord, BundlerMode, BundlerOptions, NormalizedBundlerLogger } from "../types.js";
 import { normalizeManifestOptions } from "./discovery.js";
+type NormalizedBundlerObfuscationOptions = {
+    assetNames?: string;
+    chunkNames?: string;
+    enabled: boolean;
+    entryNames?: string;
+    keepNames?: boolean;
+    mangleProps?: RegExp;
+    mangleQuoted?: boolean;
+};
 type NormalizedBundlerOptions = {
     annotateSources: boolean;
     clean: boolean;
@@ -13,6 +22,8 @@ type NormalizedBundlerOptions = {
     loggerAdapter?: BundlerOptions["loggerAdapter"];
     manifest: ReturnType<typeof normalizeManifestOptions>;
     minify: boolean;
+    mode: BundlerMode;
+    obfuscate: NormalizedBundlerObfuscationOptions;
     onEntrySetChanged?: BundlerOptions["onEntrySetChanged"];
     onRebuilt?: BundlerOptions["onRebuilt"];
     outDir: string;

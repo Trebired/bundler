@@ -25,6 +25,8 @@ export type {
   BundlerLoggerAdapter,
   BundlerLogMethod,
   BundlerManifestOptions,
+  BundlerMode,
+  BundlerObfuscationOptions,
   BundlerOptions,
   BundlerVirtualEntries,
   BundlerWatchSession,

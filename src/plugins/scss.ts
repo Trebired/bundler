@@ -3,10 +3,13 @@ import { compileAsync } from "sass-embedded";
 import type { Plugin } from "esbuild";
 
 import { injectSourceAnnotation } from "./source-annotations.js";
+import { rewriteCssClassTokens } from "./obfuscation.js";
+import type { ClassNameMap } from "./obfuscation.js";
 import type { NormalizedBundlerLogger } from "../types.js";
 
 type ScssPluginOptions = {
   annotateSources: boolean;
+  classNameMap?: ClassNameMap;
   logger: NormalizedBundlerLogger;
   rootDir: string;
   sourcemapEnabled: boolean;
@@ -25,14 +28,18 @@ function createScssPlugin(options: ScssPluginOptions): Plugin {
             style: "expanded",
           });
 
+          const transformedCss = options.classNameMap && options.classNameMap.size > 0
+            ? rewriteCssClassTokens(result.css, options.classNameMap)
+            : result.css;
+
           const contents = options.annotateSources
             ? injectSourceAnnotation({
-              contents: result.css,
+              contents: transformedCss,
               filePath: args.path,
               kind: "css",
               rootDir: options.rootDir,
             })
-            : result.css;
+            : transformedCss;
 
           return {
             contents,

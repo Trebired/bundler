@@ -3,8 +3,12 @@ import path from "node:path";
 import type { Loader, Plugin } from "esbuild";
 
 import type { NormalizedBundlerLogger } from "../types.js";
+import { rewriteCodeClassTokens, rewriteCssClassTokens } from "./obfuscation.js";
+import type { ClassNameMap } from "./obfuscation.js";
 
 type SourceAnnotationsPluginOptions = {
+  annotateSources: boolean;
+  classNameMap?: ClassNameMap;
   logger: NormalizedBundlerLogger;
   rootDir: string;
 };
@@ -71,12 +75,26 @@ function createSourceAnnotationsPlugin(options: SourceAnnotationsPluginOptions):
         try {
           const original = await fs.readFile(args.path, "utf8");
           const kind = path.extname(args.path).toLowerCase() === ".css" ? "css" : "code";
-          const contents = injectSourceAnnotation({
-            contents: original,
-            filePath: args.path,
-            kind,
-            rootDir: options.rootDir,
-          });
+          let contents = original;
+
+          if (options.classNameMap && options.classNameMap.size > 0) {
+            contents = kind === "css"
+              ? rewriteCssClassTokens(contents, options.classNameMap)
+              : rewriteCodeClassTokens({
+                classNameMap: options.classNameMap,
+                contents,
+                filePath: args.path,
+              });
+          }
+
+          if (options.annotateSources) {
+            contents = injectSourceAnnotation({
+              contents,
+              filePath: args.path,
+              kind,
+              rootDir: options.rootDir,
+            });
+          }
 
           return {
             contents,

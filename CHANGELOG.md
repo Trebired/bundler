@@ -4,6 +4,13 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 1.2.0
+
+- Added `mode` with `debug`, `compact`, and `extreme` build profiles.
+- Brought back `obfuscate` for hashed output names and optional esbuild property mangling.
+- Added coordinated static class-name rewriting so CSS, JS, TS, JSX, and TSX use the same obfuscated class tokens.
+- Made `extreme` mode enable the strongest package-owned compacting defaults.
+
 ## 1.1.0
 
 - Made minification enabled by default for bundled JS and CSS output.

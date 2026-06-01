@@ -8,6 +8,6 @@ export { buildSourceAnnotation, injectSourceAnnotation, resolveSourceLabel } fro
 export { createScssPlugin } from "./plugins/scss.js";
 export { createVirtualEntriesPlugin } from "./plugins/virtual-entries.js";
 export { runCli } from "./cli/run-cli.js";
-export type { BundlerBuildResult, BundlerDiscoverOptions, BundlerDerivedManifest, BundlerDerivedManifestChunk, BundlerDerivedManifestEntry, BundlerDerivedManifestOutput, BundlerDerivedManifestOutputKind, BundlerEntryRecord, BundlerEntrySource, BundlerGenericLogMethod, BundlerLogEvent, BundlerLogger, BundlerLoggerAdapter, BundlerLogMethod, BundlerManifestOptions, BundlerOptions, BundlerVirtualEntries, BundlerWatchSession, LoadedBundlerConfig, NormalizedBundlerLogger, } from "./types.js";
+export type { BundlerBuildResult, BundlerDiscoverOptions, BundlerDerivedManifest, BundlerDerivedManifestChunk, BundlerDerivedManifestEntry, BundlerDerivedManifestOutput, BundlerDerivedManifestOutputKind, BundlerEntryRecord, BundlerEntrySource, BundlerGenericLogMethod, BundlerLogEvent, BundlerLogger, BundlerLoggerAdapter, BundlerLogMethod, BundlerManifestOptions, BundlerMode, BundlerObfuscationOptions, BundlerOptions, BundlerVirtualEntries, BundlerWatchSession, LoadedBundlerConfig, NormalizedBundlerLogger, } from "./types.js";
 export { bundle as default } from "./core/build.js";
 //# sourceMappingURL=index.d.ts.map
