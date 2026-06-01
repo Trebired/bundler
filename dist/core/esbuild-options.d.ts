@@ -21,6 +21,7 @@ type NormalizedBundlerOptions = {
     rootDir: string;
     sourcemap?: BundlerOptions["sourcemap"];
     splitting: boolean;
+    stripComments: boolean;
     target?: string | string[];
 };
 declare function normalizeBundlerOptions(options: BundlerOptions): NormalizedBundlerOptions;

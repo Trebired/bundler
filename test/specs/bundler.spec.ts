@@ -31,9 +31,34 @@ describe("@trebired/bundler", () => {
     expect(appJs).toContain("source: src/lib/message.ts");
     expect(appJs).toContain("hello-bundle");
     expect(appCss).toContain("source: src/styles/site.scss");
-    expect(appCss).toContain("color: blue;");
+    expect(appCss).toContain(".app");
     expect(themeCss).toContain('@charset "UTF-8";');
     expect(themeCss).toContain("source: src/theme.css");
+  });
+
+  test("minifies and strips comments by default", async () => {
+    const root = tempDir();
+    createFixtureProject(root);
+
+    await bundle({
+      entries: {
+        app: "./src/app.tsx",
+        theme: "./src/theme.css",
+      },
+      outDir: "./dist",
+      rootDir: root,
+    });
+
+    const appJs = readFile(root, "dist/app.js");
+    const appCss = readFile(root, "dist/app.css");
+    const themeCss = readFile(root, "dist/theme.css");
+
+    expect(appJs).not.toContain("app entry comment");
+    expect(appJs).not.toContain("message comment");
+    expect(appJs).not.toContain("\n\n");
+    expect(appCss).not.toContain("site stylesheet comment");
+    expect(themeCss).not.toContain("theme stylesheet comment");
+    expect(themeCss).not.toContain("source:");
   });
 
   test("omits source annotations when annotateSources is disabled", async () => {
@@ -248,9 +273,9 @@ console.log("global-client");
       "entry-server": "virtual:entry-server",
       "global.client": "virtual:global.client",
     });
-    expect(readFile(root, "dist/entry-server.js")).toContain("message.toUpperCase()");
+    expect(readFile(root, "dist/entry-server.js")).toContain("toUpperCase");
     expect(readFile(root, "dist/global.client.js")).toContain("global-client");
-    expect(readFile(root, "dist/global.client.css")).toContain("color: blue;");
+    expect(readFile(root, "dist/global.client.css")).toContain(".app");
   });
 
   test("fails when virtual and manual entries collide on the same name", async () => {

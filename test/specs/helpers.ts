@@ -25,6 +25,7 @@ function exists(root: string, rel: string): boolean {
 
 function createFixtureProject(root: string): void {
   writeFile(root, "src/app.tsx", `
+/* app entry comment */
 import "./styles/site.scss";
 import { message } from "./lib/message";
 
@@ -34,6 +35,7 @@ console.log(message);
 `);
 
   writeFile(root, "src/lib/message.ts", `
+// message comment
 export const message = "hello-bundle";
 `);
 
@@ -42,6 +44,7 @@ $brand: blue;
 `);
 
   writeFile(root, "src/styles/site.scss", `
+/* site stylesheet comment */
 @use "./tokens" as *;
 
 .app {
@@ -52,6 +55,7 @@ $brand: blue;
 
   writeFile(root, "src/theme.css", `
 @charset "UTF-8";
+/* theme stylesheet comment */
 
 .theme {
   background: white;

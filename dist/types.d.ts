@@ -65,6 +65,7 @@ type BundlerOptions = {
     format?: Format;
     target?: string | string[];
     minify?: boolean;
+    stripComments?: boolean;
     sourcemap?: boolean | "inline" | "external";
     splitting?: boolean;
     publicPath?: string;

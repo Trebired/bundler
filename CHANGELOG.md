@@ -4,6 +4,11 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 1.1.0
+
+- Made minification enabled by default for bundled JS and CSS output.
+- Added `stripComments` so builds can drop preserved legal comments when source annotations are off.
+
 ## 1.0.0
 
 - Changed inline source annotations from `@trebired/source:` to neutral `source:` comments.

@@ -20,7 +20,7 @@ function normalizeBundlerOptions(options) {
         logger: options.logger,
         loggerAdapter: options.loggerAdapter,
         manifest: normalizeManifestOptions(options.manifest),
-        minify: Boolean(options.minify),
+        minify: options.minify !== false,
         onEntrySetChanged: options.onEntrySetChanged,
         onRebuilt: options.onRebuilt,
         outDir: resolvedOutDir,
@@ -29,6 +29,7 @@ function normalizeBundlerOptions(options) {
         rootDir,
         sourcemap: options.sourcemap,
         splitting: Boolean(options.splitting),
+        stripComments: options.stripComments !== false,
         target: options.target,
     };
 }
@@ -42,6 +43,12 @@ function createEsbuildOptions(options, logger) {
     if (options.annotateSources) {
         logger.info("annotate", "inline source annotations enabled");
     }
+    if (options.minify) {
+        logger.info("build", "minify enabled");
+    }
+    if (options.stripComments && !options.annotateSources) {
+        logger.info("build", "comment stripping enabled");
+    }
     logger.info("scss", "scss compiler enabled");
     return {
         absWorkingDir: options.rootDir,
@@ -50,7 +57,7 @@ function createEsbuildOptions(options, logger) {
         entryPoints,
         external: options.external,
         format: options.format,
-        legalComments: options.annotateSources ? "inline" : undefined,
+        legalComments: options.annotateSources ? "inline" : options.stripComments ? "none" : undefined,
         logLevel: "silent",
         metafile: true,
         minify: options.minify,

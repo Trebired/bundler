@@ -1,8 +1,10 @@
 # @trebired/bundler
 
-Fast bundler wrapper around `esbuild` with SCSS support, watch mode, and inline source path annotations.
+Fast bundler wrapper around `esbuild` with SCSS support, production-first minification, watch mode, and inline source path annotations.
 
 `@trebired/bundler` is not a full custom bundler. It keeps the package-owned API small and lets `esbuild` do the heavy lifting, while adding logging aligned with other packages published by Trebired, SCSS compilation through `sass-embedded`, built-in source walking, config-driven CLI commands, virtual entry modules, derived manifest helpers, and inline source path comments in generated output.
+
+Minification is enabled by default. Comment stripping is also enabled by default unless you turn on source annotations.
 
 ## Install
 
@@ -26,6 +28,7 @@ Use this when:
 - you want a stable helper for turning esbuild metafiles into runtime asset graphs
 - you want rebuild hooks instead of scraping logger text
 - you want generated bundles to optionally include inline comments that point back to the original source file path
+- you want production-lean defaults with minified output and stripped comments
 - you want package-owned logs routed through `@trebired/logger-adapter`
 
 ## What It Does Not Do
@@ -194,6 +197,27 @@ await watch({
 
 `onEntrySetChanged()` runs only when the resolved entry set changes. `onRebuilt()` runs after a successful rebuild result is assembled.
 
+## Optimization Defaults
+
+`@trebired/bundler` now defaults to production-lean output:
+
+- `minify` defaults to `true`
+- `stripComments` defaults to `true`
+- source annotations stay opt-in through `annotateSources: true`
+
+If you want a more readable debug build:
+
+```ts
+await bundle({
+  entries: {
+    app: "./src/app.tsx",
+  },
+  minify: false,
+  outDir: "./dist",
+  stripComments: false,
+});
+```
+
 ## Source Annotation Comments
 
 Set `annotateSources: true` to inject preserved inline comments into bundled output.
@@ -263,6 +287,7 @@ type BundlerOptions = {
   format?: "esm" | "cjs" | "iife";
   target?: string | string[];
   minify?: boolean;
+  stripComments?: boolean;
   sourcemap?: boolean | "inline" | "external";
   splitting?: boolean;
   publicPath?: string;
