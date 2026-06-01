@@ -18,7 +18,7 @@ function resolveSourceLabel(filePath: string, rootDir: string): string {
 }
 
 function buildSourceAnnotation(filePath: string, rootDir: string): string {
-  return `/*! @trebired/source: ${resolveSourceLabel(filePath, rootDir)} */`;
+  return `/*! source: ${resolveSourceLabel(filePath, rootDir)} */`;
 }
 
 function insertAfterShebang(contents: string, annotation: string): string {

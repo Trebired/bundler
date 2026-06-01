@@ -7,7 +7,7 @@ function resolveSourceLabel(filePath, rootDir) {
     return toPosixPath(path.relative(rootDir, filePath) || path.basename(filePath));
 }
 function buildSourceAnnotation(filePath, rootDir) {
-    return `/*! @trebired/source: ${resolveSourceLabel(filePath, rootDir)} */`;
+    return `/*! source: ${resolveSourceLabel(filePath, rootDir)} */`;
 }
 function insertAfterShebang(contents, annotation) {
     const newlineIndex = contents.indexOf("\n");

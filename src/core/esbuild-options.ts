@@ -3,6 +3,7 @@ import type { BuildOptions } from "esbuild";
 
 import { createScssPlugin } from "../plugins/scss.js";
 import { createSourceAnnotationsPlugin } from "../plugins/source-annotations.js";
+import { createVirtualEntriesPlugin } from "../plugins/virtual-entries.js";
 import type { BundlerOptions, BundlerEntryRecord, NormalizedBundlerLogger } from "../types.js";
 import { normalizeManifestOptions, toEntryPointMap } from "./discovery.js";
 
@@ -18,6 +19,8 @@ type NormalizedBundlerOptions = {
   loggerAdapter?: BundlerOptions["loggerAdapter"];
   manifest: ReturnType<typeof normalizeManifestOptions>;
   minify: boolean;
+  onEntrySetChanged?: BundlerOptions["onEntrySetChanged"];
+  onRebuilt?: BundlerOptions["onRebuilt"];
   outDir: string;
   platform?: BundlerOptions["platform"];
   publicPath?: string;
@@ -47,6 +50,8 @@ function normalizeBundlerOptions(options: BundlerOptions): NormalizedBundlerOpti
     loggerAdapter: options.loggerAdapter,
     manifest: normalizeManifestOptions(options.manifest),
     minify: Boolean(options.minify),
+    onEntrySetChanged: options.onEntrySetChanged,
+    onRebuilt: options.onRebuilt,
     outDir: resolvedOutDir,
     platform: options.platform,
     publicPath: options.publicPath,
@@ -90,6 +95,11 @@ function createEsbuildOptions(
     outdir: options.outDir,
     platform: options.platform,
     plugins: [
+      createVirtualEntriesPlugin({
+        entries: options.entryRecords || [],
+        logger,
+        rootDir: options.rootDir,
+      }),
       createScssPlugin({
         annotateSources: options.annotateSources,
         logger,

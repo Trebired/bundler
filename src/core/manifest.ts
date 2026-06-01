@@ -1,9 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import type { Metafile } from "esbuild";
 
 import type { BundlerEntryRecord } from "../types.js";
 import { toPosixPath } from "./discovery.js";
 import type { NormalizedManifestOptions } from "./discovery.js";
+import { deriveManifest } from "./derive-manifest.js";
 
 type ManifestWriteResult = {
   manifestPath?: string;
@@ -11,12 +13,12 @@ type ManifestWriteResult = {
 
 async function writeBundlerManifest(args: {
   entries: BundlerEntryRecord[];
+  metafile?: Metafile;
   manifest: NormalizedManifestOptions;
   outDir: string;
-  outputs: string[];
   rootDir: string;
 }): Promise<ManifestWriteResult> {
-  if (!args.manifest.enabled || !args.manifest.file) {
+  if (!args.manifest.enabled || !args.manifest.file || !args.metafile) {
     return {};
   }
 
@@ -25,16 +27,21 @@ async function writeBundlerManifest(args: {
 
   const body = {
     generatedAt: new Date().toISOString(),
-    entries: Object.fromEntries(
+    resolvedEntries: Object.fromEntries(
       args.entries.map((entry) => [
         entry.name,
         {
-          path: toPosixPath(path.relative(args.rootDir, entry.path)),
+          path: entry.source === "virtual"
+            ? `virtual:${entry.name}`
+            : toPosixPath(path.relative(args.rootDir, entry.path)),
           source: entry.source,
         },
       ]),
     ),
-    outputs: args.outputs.map((output) => toPosixPath(path.relative(args.rootDir, output))),
+    ...deriveManifest(args.metafile, {
+      outDir: args.outDir,
+      rootDir: args.rootDir,
+    }),
   };
 
   await fs.writeFile(`${manifestPath}`, `${JSON.stringify(body, null, 2)}\n`);

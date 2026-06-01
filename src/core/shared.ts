@@ -3,7 +3,7 @@ import path from "node:path";
 import type { BuildResult, Message } from "esbuild";
 
 import type { BundlerBuildResult, BundlerEntryRecord, NormalizedBundlerLogger } from "../types.js";
-import { toEntryPointMap } from "./discovery.js";
+import { toPublicEntryMap } from "./discovery.js";
 import { writeBundlerManifest } from "./manifest.js";
 import type { NormalizedManifestOptions } from "./discovery.js";
 
@@ -40,14 +40,14 @@ async function toBuildResult(args: {
   const outputs = resolveOutputs(args.result, args.rootDir);
   const manifestWrite = await writeBundlerManifest({
     entries: args.entries,
+    metafile: args.result.metafile,
     manifest: args.manifest,
     outDir: args.outDir,
-    outputs,
     rootDir: args.rootDir,
   });
 
   return {
-    entries: toEntryPointMap(args.entries, args.rootDir),
+    entries: toPublicEntryMap(args.entries, args.rootDir),
     outputs,
     warnings: args.result.warnings.length,
     metafile: args.result.metafile,

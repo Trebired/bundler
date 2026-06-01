@@ -13,6 +13,8 @@ type NormalizedBundlerOptions = {
     loggerAdapter?: BundlerOptions["loggerAdapter"];
     manifest: ReturnType<typeof normalizeManifestOptions>;
     minify: boolean;
+    onEntrySetChanged?: BundlerOptions["onEntrySetChanged"];
+    onRebuilt?: BundlerOptions["onRebuilt"];
     outDir: string;
     platform?: BundlerOptions["platform"];
     publicPath?: string;

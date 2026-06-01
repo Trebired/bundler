@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { toEntryPointMap } from "./discovery.js";
+import { toPublicEntryMap } from "./discovery.js";
 import { writeBundlerManifest } from "./manifest.js";
 function formatEsbuildMessage(message) {
     const location = message.location
@@ -25,13 +25,13 @@ async function toBuildResult(args) {
     const outputs = resolveOutputs(args.result, args.rootDir);
     const manifestWrite = await writeBundlerManifest({
         entries: args.entries,
+        metafile: args.result.metafile,
         manifest: args.manifest,
         outDir: args.outDir,
-        outputs,
         rootDir: args.rootDir,
     });
     return {
-        entries: toEntryPointMap(args.entries, args.rootDir),
+        entries: toPublicEntryMap(args.entries, args.rootDir),
         outputs,
         warnings: args.result.warnings.length,
         metafile: args.result.metafile,

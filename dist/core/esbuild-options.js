@@ -1,6 +1,7 @@
 import path from "node:path";
 import { createScssPlugin } from "../plugins/scss.js";
 import { createSourceAnnotationsPlugin } from "../plugins/source-annotations.js";
+import { createVirtualEntriesPlugin } from "../plugins/virtual-entries.js";
 import { normalizeManifestOptions, toEntryPointMap } from "./discovery.js";
 function normalizeBundlerOptions(options) {
     const rootDir = path.resolve(String(options.rootDir || "").trim() || process.cwd());
@@ -20,6 +21,8 @@ function normalizeBundlerOptions(options) {
         loggerAdapter: options.loggerAdapter,
         manifest: normalizeManifestOptions(options.manifest),
         minify: Boolean(options.minify),
+        onEntrySetChanged: options.onEntrySetChanged,
+        onRebuilt: options.onRebuilt,
         outDir: resolvedOutDir,
         platform: options.platform,
         publicPath: options.publicPath,
@@ -55,6 +58,11 @@ function createEsbuildOptions(options, logger) {
         outdir: options.outDir,
         platform: options.platform,
         plugins: [
+            createVirtualEntriesPlugin({
+                entries: options.entryRecords || [],
+                logger,
+                rootDir: options.rootDir,
+            }),
             createScssPlugin({
                 annotateSources: options.annotateSources,
                 logger,

@@ -28,17 +28,56 @@ type BundlerManifestOptions = boolean | {
   file?: string;
 };
 
-type BundlerEntrySource = "manual" | "discover";
+type BundlerVirtualEntries = Record<string, string>;
+
+type BundlerEntrySource = "manual" | "discover" | "virtual";
 
 type BundlerEntryRecord = {
+  contents?: string;
   name: string;
   path: string;
   source: BundlerEntrySource;
 };
 
+type BundlerDerivedManifestEntry = {
+  entryOutput: string;
+  entryName?: string;
+  inputs: string[];
+  js: string[];
+  css: string[];
+  imports: string[];
+};
+
+type BundlerDerivedManifestChunk = {
+  output: string;
+  inputs: string[];
+  css: string[];
+  imports: string[];
+};
+
+type BundlerDerivedManifestOutputKind = "asset" | "chunk" | "entry";
+
+type BundlerDerivedManifestOutput = {
+  output: string;
+  kind: BundlerDerivedManifestOutputKind;
+  entryPoint?: string;
+  entryName?: string;
+  inputs: string[];
+  css: string[];
+  imports: string[];
+  bytes: number;
+};
+
+type BundlerDerivedManifest = {
+  entries: Record<string, BundlerDerivedManifestEntry>;
+  chunks: Record<string, BundlerDerivedManifestChunk>;
+  allOutputs: Record<string, BundlerDerivedManifestOutput>;
+};
+
 type BundlerOptions = {
   entries?: string[] | Record<string, string>;
   discover?: BundlerDiscoverOptions | BundlerDiscoverOptions[];
+  virtualEntries?: BundlerVirtualEntries;
   outDir: string;
   rootDir?: string;
   platform?: Platform;
@@ -53,6 +92,8 @@ type BundlerOptions = {
   clean?: boolean;
   annotateSources?: boolean;
   manifest?: BundlerManifestOptions;
+  onRebuilt?: (result: BundlerBuildResult) => void | Promise<void>;
+  onEntrySetChanged?: (entries: Record<string, string>) => void | Promise<void>;
   logger?: BundlerLogger;
   loggerAdapter?: BundlerLoggerAdapter;
 };
@@ -79,6 +120,11 @@ type LoadedBundlerConfig = {
 export type {
   BundlerBuildResult,
   BundlerDiscoverOptions,
+  BundlerDerivedManifest,
+  BundlerDerivedManifestChunk,
+  BundlerDerivedManifestEntry,
+  BundlerDerivedManifestOutput,
+  BundlerDerivedManifestOutputKind,
   BundlerEntryRecord,
   BundlerEntrySource,
   BundlerGenericLogMethod,
@@ -88,6 +134,7 @@ export type {
   BundlerLogMethod,
   BundlerManifestOptions,
   BundlerOptions,
+  BundlerVirtualEntries,
   BundlerWatchSession,
   LoadedBundlerConfig,
   NormalizedBundlerLogger,

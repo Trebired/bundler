@@ -6,7 +6,7 @@ import { BUNDLER_LOG_GROUP, BUNDLER_PACKAGE_NAME } from "../constants.js";
 import { resolveLogger } from "../logging.js";
 import type { BundlerBuildResult, BundlerOptions, BundlerWatchSession } from "../types.js";
 import { createEsbuildOptions, normalizeBundlerOptions } from "./esbuild-options.js";
-import { resolveBundlerEntries, normalizeDiscoverRoots } from "./discovery.js";
+import { resolveBundlerEntries, normalizeDiscoverRoots, toPublicEntryMap } from "./discovery.js";
 import { createDiscoveryWatcher } from "./discovery-watch.js";
 import { cleanOutDir, formatFailure, logWarnings, toBuildResult } from "./shared.js";
 
@@ -34,6 +34,21 @@ async function watch(options: BundlerOptions): Promise<BundlerWatchSession> {
   let currentContext: BuildContext<any> | null = null;
   let queued = Promise.resolve();
 
+  const callHook = async (args: {
+    hook: BundlerOptions["onEntrySetChanged"] | BundlerOptions["onRebuilt"];
+    name: "onEntrySetChanged" | "onRebuilt";
+    payload: Record<string, string> | BundlerBuildResult;
+  }): Promise<void> => {
+    if (typeof args.hook !== "function") return;
+
+    try {
+      await args.hook(args.payload as never);
+    } catch (error) {
+      logger.fail("watch", `${args.name}-failed :: ${formatFailure(error)}`);
+      throw error;
+    }
+  };
+
   const createWatchedContext = async (records = currentEntries.records): Promise<BuildContext<any>> => {
     const context = await createContext(createEsbuildOptions({
       ...normalized,
@@ -45,13 +60,19 @@ async function watch(options: BundlerOptions): Promise<BundlerWatchSession> {
 
   const executeRebuild = async (): Promise<BundlerBuildResult> => {
     if (!currentContext) {
-      return {
+      const emptyResult = {
         entries: {},
         outputs: [],
         warnings: 0,
         manifestPath: undefined,
         durationMs: 0,
       };
+      await callHook({
+        hook: normalized.onRebuilt,
+        name: "onRebuilt",
+        payload: emptyResult,
+      });
+      return emptyResult;
     }
     const startedAt = Date.now();
     const result = await currentContext.rebuild();
@@ -65,6 +86,11 @@ async function watch(options: BundlerOptions): Promise<BundlerWatchSession> {
       startedAt,
     });
     logger.info("watch", `rebuilt :: outputs=${summary.outputs.length} warnings=${summary.warnings}`);
+    await callHook({
+      hook: normalized.onRebuilt,
+      name: "onRebuilt",
+      payload: summary,
+    });
     return summary;
   };
 
@@ -75,6 +101,11 @@ async function watch(options: BundlerOptions): Promise<BundlerWatchSession> {
     if (nextEntries.signature === currentEntries.signature) return;
 
     logger.info("watch", `entry-set-changed :: count=${nextEntries.records.length}`);
+    await callHook({
+      hook: normalized.onEntrySetChanged,
+      name: "onEntrySetChanged",
+      payload: toPublicEntryMap(nextEntries.records, normalized.rootDir),
+    });
     currentEntries = nextEntries;
 
     if (currentContext) {

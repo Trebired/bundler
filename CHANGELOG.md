@@ -4,6 +4,14 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 0.3.0
+
+- Changed inline source annotations from `@trebired/source:` to neutral `source:` comments.
+- Added `virtualEntries` for in-memory generated entry modules.
+- Added `deriveManifest()` for stable entry-centric asset graph derivation from esbuild metafiles.
+- Added watch lifecycle hooks through `onRebuilt()` and `onEntrySetChanged()`.
+- Aligned written manifest output with the same derived manifest graph used by runtime helpers.
+
 ## 0.2.0
 
 - Added built-in entry discovery so the package can walk source directories and generate entry lists itself.

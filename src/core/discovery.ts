@@ -7,10 +7,12 @@ import type {
   BundlerEntryRecord,
   BundlerManifestOptions,
   BundlerOptions,
+  BundlerVirtualEntries,
 } from "../types.js";
 
 const DEFAULT_DISCOVERY_EXTENSIONS = [".css", ".js", ".jsx", ".scss", ".ts", ".tsx"];
 const DEFAULT_IGNORE_DIRS = [".git", "coverage", "dist", "node_modules"];
+const VIRTUAL_ENTRY_PREFIX = "trebired-virtual:";
 
 type NormalizedDiscoverOptions = {
   dir: string;
@@ -168,6 +170,19 @@ function normalizeManualEntries(entries: BundlerOptions["entries"], rootDir: str
   return [];
 }
 
+function normalizeVirtualEntries(virtualEntries: BundlerVirtualEntries | undefined): BundlerEntryRecord[] {
+  if (!virtualEntries || typeof virtualEntries !== "object") return [];
+
+  return Object.entries(virtualEntries)
+    .map(([key, value]) => ({
+      name: normalizePathValue(key),
+      path: `${VIRTUAL_ENTRY_PREFIX}${normalizePathValue(key)}`,
+      source: "virtual" as const,
+      contents: String(value || ""),
+    }))
+    .filter((entry) => Boolean(entry.name));
+}
+
 function buildDiscoveredEntryName(args: {
   config: NormalizedDiscoverOptions;
   relativePath: string;
@@ -226,9 +241,10 @@ async function resolveBundlerEntries(
   settings: { allowEmpty?: boolean } = {},
 ): Promise<ResolvedEntries> {
   const manual = normalizeManualEntries(options.entries, rootDir);
+  const virtual = normalizeVirtualEntries(options.virtualEntries);
   const discoveredGroups = await Promise.all(normalizeDiscoverOptions(rootDir, options.discover).map(walkDiscoveredEntries));
   const discovered = discoveredGroups.flat();
-  const all = [...manual, ...discovered];
+  const all = [...manual, ...virtual, ...discovered];
 
   if (!all.length && !settings.allowEmpty) {
     throw new Error("bundler-missing-entries");
@@ -249,8 +265,11 @@ async function resolveBundlerEntries(
 
   const records = Array.from(byName.values()).sort((a, b) => a.name.localeCompare(b.name) || a.path.localeCompare(b.path));
   const signature = JSON.stringify(records.map((record) => ({
+    contents: record.source === "virtual" ? record.contents || "" : undefined,
     name: record.name,
-    path: normalizePathValue(path.relative(rootDir, record.path)),
+    path: record.source === "virtual"
+      ? `virtual:${record.name}`
+      : normalizePathValue(path.relative(rootDir, record.path)),
     source: record.source,
   })));
 
@@ -262,7 +281,23 @@ async function resolveBundlerEntries(
 
 function toEntryPointMap(records: BundlerEntryRecord[], rootDir: string): Record<string, string> {
   return Object.fromEntries(
-    records.map((record) => [record.name, normalizePathValue(path.relative(rootDir, record.path))]),
+    records.map((record) => [
+      record.name,
+      record.source === "virtual"
+        ? record.path
+        : normalizePathValue(path.relative(rootDir, record.path)),
+    ]),
+  );
+}
+
+function toPublicEntryMap(records: BundlerEntryRecord[], rootDir: string): Record<string, string> {
+  return Object.fromEntries(
+    records.map((record) => [
+      record.name,
+      record.source === "virtual"
+        ? `virtual:${record.name}`
+        : normalizePathValue(path.relative(rootDir, record.path)),
+    ]),
   );
 }
 
@@ -304,7 +339,9 @@ export {
   normalizeDiscoverRoots,
   normalizeManifestOptions,
   resolveBundlerEntries,
+  toPublicEntryMap,
   toEntryPointMap,
   toPosixPath,
+  VIRTUAL_ENTRY_PREFIX,
 };
 export type { NormalizedDiscoverOptions, NormalizedManifestOptions, ResolvedEntries };

@@ -3,7 +3,7 @@ import { logPackageInitialized } from "@trebired/logger-adapter";
 import { BUNDLER_LOG_GROUP, BUNDLER_PACKAGE_NAME } from "../constants.js";
 import { resolveLogger } from "../logging.js";
 import { createEsbuildOptions, normalizeBundlerOptions } from "./esbuild-options.js";
-import { resolveBundlerEntries, normalizeDiscoverRoots } from "./discovery.js";
+import { resolveBundlerEntries, normalizeDiscoverRoots, toPublicEntryMap } from "./discovery.js";
 import { createDiscoveryWatcher } from "./discovery-watch.js";
 import { cleanOutDir, formatFailure, logWarnings, toBuildResult } from "./shared.js";
 async function watch(options) {
@@ -26,6 +26,17 @@ async function watch(options) {
     });
     let currentContext = null;
     let queued = Promise.resolve();
+    const callHook = async (args) => {
+        if (typeof args.hook !== "function")
+            return;
+        try {
+            await args.hook(args.payload);
+        }
+        catch (error) {
+            logger.fail("watch", `${args.name}-failed :: ${formatFailure(error)}`);
+            throw error;
+        }
+    };
     const createWatchedContext = async (records = currentEntries.records) => {
         const context = await createContext(createEsbuildOptions({
             ...normalized,
@@ -36,13 +47,19 @@ async function watch(options) {
     };
     const executeRebuild = async () => {
         if (!currentContext) {
-            return {
+            const emptyResult = {
                 entries: {},
                 outputs: [],
                 warnings: 0,
                 manifestPath: undefined,
                 durationMs: 0,
             };
+            await callHook({
+                hook: normalized.onRebuilt,
+                name: "onRebuilt",
+                payload: emptyResult,
+            });
+            return emptyResult;
         }
         const startedAt = Date.now();
         const result = await currentContext.rebuild();
@@ -56,6 +73,11 @@ async function watch(options) {
             startedAt,
         });
         logger.info("watch", `rebuilt :: outputs=${summary.outputs.length} warnings=${summary.warnings}`);
+        await callHook({
+            hook: normalized.onRebuilt,
+            name: "onRebuilt",
+            payload: summary,
+        });
         return summary;
     };
     const refreshDiscovery = async () => {
@@ -65,6 +87,11 @@ async function watch(options) {
         if (nextEntries.signature === currentEntries.signature)
             return;
         logger.info("watch", `entry-set-changed :: count=${nextEntries.records.length}`);
+        await callHook({
+            hook: normalized.onEntrySetChanged,
+            name: "onEntrySetChanged",
+            payload: toPublicEntryMap(nextEntries.records, normalized.rootDir),
+        });
         currentEntries = nextEntries;
         if (currentContext) {
             await currentContext.dispose();
