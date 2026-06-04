@@ -4,7 +4,7 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
-## Unreleased
+## 1.5.0
 
 - Removed the `obfuscate` option and all package-owned obfuscation behavior, including hashed artifact naming, property mangling, and static class-token rewriting.
 - Kept `extreme` mode as the strongest compacting profile while making its output naming and class strings stay stable and readable.
