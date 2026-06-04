@@ -13,12 +13,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/trebired/bundler.git"
+    "url": "https://github.com/Trebired/bundler"
   },
   "bugs": {
-    "url": "https://github.com/trebired/bundler/issues"
+    "url": "https://github.com/Trebired/bundler/issues"
   },
-  "homepage": "https://github.com/trebired/bundler#readme",
+  "homepage": "https://github.com/Trebired/bundler#readme",
   "type": "module",
   "engines": {
     "node": ">=18",
