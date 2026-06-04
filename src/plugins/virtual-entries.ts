@@ -1,14 +1,11 @@
 import type { Plugin } from "esbuild";
 
 import { VIRTUAL_ENTRY_PREFIX } from "../core/discovery.js";
-import { rewriteCodeClassTokens } from "./obfuscation.js";
 import type { BundlerEntryRecord, NormalizedBundlerLogger } from "../types.js";
-import type { ClassNameMap } from "./obfuscation.js";
 
 const VIRTUAL_ENTRY_NAMESPACE = "trebired-virtual-entry";
 
 type VirtualEntriesPluginOptions = {
-  classNameMap?: ClassNameMap;
   entries: BundlerEntryRecord[];
   logger: NormalizedBundlerLogger;
   rootDir: string;
@@ -42,13 +39,7 @@ function createVirtualEntriesPlugin(options: VirtualEntriesPluginOptions): Plugi
         const contents = byName.get(args.path) || "";
 
         return {
-          contents: options.classNameMap && options.classNameMap.size > 0
-            ? rewriteCodeClassTokens({
-              classNameMap: options.classNameMap,
-              contents,
-              filePath: `${args.path}.ts`,
-            })
-            : contents,
+          contents,
           loader: "ts",
           resolveDir: options.rootDir,
         };

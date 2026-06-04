@@ -2,27 +2,15 @@ import path from "node:path";
 import type { BuildOptions } from "esbuild";
 
 import { createScssPlugin } from "../plugins/scss.js";
-import { createClassNameMap } from "../plugins/obfuscation.js";
 import { createSourceAnnotationsPlugin } from "../plugins/source-annotations.js";
 import { createVirtualEntriesPlugin } from "../plugins/virtual-entries.js";
 import type {
   BundlerEntryRecord,
   BundlerMode,
-  BundlerObfuscationOptions,
   BundlerOptions,
   NormalizedBundlerLogger,
 } from "../types.js";
 import { normalizeManifestOptions, toEntryPointMap } from "./discovery.js";
-
-type NormalizedBundlerObfuscationOptions = {
-  assetNames?: string;
-  chunkNames?: string;
-  enabled: boolean;
-  entryNames?: string;
-  keepNames?: boolean;
-  mangleProps?: RegExp;
-  mangleQuoted?: boolean;
-};
 
 type NormalizedBundlerOptions = {
   annotateSources: boolean;
@@ -38,7 +26,6 @@ type NormalizedBundlerOptions = {
   manifest: ReturnType<typeof normalizeManifestOptions>;
   minify: boolean;
   mode: BundlerMode;
-  obfuscate: NormalizedBundlerObfuscationOptions;
   onEntrySetChanged?: BundlerOptions["onEntrySetChanged"];
   onRebuilt?: BundlerOptions["onRebuilt"];
   outDir: string;
@@ -52,7 +39,6 @@ type NormalizedBundlerOptions = {
 
 type ResolvedModeDefaults = {
   minify: boolean;
-  obfuscate: BundlerObfuscationOptions | undefined;
   stripComments: boolean;
 };
 
@@ -60,54 +46,13 @@ function resolveModeDefaults(mode: BundlerMode): ResolvedModeDefaults {
   if (mode === "debug") {
     return {
       minify: false,
-      obfuscate: undefined,
       stripComments: false,
-    };
-  }
-
-  if (mode === "extreme") {
-    return {
-      minify: true,
-      obfuscate: true,
-      stripComments: true,
     };
   }
 
   return {
     minify: true,
-    obfuscate: undefined,
     stripComments: true,
-  };
-}
-
-function toRegExp(value: RegExp | string | undefined): RegExp | undefined {
-  if (!value) return undefined;
-  return value instanceof RegExp ? value : new RegExp(value);
-}
-
-function normalizeObfuscation(options: BundlerObfuscationOptions | undefined): NormalizedBundlerObfuscationOptions {
-  if (!options) {
-    return { enabled: false };
-  }
-
-  if (options === true) {
-    return {
-      assetNames: "[hash]",
-      chunkNames: "[hash]",
-      enabled: true,
-      entryNames: "[hash]",
-      keepNames: false,
-    };
-  }
-
-  return {
-    assetNames: String(options.assetNames || "").trim() || "[hash]",
-    chunkNames: String(options.chunkNames || "").trim() || "[hash]",
-    enabled: true,
-    entryNames: String(options.entryNames || "").trim() || "[hash]",
-    keepNames: options.keepNames,
-    mangleProps: toRegExp(options.mangleProps),
-    mangleQuoted: options.mangleQuoted,
   };
 }
 
@@ -135,7 +80,6 @@ function normalizeBundlerOptions(options: BundlerOptions): NormalizedBundlerOpti
     manifest: normalizeManifestOptions(options.manifest),
     minify: options.minify ?? defaults.minify,
     mode,
-    obfuscate: normalizeObfuscation(options.obfuscate ?? defaults.obfuscate),
     onEntrySetChanged: options.onEntrySetChanged,
     onRebuilt: options.onRebuilt,
     outDir: resolvedOutDir,
@@ -152,7 +96,6 @@ function createEsbuildOptions(
   options: NormalizedBundlerOptions,
   logger: NormalizedBundlerLogger,
 ): BuildOptions {
-  const esbuildEnvironmentKey = ["plat", "form"].join("") as keyof BuildOptions;
   const entryPoints = options.entryRecords
     ? toEntryPointMap(options.entryRecords, options.rootDir)
     : options.entries;
@@ -175,54 +118,35 @@ function createEsbuildOptions(
     logger.info("build", "comment stripping enabled");
   }
 
-  if (options.obfuscate.enabled) {
-    logger.info("build", "obfuscation enabled");
-  }
-
   logger.info("scss", "scss compiler enabled");
-  const classNameMap = options.obfuscate.enabled ? createClassNameMap(options.rootDir) : undefined;
-
-  if (classNameMap && classNameMap.size > 0) {
-    logger.info("build", `class-obfuscation :: count=${classNameMap.size}`);
-  }
 
   return {
     absWorkingDir: options.rootDir,
-    assetNames: options.obfuscate.enabled ? options.obfuscate.assetNames : undefined,
     bundle: true,
-    chunkNames: options.obfuscate.enabled ? options.obfuscate.chunkNames : undefined,
     define: options.define,
     entryPoints,
-    entryNames: options.obfuscate.enabled ? options.obfuscate.entryNames : undefined,
     external: options.external,
     format: options.format,
-    keepNames: options.obfuscate.enabled ? options.obfuscate.keepNames : undefined,
     legalComments: options.annotateSources ? "inline" : options.stripComments ? "none" : undefined,
     logLevel: "silent",
-    mangleProps: options.obfuscate.enabled ? options.obfuscate.mangleProps : undefined,
-    mangleQuoted: options.obfuscate.enabled ? options.obfuscate.mangleQuoted : undefined,
     metafile: true,
     minify: options.minify,
     outbase: options.rootDir,
     outdir: options.outDir,
     plugins: [
       createVirtualEntriesPlugin({
-        classNameMap,
         entries: options.entryRecords || [],
         logger,
         rootDir: options.rootDir,
       }),
       createScssPlugin({
         annotateSources: options.annotateSources,
-        classNameMap,
         logger,
         rootDir: options.rootDir,
         sourcemapEnabled: Boolean(options.sourcemap),
       }),
-      ...((options.annotateSources || (classNameMap && classNameMap.size > 0)) ? [
+      ...(options.annotateSources ? [
         createSourceAnnotationsPlugin({
-          annotateSources: options.annotateSources,
-          classNameMap,
           logger,
           rootDir: options.rootDir,
         }),
@@ -233,7 +157,7 @@ function createEsbuildOptions(
     splitting: options.splitting,
     target: options.target,
     write: true,
-    [esbuildEnvironmentKey]: options.environment,
+    platform: options.environment,
   };
 }
 

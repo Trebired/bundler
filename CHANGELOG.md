@@ -4,6 +4,12 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## Unreleased
+
+- Removed the `obfuscate` option and all package-owned obfuscation behavior, including hashed artifact naming, property mangling, and static class-token rewriting.
+- Kept `extreme` mode as the strongest compacting profile while making its output naming and class strings stay stable and readable.
+- Removed the leftover indirect esbuild `platform` key shim and now pass the normalized `environment` value directly.
+
 ## 1.4.0
 
 - Fixed `extreme` mode class obfuscation so emitted JS, TS, JSX, and TSX class usage stays aligned with obfuscated CSS output across bound identifiers, class-bearing object props, helper aliases, template literals, and HTML fragments.

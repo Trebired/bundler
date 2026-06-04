@@ -29,7 +29,7 @@ Use this when:
 - you want rebuild hooks instead of scraping logger text
 - you want generated bundles to optionally include inline comments that point back to the original source file path
 - you want production-lean defaults with minified output and stripped comments
-- you want a stronger `extreme` mode for denser output and hashed artifact names
+- you want a stronger `extreme` mode for the most aggressive package-owned compacting defaults
 - you want package-owned logs routed through `@trebired/logger-adapter`
 
 ## What It Does Not Do
@@ -209,9 +209,9 @@ await watch({
 
 Available modes:
 
-- `debug`: readable output, no minification, no obfuscation, no comment stripping by default
+- `debug`: readable output, no minification, no comment stripping by default
 - `compact`: minified output with stripped preserved comments by default
-- `extreme`: compact mode plus hashed output names and obfuscation defaults
+- `extreme`: compact mode with the strongest package-owned compacting profile, without renaming classes or artifacts
 
 If you want a more readable debug build:
 
@@ -229,7 +229,7 @@ await bundle({
 
 ## Extreme Mode
 
-Use `mode: "extreme"` when you want the package to pack output as tightly as its current esbuild-based pipeline can:
+Use `mode: "extreme"` when you want the package to apply its strongest built-in compacting profile:
 
 ```ts
 await bundle({
@@ -245,30 +245,9 @@ This mode enables:
 
 - minification
 - stripped preserved comments
-- hashed entry, chunk, and asset names
-- static class-name rewriting across CSS plus JS/TS/JSX/TSX class usage
-- no kept function/class names unless you override that behavior
+- stable entry, chunk, and asset naming
 
-## Obfuscation
-
-Use `obfuscate` when you want hashed output names without switching the full build mode, or when you want custom esbuild property mangling patterns:
-
-```ts
-await bundle({
-  entries: {
-    app: "./src/app.tsx",
-  },
-  obfuscate: {
-    entryNames: "x/[hash]",
-    chunkNames: "x/[hash]",
-    assetNames: "x/[hash]",
-    mangleProps: "^_",
-  },
-  outDir: "./dist",
-});
-```
-
-This obfuscation layer covers emitted artifact names, esbuild-supported JS property mangling, and coordinated rewriting of static CSS class usage across CSS plus JS/TS/JSX/TSX code. Dynamic class construction still stays outside the package-owned rewrite layer.
+Today `extreme` intentionally keeps the same readable artifact and class names as other modes. The difference is its production-lean compacting profile, not obfuscation.
 
 ## Source Annotation Comments
 
@@ -341,14 +320,6 @@ type BundlerOptions = {
   target?: string | string[];
   minify?: boolean;
   stripComments?: boolean;
-  obfuscate?: boolean | {
-    assetNames?: string;
-    chunkNames?: string;
-    entryNames?: string;
-    keepNames?: boolean;
-    mangleProps?: RegExp | string;
-    mangleQuoted?: boolean;
-  };
   sourcemap?: boolean | "inline" | "external";
   splitting?: boolean;
   publicPath?: string;

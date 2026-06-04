@@ -1,5 +1,4 @@
 import { VIRTUAL_ENTRY_PREFIX } from "../core/discovery.js";
-import { rewriteCodeClassTokens } from "./obfuscation.js";
 const VIRTUAL_ENTRY_NAMESPACE = "trebired-virtual-entry";
 function createVirtualEntriesPlugin(options) {
     const byName = new Map(options.entries
@@ -22,13 +21,7 @@ function createVirtualEntriesPlugin(options) {
             build.onLoad({ filter: /.*/, namespace: VIRTUAL_ENTRY_NAMESPACE }, async (args) => {
                 const contents = byName.get(args.path) || "";
                 return {
-                    contents: options.classNameMap && options.classNameMap.size > 0
-                        ? rewriteCodeClassTokens({
-                            classNameMap: options.classNameMap,
-                            contents,
-                            filePath: `${args.path}.ts`,
-                        })
-                        : contents,
+                    contents,
                     loader: "ts",
                     resolveDir: options.rootDir,
                 };

@@ -1,9 +1,6 @@
 import type { Plugin } from "esbuild";
 import type { NormalizedBundlerLogger } from "../types.js";
-import type { ClassNameMap } from "./obfuscation.js";
 type SourceAnnotationsPluginOptions = {
-    annotateSources: boolean;
-    classNameMap?: ClassNameMap;
     logger: NormalizedBundlerLogger;
     rootDir: string;
 };

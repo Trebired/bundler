@@ -1,9 +1,7 @@
 import type { Plugin } from "esbuild";
 import type { BundlerEntryRecord, NormalizedBundlerLogger } from "../types.js";
-import type { ClassNameMap } from "./obfuscation.js";
 declare const VIRTUAL_ENTRY_NAMESPACE = "trebired-virtual-entry";
 type VirtualEntriesPluginOptions = {
-    classNameMap?: ClassNameMap;
     entries: BundlerEntryRecord[];
     logger: NormalizedBundlerLogger;
     rootDir: string;

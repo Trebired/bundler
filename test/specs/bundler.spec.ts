@@ -62,7 +62,7 @@ describe("@trebired/bundler", () => {
     expect(themeCss).not.toContain("source:");
   });
 
-  test("uses extreme mode for denser and obfuscated output", async () => {
+  test("uses extreme mode for denser output while keeping stable entry names", async () => {
     const root = tempDir();
     createFixtureProject(root);
 
@@ -89,12 +89,11 @@ describe("@trebired/bundler", () => {
 
     expect(debugJsPath).toBeDefined();
     expect(extremeJsPath).toBeDefined();
-    expect(extremeJsPath?.endsWith("/dist-extreme/app.js")).toBe(false);
-    expect(path.basename(extremeJsPath!)).toMatch(/^[A-Z0-9]+\.[a-z]+$/);
+    expect(extremeJsPath).toBe(path.join(root, "dist-extreme/app.js"));
     expect(fs.readFileSync(extremeJsPath!, "utf8").length).toBeLessThan(fs.readFileSync(debugJsPath!, "utf8").length);
   });
 
-  test("rewrites js and tsx class usage to the same obfuscated css class names", async () => {
+  test("keeps css and class string usage unchanged in extreme mode", async () => {
     const root = tempDir();
     createFixtureProject(root);
 
@@ -123,14 +122,10 @@ document.querySelector(".app");
 
     const js = fs.readFileSync(jsPath!, "utf8");
     const css = fs.readFileSync(cssPath!, "utf8");
-    const cssClassMatch = css.match(/\.([a-z][a-z0-9]*)/i);
 
-    expect(css).not.toContain(".app");
-    expect(js).not.toContain("\"app\"");
-    expect(js).not.toContain(".app");
-    expect(cssClassMatch?.[1]).toBeDefined();
-    expect(js).toContain(`"${cssClassMatch![1]}"`);
-    expect(js).toContain(`".${cssClassMatch![1]}"`);
+    expect(css).toContain(".app");
+    expect(js).toContain("\"app\"");
+    expect(js).toContain("\".app\"");
   });
 
   test("omits source annotations when annotateSources is disabled", async () => {
@@ -384,33 +379,7 @@ console.log("global-client");
     expect(readFile(root, "dist/global.client.css")).toContain(".app");
   });
 
-  test("supports explicit obfuscation options", async () => {
-    const root = tempDir();
-    createFixtureProject(root);
-
-    writeFile(root, "src/props.ts", `
-const model = { _secretValue: "secret" };
-console.log(model._secretValue);
-`);
-
-    const result = await bundle({
-      entries: {
-        props: "./src/props.ts",
-      },
-      obfuscate: {
-        entryNames: "x/[hash]",
-        mangleProps: "^_",
-      },
-      outDir: "./dist",
-      rootDir: root,
-    });
-
-    const jsPath = result.outputs.find((filePath) => filePath.endsWith(".js") && !filePath.endsWith(".js.map"));
-    expect(jsPath?.includes("/dist/x/")).toBe(true);
-    expect(fs.readFileSync(jsPath!, "utf8")).not.toContain("_secretValue");
-  });
-
-  test("rewrites helper aliases, template literals, and html class strings in extreme mode", async () => {
+  test("keeps rich class-bearing strings intact in extreme mode", async () => {
     const root = tempDir();
     createFixtureProject(root);
 
@@ -429,42 +398,25 @@ console.log(model._secretValue);
     writeFile(root, "src/patterns.tsx", `
 import "./styles/patterns.scss";
 
-function joinClassNames(...values: Array<string | Record<string, boolean>>) {
-  return values
-    .flatMap((value) => {
-      if (typeof value === "string") return [value];
-      return Object.entries(value)
-        .filter(([, enabled]) => enabled)
-        .map(([key]) => key);
-    })
-    .join(" ");
-}
-
-const og = joinClassNames;
-const h = (tag: string, props: Record<string, unknown>, ...children: unknown[]) => ({ tag, props, children });
 const tone = "tone-info";
 const progressClass = true ? "loader-circle" : "select-card";
 const html = "<div class=\\"select-card inline-row gap-sm ver-center\\"></div>";
 const htmlTemplate = \`<span class="pill \${tone} loader-circle"></span>\`;
-const classes = og(
-  "select-card",
-  "inline-row gap-sm ver-center",
-  \`pill \${tone}\`,
-  { "loader-circle": true, "column gap-xs flex-1": true },
-);
 const stackedClassName = ["column", "gap-xs", "flex-1"].filter(Boolean).join(" ");
-const renderTree = h(
-  "div",
-  { className: "inline-row gap-sm ver-center" },
-  h("div", { className: stackedClassName, contentClassName: "column gap-xs flex-1" }),
-  h("span", { className: \`pill \${progressClass}\` }),
+
+document.body.className = "select-card loader-circle";
+document.body.setAttribute("class", "inline-row gap-sm");
+document.querySelector(".select-card");
+
+export const view = (
+  <div
+    className="select-card inline-row gap-sm ver-center"
+    data-stacked={stackedClassName}
+    data-progress={progressClass}
+    data-html={html}
+    data-template={htmlTemplate}
+  />
 );
-
-document.body.className = og("select-card", "loader-circle");
-document.body.setAttribute("class", og("inline-row", "gap-sm"));
-document.querySelector(\`.select-card\`);
-
-export const view = <div className={classes} data-html={html} data-template={htmlTemplate} data-tree={JSON.stringify(renderTree)}></div>;
 `);
 
     const result = await bundle({
@@ -485,19 +437,13 @@ export const view = <div className={classes} data-html={html} data-template={htm
     const js = fs.readFileSync(jsPath!, "utf8");
     const css = fs.readFileSync(cssPath!, "utf8");
 
-    expect(css).not.toContain(".select-card");
-    expect(js).not.toContain("select-card");
-    expect(js).not.toContain("inline-row gap-sm ver-center");
-    expect(js).not.toContain("column gap-xs flex-1");
-    expect(js).not.toContain("loader-circle");
-    expect(js).not.toContain('class="pill ');
-
-    const obfuscatedTokens = Array.from(new Set(
-      [...css.matchAll(/\.([a-z][a-z0-9]*)/ig)].map((match) => match[1]),
-    ));
-
-    expect(obfuscatedTokens.length).toBeGreaterThan(0);
-    expect(obfuscatedTokens.some((token) => js.includes(token))).toBe(true);
+    expect(css).toContain(".select-card");
+    expect(css).toContain(".loader-circle");
+    expect(js).toContain("select-card");
+    expect(js).toContain("inline-row gap-sm ver-center");
+    expect(js).toContain("\"column\",\"gap-xs\",\"flex-1\"");
+    expect(js).toContain("loader-circle");
+    expect(js).toContain('class="pill ');
   });
 
   test("fails when virtual and manual entries collide on the same name", async () => {
