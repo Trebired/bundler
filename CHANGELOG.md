@@ -4,7 +4,7 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
-## Unreleased
+## 1.6.0
 
 - Added `buildAssetManifest()` for a runtime-friendly asset manifest keyed by logical entries and source paths.
 - Added `collectAssetLinks()` for collecting emitted scripts, styles, and other assets without app-specific HTML generation.
