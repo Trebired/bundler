@@ -4,6 +4,13 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## Unreleased
+
+- Added `buildAssetManifest()` for a runtime-friendly asset manifest keyed by logical entries and source paths.
+- Added `collectAssetLinks()` for collecting emitted scripts, styles, and other assets without app-specific HTML generation.
+- Added `walkImportGraph()` for generic source dependency walking with relative import and tsconfig `paths` resolution.
+- Exposed `assetManifest` on `bundle()` and `watch()` build results and included the same structure in the written bundler manifest.
+
 ## 1.5.0
 
 - Removed the `obfuscate` option and all package-owned obfuscation behavior, including hashed artifact naming, property mangling, and static class-token rewriting.

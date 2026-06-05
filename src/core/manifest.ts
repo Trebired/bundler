@@ -3,6 +3,7 @@ import path from "node:path";
 import type { Metafile } from "esbuild";
 
 import type { BundlerEntryRecord } from "../types.js";
+import { buildAssetManifest } from "./asset-manifest.js";
 import { toPosixPath } from "./discovery.js";
 import type { NormalizedManifestOptions } from "./discovery.js";
 import { deriveManifest } from "./derive-manifest.js";
@@ -38,6 +39,12 @@ async function writeBundlerManifest(args: {
         },
       ]),
     ),
+    assetManifest: buildAssetManifest({
+      metafile: args.metafile,
+      outDir: args.outDir,
+      rootDir: args.rootDir,
+      resolvedEntries: args.entries,
+    }),
     ...deriveManifest(args.metafile, {
       outDir: args.outDir,
       rootDir: args.rootDir,

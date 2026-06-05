@@ -26,6 +26,9 @@ Use this when:
 - you want newly created matching files to join the build without external entry regeneration code
 - you want a manifest describing resolved entries and generated outputs
 - you want a stable helper for turning esbuild metafiles into runtime asset graphs
+- you want a runtime-friendly asset manifest keyed by entry names and source paths
+- you want a package-owned helper for collecting script and stylesheet links for selected entries
+- you want a generic import graph walker with tsconfig path resolution for higher-level presets
 - you want rebuild hooks instead of scraping logger text
 - you want generated bundles to optionally include inline comments that point back to the original source file path
 - you want production-lean defaults with minified output and stripped comments
@@ -126,6 +129,7 @@ The manifest contains:
 - resolved entries
 - whether each entry came from `manual` config or `discover`
 - generated output files
+- a runtime-friendly `assetManifest` keyed by entry source path, with lookup maps for entry names and emitted outputs
 
 If you want a runtime-friendly asset graph directly in app code, call `deriveManifest()` on the returned `metafile`:
 
@@ -150,6 +154,37 @@ The helper returns:
 - `entries`: entry output -> JS/CSS/import graph
 - `chunks`: shared output -> import/CSS graph
 - `allOutputs`: flat normalized output index
+
+If you want a manifest ready for runtime asset selection, use `buildAssetManifest()`:
+
+```ts
+import { buildAssetManifest, bundle, collectAssetLinks } from "@trebired/bundler";
+
+const result = await bundle({
+  entries: {
+    app: "./src/app.tsx",
+  },
+  outDir: "./dist",
+});
+
+const assetManifest = result.assetManifest || buildAssetManifest({
+  metafile: result.metafile!,
+  outDir: "./dist",
+  rootDir: process.cwd(),
+  resolvedEntries: result.entries,
+});
+
+const assets = collectAssetLinks(assetManifest, ["app"], {
+  publicPath: "/",
+});
+```
+
+The runtime asset manifest exposes:
+
+- `entries`: entry source path -> primary file, reachable JS, reachable CSS, and other emitted assets
+- `entryNames`: logical entry name -> entry source path
+- `entryOutputs`: emitted entry file -> entry source path
+- `outputs`: emitted output index relative to `outDir`
 
 ## Virtual Entries
 
@@ -197,6 +232,25 @@ await watch({
 ```
 
 `onEntrySetChanged()` runs only when the resolved entry set changes. `onRebuilt()` runs after a successful rebuild result is assembled.
+
+## Import Graph Walking
+
+Use `walkImportGraph()` when a higher-level preset needs to inspect internal source dependencies without reimplementing relative import or tsconfig-path resolution:
+
+```ts
+import { walkImportGraph } from "@trebired/bundler";
+
+const graph = await walkImportGraph({
+  entries: "./src/app.tsx",
+  rootDir: process.cwd(),
+});
+```
+
+The helper:
+
+- walks static imports, re-exports, and string-literal dynamic imports
+- resolves relative imports and tsconfig `paths`
+- returns a root-relative file graph with resolved internal imports marked explicitly
 
 ## Optimization Defaults
 

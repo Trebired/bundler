@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { buildAssetManifest } from "./asset-manifest.js";
 import { toPosixPath } from "./discovery.js";
 import { deriveManifest } from "./derive-manifest.js";
 async function writeBundlerManifest(args) {
@@ -19,6 +20,12 @@ async function writeBundlerManifest(args) {
                 source: entry.source,
             },
         ])),
+        assetManifest: buildAssetManifest({
+            metafile: args.metafile,
+            outDir: args.outDir,
+            rootDir: args.rootDir,
+            resolvedEntries: args.entries,
+        }),
         ...deriveManifest(args.metafile, {
             outDir: args.outDir,
             rootDir: args.rootDir,

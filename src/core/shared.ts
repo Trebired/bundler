@@ -3,6 +3,7 @@ import path from "node:path";
 import type { BuildResult, Message } from "esbuild";
 
 import type { BundlerBuildResult, BundlerEntryRecord, NormalizedBundlerLogger } from "../types.js";
+import { buildAssetManifest } from "./asset-manifest.js";
 import { toPublicEntryMap } from "./discovery.js";
 import type { DuplicateBundlerEntryRecord } from "./discovery.js";
 import { writeBundlerManifest } from "./manifest.js";
@@ -62,6 +63,14 @@ async function toBuildResult(args: {
   startedAt: number;
 }): Promise<BundlerBuildResult> {
   const outputs = resolveOutputs(args.result, args.rootDir);
+  const assetManifest = args.result.metafile
+    ? buildAssetManifest({
+      metafile: args.result.metafile,
+      outDir: args.outDir,
+      rootDir: args.rootDir,
+      resolvedEntries: args.entries,
+    })
+    : undefined;
   const manifestWrite = await writeBundlerManifest({
     entries: args.entries,
     metafile: args.result.metafile,
@@ -75,6 +84,7 @@ async function toBuildResult(args: {
     outputs,
     warnings: args.result.warnings.length,
     metafile: args.result.metafile,
+    assetManifest,
     manifestPath: manifestWrite.manifestPath,
     durationMs: Date.now() - args.startedAt,
   };
