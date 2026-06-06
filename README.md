@@ -119,7 +119,7 @@ The package:
 - leaves discovered `.jsx` and `.tsx` files as normal per-file entries
 - rebuilds the entry list during watch mode when matching files are added or removed
 
-- grouped bundles are auto-named like `bundle-scripts-abc123.js` and `bundle-styles-abc123-2.css`
+- grouped bundles are auto-named like `bundle-abc123.js` and `bundle-abc123-2.css`
 - `maxBundleSize` defaults to `50mb`
 - `maxBundleSize` accepts bytes or strings like `"50mb"` and splits bundles by summed discovered source-file size before handing each group to `esbuild`
 - if one discovered grouped file is larger than `maxBundleSize`, the build fails

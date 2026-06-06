@@ -321,7 +321,7 @@ async function toBundledDiscoverEntries(args) {
         });
         chunks.forEach((chunk, index) => {
             const suffix = chunks.length > 1 ? `-${index + 1}` : "";
-            const name = `bundle-${groupName}-${bundleId}${suffix}`;
+            const name = `bundle-${bundleId}${suffix}`;
             bundledRecords.push({
                 contents: buildBundleContents({
                     files: chunk,

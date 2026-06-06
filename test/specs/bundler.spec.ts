@@ -290,8 +290,8 @@ console.log("bravo");
     });
 
     const outputNames = result.outputs.map((filePath) => path.basename(filePath)).sort();
-    const scriptBundles = outputNames.filter((name) => /^bundle-scripts-[a-z0-9]+(?:-\d+)?\.js$/.test(name));
-    const styleBundles = outputNames.filter((name) => /^bundle-styles-[a-z0-9]+(?:-\d+)?\.css$/.test(name));
+    const scriptBundles = outputNames.filter((name) => /^bundle-[a-z0-9]+(?:-\d+)?\.js$/.test(name));
+    const styleBundles = outputNames.filter((name) => /^bundle-[a-z0-9]+(?:-\d+)?\.css$/.test(name));
 
     expect(outputNames).toContain("app.js");
     expect(scriptBundles).toHaveLength(1);
@@ -338,14 +338,14 @@ console.log("bravo-${"y".repeat(80)}");
     });
 
     const outputNames = result.outputs.map((filePath) => path.basename(filePath)).sort();
-    const scriptBundles = outputNames.filter((name) => /^bundle-scripts-[a-z0-9]+(?:-\d+)?\.js$/.test(name));
-    const styleBundles = outputNames.filter((name) => /^bundle-styles-[a-z0-9]+(?:-\d+)?\.css$/.test(name));
+    const scriptBundles = outputNames.filter((name) => /^bundle-[a-z0-9]+(?:-\d+)?\.js$/.test(name));
+    const styleBundles = outputNames.filter((name) => /^bundle-[a-z0-9]+(?:-\d+)?\.css$/.test(name));
 
     expect(outputNames).toContain("app.js");
     expect(scriptBundles.length).toBe(2);
     expect(styleBundles.length).toBe(2);
-    expect(scriptBundles.every((name) => name.startsWith("bundle-scripts-"))).toBe(true);
-    expect(styleBundles.every((name) => name.startsWith("bundle-styles-"))).toBe(true);
+    expect(scriptBundles.every((name) => name.startsWith("bundle-"))).toBe(true);
+    expect(styleBundles.every((name) => name.startsWith("bundle-"))).toBe(true);
     expect(scriptBundles.some((name) => readFile(root, `dist/${name}`).includes("alpha-"))).toBe(true);
     expect(scriptBundles.some((name) => readFile(root, `dist/${name}`).includes("bravo-"))).toBe(true);
     expect(styleBundles.some((name) => readFile(root, `dist/${name}`).includes(".alpha"))).toBe(true);
@@ -420,7 +420,7 @@ console.log("bravo-${"y".repeat(80)}");
     });
 
     const entryNames = Object.keys(result.entries).sort();
-    const styleEntryName = entryNames.find((value) => value.startsWith("bundle-styles-"));
+    const styleEntryName = entryNames.find((value) => value.startsWith("bundle-"));
 
     expect(entryNames).toContain("app");
     expect(styleEntryName).toBeDefined();
@@ -437,7 +437,7 @@ console.log("bravo-${"y".repeat(80)}");
     });
     expect(manifest.entries["dist/app.js"].entryOutput).toBe("dist/app.js");
     expect(manifest.entries["dist/app.js"].css).toContain("dist/app.css");
-    expect(Object.keys(manifest.entries).some((key) => /^dist\/bundle-styles-[a-z0-9]+\.css$/.test(key))).toBe(true);
+    expect(Object.keys(manifest.entries).some((key) => /^dist\/bundle-[a-z0-9]+\.css$/.test(key))).toBe(true);
   });
 
   test("watch mode picks up new discovered entry files", async () => {
