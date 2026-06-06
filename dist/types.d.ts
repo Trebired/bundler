@@ -6,12 +6,14 @@ type BundlerLogMethod = LoggerAdapterLogMethod;
 type BundlerGenericLogMethod = LoggerAdapterGenericLogMethod;
 type BundlerLogEvent = LoggerAdapterEvent;
 type NormalizedBundlerLogger = NormalizedLoggerAdapter;
+type BundlerVirtualEntryLoader = "css" | "ts";
 type BundlerDiscoverOptions = {
     dir: string;
     include?: string[];
     exclude?: string[];
     extensions?: string[];
     ignoreDirs?: string[];
+    maxBundleSize?: number | string;
     namePrefix?: string;
 };
 type BundlerManifestOptions = boolean | {
@@ -26,6 +28,7 @@ type BundlerEntryRecord = {
     name: string;
     path: string;
     source: BundlerEntrySource;
+    virtualLoader?: BundlerVirtualEntryLoader;
 };
 type BundlerDerivedManifestEntry = {
     entryOutput: string;
@@ -175,5 +178,5 @@ type LoadedBundlerConfig = {
     config: BundlerOptions;
     configPath: string;
 };
-export type { BundlerAssetManifest, BundlerAssetManifestEntry, BundlerAssetManifestOutput, BundlerBuildAssetManifestOptions, BundlerBuildResult, BundlerCollectedAssetLinks, BundlerCollectAssetLinksLookup, BundlerCollectAssetLinksOptions, BundlerDiscoverOptions, BundlerDerivedManifest, BundlerDerivedManifestChunk, BundlerDerivedManifestEntry, BundlerDerivedManifestOutput, BundlerDerivedManifestOutputKind, BundlerEnvironment, BundlerEntryRecord, BundlerEntrySource, BundlerGenericLogMethod, BundlerImportGraph, BundlerImportGraphFile, BundlerImportGraphImport, BundlerImportGraphImportKind, BundlerImportGraphOptions, BundlerImportGraphTsconfigOptions, BundlerLogEvent, BundlerLogger, BundlerLoggerAdapter, BundlerLogMethod, BundlerManifestOptions, BundlerMode, BundlerOptions, BundlerResolvedEntriesInput, BundlerTsconfigPaths, BundlerVirtualEntries, BundlerWatchSession, LoadedBundlerConfig, NormalizedBundlerLogger, };
+export type { BundlerAssetManifest, BundlerAssetManifestEntry, BundlerAssetManifestOutput, BundlerBuildAssetManifestOptions, BundlerBuildResult, BundlerCollectedAssetLinks, BundlerCollectAssetLinksLookup, BundlerCollectAssetLinksOptions, BundlerDiscoverOptions, BundlerDerivedManifest, BundlerDerivedManifestChunk, BundlerDerivedManifestEntry, BundlerDerivedManifestOutput, BundlerDerivedManifestOutputKind, BundlerEnvironment, BundlerEntryRecord, BundlerEntrySource, BundlerGenericLogMethod, BundlerImportGraph, BundlerImportGraphFile, BundlerImportGraphImport, BundlerImportGraphImportKind, BundlerImportGraphOptions, BundlerImportGraphTsconfigOptions, BundlerLogEvent, BundlerLogger, BundlerLoggerAdapter, BundlerLogMethod, BundlerManifestOptions, BundlerMode, BundlerOptions, BundlerResolvedEntriesInput, BundlerTsconfigPaths, BundlerVirtualEntries, BundlerVirtualEntryLoader, BundlerWatchSession, LoadedBundlerConfig, NormalizedBundlerLogger, };
 //# sourceMappingURL=types.d.ts.map

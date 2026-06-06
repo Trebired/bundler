@@ -4,6 +4,14 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 2.0.0
+
+- Changed `discover` to group discovered `.js` and `.ts` files into auto-named script bundles by default.
+- Changed `discover` to group discovered `.css` and `.scss` files into auto-named style bundles by default.
+- Added `discover.maxBundleSize` with a default of `50mb`, splitting grouped discovered bundles only when the full group exceeds the limit.
+- Kept discovered `.jsx` and `.tsx` files as normal per-file entries.
+- Made grouped discovered builds fail when one grouped source file is larger than the configured max bundle size.
+
 ## 1.6.0
 
 - Added `buildAssetManifest()` for a runtime-friendly asset manifest keyed by logical entries and source paths.

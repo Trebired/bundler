@@ -3,7 +3,10 @@ const VIRTUAL_ENTRY_NAMESPACE = "trebired-virtual-entry";
 function createVirtualEntriesPlugin(options) {
     const byName = new Map(options.entries
         .filter((entry) => entry.source === "virtual")
-        .map((entry) => [entry.name, entry.contents || ""]));
+        .map((entry) => [entry.name, {
+            contents: entry.contents || "",
+            loader: entry.virtualLoader || "ts",
+        }]));
     return {
         name: "trebired-virtual-entries",
         setup(build) {
@@ -19,10 +22,13 @@ function createVirtualEntriesPlugin(options) {
                 };
             });
             build.onLoad({ filter: /.*/, namespace: VIRTUAL_ENTRY_NAMESPACE }, async (args) => {
-                const contents = byName.get(args.path) || "";
-                return {
-                    contents,
+                const entry = byName.get(args.path) || {
+                    contents: "",
                     loader: "ts",
+                };
+                return {
+                    contents: entry.contents,
+                    loader: entry.loader,
                     resolveDir: options.rootDir,
                 };
             });

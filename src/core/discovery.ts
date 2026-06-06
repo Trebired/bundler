@@ -7,12 +7,40 @@ import type {
   BundlerEntryRecord,
   BundlerManifestOptions,
   BundlerOptions,
+  BundlerVirtualEntryLoader,
   BundlerVirtualEntries,
 } from "../types.js";
 
 const DEFAULT_DISCOVERY_EXTENSIONS = [".css", ".js", ".jsx", ".scss", ".ts", ".tsx"];
 const DEFAULT_IGNORE_DIRS = [".git", "coverage", "dist", "node_modules"];
+const DEFAULT_DISCOVERY_BUNDLE_MAX_SIZE = 50 * 1024 * 1024;
+const DEFAULT_DISCOVERY_BUNDLE_GROUPS: Array<{
+  extensions: string[];
+  loader: BundlerVirtualEntryLoader;
+  name: string;
+}> = [
+  {
+    name: "scripts",
+    extensions: [".js", ".ts"],
+    loader: "ts",
+  },
+  {
+    name: "styles",
+    extensions: [".css", ".scss"],
+    loader: "css",
+  },
+];
+const NORMALIZED_DISCOVERY_BUNDLE_GROUPS: NormalizedDiscoverBundleGroup[] = DEFAULT_DISCOVERY_BUNDLE_GROUPS.map((group) => ({
+  ...group,
+  extensions: new Set(group.extensions),
+}));
 const VIRTUAL_ENTRY_PREFIX = "trebired-virtual:";
+
+type NormalizedDiscoverBundleGroup = {
+  extensions: Set<string>;
+  loader: BundlerVirtualEntryLoader;
+  name: string;
+};
 
 type NormalizedDiscoverOptions = {
   dir: string;
@@ -21,6 +49,7 @@ type NormalizedDiscoverOptions = {
   extensions: string[];
   ignoreDirs: Set<string>;
   include: string[];
+  maxBundleSize: number;
   namePrefix: string;
 };
 
@@ -108,6 +137,41 @@ function normalizeStringList(values: string[] | undefined): string[] {
   return (values || []).map(normalizePathValue).filter(Boolean);
 }
 
+function parseBundleMaxSize(value: BundlerDiscoverOptions["maxBundleSize"]): number {
+  if (typeof value === "number") {
+    if (!Number.isFinite(value) || value <= 0) {
+      throw new Error("bundler-discover-bundle-invalid-max-size");
+    }
+
+    return Math.floor(value);
+  }
+
+  const raw = String(value || "").trim();
+  if (!raw) return DEFAULT_DISCOVERY_BUNDLE_MAX_SIZE;
+
+  const match = raw.match(/^(\d+(?:\.\d+)?)\s*(b|kb|mb|gb)?$/i);
+  if (!match) {
+    throw new Error("bundler-discover-bundle-invalid-max-size");
+  }
+
+  const amount = Number(match[1]);
+  const unit = (match[2] || "b").toLowerCase();
+  const multiplier = unit === "gb"
+    ? 1024 * 1024 * 1024
+    : unit === "mb"
+      ? 1024 * 1024
+      : unit === "kb"
+        ? 1024
+        : 1;
+  const resolved = Math.floor(amount * multiplier);
+
+  if (!Number.isFinite(resolved) || resolved <= 0) {
+    throw new Error("bundler-discover-bundle-invalid-max-size");
+  }
+
+  return resolved;
+}
+
 function normalizeDiscoverOptions(
   rootDir: string,
   discover: BundlerOptions["discover"],
@@ -138,6 +202,7 @@ function normalizeDiscoverOptions(
           ...normalizeStringList(item!.ignoreDirs),
         ].map((value) => path.basename(value))),
         include: normalizeStringList(item!.include),
+        maxBundleSize: parseBundleMaxSize(item!.maxBundleSize),
         namePrefix: normalizePathValue(item!.namePrefix || ""),
       };
     });
@@ -246,6 +311,164 @@ function buildDiscoveredEntryName(args: {
   return normalizePathValue([args.config.namePrefix, withoutExt].filter(Boolean).join("/"));
 }
 
+function createStableBundleId(value: string): string {
+  let hash = 2166136261;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return (hash >>> 0).toString(36);
+}
+
+function resolveBundleGroup(entry: BundlerEntryRecord): NormalizedDiscoverBundleGroup | undefined {
+  const ext = path.extname(entry.path).toLowerCase();
+  return NORMALIZED_DISCOVERY_BUNDLE_GROUPS.find((group) => group.extensions.has(ext));
+}
+
+function toRootImportSpecifier(rootDir: string, absPath: string): string {
+  const rel = normalizePathValue(path.relative(rootDir, absPath));
+  return rel.startsWith(".") ? rel : `./${rel}`;
+}
+
+function buildBundleContents(args: {
+  files: BundlerEntryRecord[];
+  loader: BundlerVirtualEntryLoader;
+  rootDir: string;
+}): string {
+  if (args.loader === "css") {
+    return args.files
+      .map((file) => `@import ${JSON.stringify(toRootImportSpecifier(args.rootDir, file.path))};`)
+      .join("\n");
+  }
+
+  return args.files
+    .map((file) => `import ${JSON.stringify(toRootImportSpecifier(args.rootDir, file.path))};`)
+    .join("\n");
+}
+
+function splitEntriesByMaxSize(args: {
+  entries: Array<BundlerEntryRecord & { bytes: number }>;
+  maxSize: number;
+}): Array<Array<BundlerEntryRecord & { bytes: number }>> {
+  const chunks: Array<Array<BundlerEntryRecord & { bytes: number }>> = [];
+  let current: Array<BundlerEntryRecord & { bytes: number }> = [];
+  let currentSize = 0;
+
+  for (const entry of args.entries) {
+    const nextSize = currentSize + entry.bytes;
+
+    if (current.length > 0 && nextSize > args.maxSize) {
+      chunks.push(current);
+      current = [];
+      currentSize = 0;
+    }
+
+    current.push(entry);
+    currentSize += entry.bytes;
+  }
+
+  if (current.length > 0) {
+    chunks.push(current);
+  }
+
+  return chunks;
+}
+
+async function toBundledDiscoverEntries(args: {
+  config: NormalizedDiscoverOptions;
+  records: BundlerEntryRecord[];
+  rootDir: string;
+}): Promise<BundlerEntryRecord[]> {
+  const resolved = await Promise.all(args.records.map(async (record) => {
+    const group = resolveBundleGroup(record);
+
+    if (!group) {
+      return {
+        group: undefined,
+        record,
+      };
+    }
+
+    const stats = await fsp.stat(record.path);
+    const bytes = Math.max(stats.size, 1);
+    if (bytes > args.config.maxBundleSize) {
+      throw new Error(`bundler-discover-bundle-file-too-large :: ${normalizePathValue(path.relative(args.rootDir, record.path))}`);
+    }
+
+    return {
+      group,
+      record: {
+        ...record,
+        bytes,
+      },
+    };
+  }));
+
+  const passthrough: BundlerEntryRecord[] = [];
+  const grouped = new Map<string, {
+    files: Array<BundlerEntryRecord & { bytes: number }>;
+    group: NormalizedDiscoverBundleGroup;
+  }>();
+
+  for (const item of resolved) {
+    if (!item.group) {
+      passthrough.push(item.record);
+      continue;
+    }
+
+    const existing = grouped.get(item.group.name);
+    if (existing) {
+      existing.files.push(item.record as BundlerEntryRecord & { bytes: number });
+      continue;
+    }
+
+    grouped.set(item.group.name, {
+      files: [item.record as BundlerEntryRecord & { bytes: number }],
+      group: item.group,
+    });
+  }
+
+  const bundledRecords: BundlerEntryRecord[] = [];
+
+  for (const [groupName, value] of Array.from(grouped.entries()).sort(([a], [b]) => a.localeCompare(b))) {
+    const bundleId = createStableBundleId(JSON.stringify({
+      dir: args.config.dir,
+      exclude: args.config.exclude,
+      extensions: args.config.extensions,
+      groupName,
+      include: args.config.include,
+      maxBundleSize: args.config.maxBundleSize,
+      namePrefix: args.config.namePrefix,
+    }));
+    const chunks = splitEntriesByMaxSize({
+      entries: value.files.sort((a, b) => a.name.localeCompare(b.name) || a.path.localeCompare(b.path)),
+      maxSize: args.config.maxBundleSize,
+    });
+
+    chunks.forEach((chunk, index) => {
+      const suffix = chunks.length > 1 ? `-${index + 1}` : "";
+      const name = `bundle-${groupName}-${bundleId}${suffix}`;
+
+      bundledRecords.push({
+        contents: buildBundleContents({
+          files: chunk,
+          loader: value.group.loader,
+          rootDir: args.rootDir,
+        }),
+        name,
+        path: `${VIRTUAL_ENTRY_PREFIX}${name}`,
+        source: "virtual",
+        virtualLoader: value.group.loader,
+      });
+    });
+  }
+
+  return [...passthrough, ...bundledRecords]
+    .sort((a, b) => a.name.localeCompare(b.name) || a.path.localeCompare(b.path));
+}
+
 async function walkDiscoveredEntries(config: NormalizedDiscoverOptions): Promise<BundlerEntryRecord[]> {
   if (!fs.existsSync(config.dirAbs)) return [];
 
@@ -296,7 +519,14 @@ async function resolveBundlerEntries(
 ): Promise<ResolvedEntries> {
   const manual = normalizeManualEntries(options.entries, rootDir);
   const virtual = normalizeVirtualEntries(options.virtualEntries);
-  const discoveredGroups = await Promise.all(normalizeDiscoverOptions(rootDir, options.discover).map(walkDiscoveredEntries));
+  const discoveredGroups = await Promise.all(normalizeDiscoverOptions(rootDir, options.discover).map(async (config) => {
+    const records = await walkDiscoveredEntries(config);
+    return toBundledDiscoverEntries({
+      config,
+      records,
+      rootDir,
+    });
+  }));
   const discovered = discoveredGroups.flat();
   const deduped = dedupeEntriesBySourcePath([...manual, ...virtual, ...discovered]);
   const all = deduped.records;

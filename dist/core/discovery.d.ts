@@ -7,6 +7,7 @@ type NormalizedDiscoverOptions = {
     extensions: string[];
     ignoreDirs: Set<string>;
     include: string[];
+    maxBundleSize: number;
     namePrefix: string;
 };
 type ResolvedEntries = {

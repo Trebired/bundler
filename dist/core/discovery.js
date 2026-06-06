@@ -3,6 +3,23 @@ import fsp from "node:fs/promises";
 import path from "node:path";
 const DEFAULT_DISCOVERY_EXTENSIONS = [".css", ".js", ".jsx", ".scss", ".ts", ".tsx"];
 const DEFAULT_IGNORE_DIRS = [".git", "coverage", "dist", "node_modules"];
+const DEFAULT_DISCOVERY_BUNDLE_MAX_SIZE = 50 * 1024 * 1024;
+const DEFAULT_DISCOVERY_BUNDLE_GROUPS = [
+    {
+        name: "scripts",
+        extensions: [".js", ".ts"],
+        loader: "ts",
+    },
+    {
+        name: "styles",
+        extensions: [".css", ".scss"],
+        loader: "css",
+    },
+];
+const NORMALIZED_DISCOVERY_BUNDLE_GROUPS = DEFAULT_DISCOVERY_BUNDLE_GROUPS.map((group) => ({
+    ...group,
+    extensions: new Set(group.extensions),
+}));
 const VIRTUAL_ENTRY_PREFIX = "trebired-virtual:";
 function toPosixPath(value) {
     return value.replace(/\\/g, "/");
@@ -60,6 +77,35 @@ function matchesAnyPattern(value, patterns) {
 function normalizeStringList(values) {
     return (values || []).map(normalizePathValue).filter(Boolean);
 }
+function parseBundleMaxSize(value) {
+    if (typeof value === "number") {
+        if (!Number.isFinite(value) || value <= 0) {
+            throw new Error("bundler-discover-bundle-invalid-max-size");
+        }
+        return Math.floor(value);
+    }
+    const raw = String(value || "").trim();
+    if (!raw)
+        return DEFAULT_DISCOVERY_BUNDLE_MAX_SIZE;
+    const match = raw.match(/^(\d+(?:\.\d+)?)\s*(b|kb|mb|gb)?$/i);
+    if (!match) {
+        throw new Error("bundler-discover-bundle-invalid-max-size");
+    }
+    const amount = Number(match[1]);
+    const unit = (match[2] || "b").toLowerCase();
+    const multiplier = unit === "gb"
+        ? 1024 * 1024 * 1024
+        : unit === "mb"
+            ? 1024 * 1024
+            : unit === "kb"
+                ? 1024
+                : 1;
+    const resolved = Math.floor(amount * multiplier);
+    if (!Number.isFinite(resolved) || resolved <= 0) {
+        throw new Error("bundler-discover-bundle-invalid-max-size");
+    }
+    return resolved;
+}
 function normalizeDiscoverOptions(rootDir, discover) {
     const list = Array.isArray(discover) ? discover : discover ? [discover] : [];
     return list
@@ -84,6 +130,7 @@ function normalizeDiscoverOptions(rootDir, discover) {
                 ...normalizeStringList(item.ignoreDirs),
             ].map((value) => path.basename(value))),
             include: normalizeStringList(item.include),
+            maxBundleSize: parseBundleMaxSize(item.maxBundleSize),
             namePrefix: normalizePathValue(item.namePrefix || ""),
         };
     });
@@ -173,6 +220,124 @@ function buildDiscoveredEntryName(args) {
     const withoutExt = ext ? args.relativePath.slice(0, -ext.length) : args.relativePath;
     return normalizePathValue([args.config.namePrefix, withoutExt].filter(Boolean).join("/"));
 }
+function createStableBundleId(value) {
+    let hash = 2166136261;
+    for (let index = 0; index < value.length; index += 1) {
+        hash ^= value.charCodeAt(index);
+        hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(36);
+}
+function resolveBundleGroup(entry) {
+    const ext = path.extname(entry.path).toLowerCase();
+    return NORMALIZED_DISCOVERY_BUNDLE_GROUPS.find((group) => group.extensions.has(ext));
+}
+function toRootImportSpecifier(rootDir, absPath) {
+    const rel = normalizePathValue(path.relative(rootDir, absPath));
+    return rel.startsWith(".") ? rel : `./${rel}`;
+}
+function buildBundleContents(args) {
+    if (args.loader === "css") {
+        return args.files
+            .map((file) => `@import ${JSON.stringify(toRootImportSpecifier(args.rootDir, file.path))};`)
+            .join("\n");
+    }
+    return args.files
+        .map((file) => `import ${JSON.stringify(toRootImportSpecifier(args.rootDir, file.path))};`)
+        .join("\n");
+}
+function splitEntriesByMaxSize(args) {
+    const chunks = [];
+    let current = [];
+    let currentSize = 0;
+    for (const entry of args.entries) {
+        const nextSize = currentSize + entry.bytes;
+        if (current.length > 0 && nextSize > args.maxSize) {
+            chunks.push(current);
+            current = [];
+            currentSize = 0;
+        }
+        current.push(entry);
+        currentSize += entry.bytes;
+    }
+    if (current.length > 0) {
+        chunks.push(current);
+    }
+    return chunks;
+}
+async function toBundledDiscoverEntries(args) {
+    const resolved = await Promise.all(args.records.map(async (record) => {
+        const group = resolveBundleGroup(record);
+        if (!group) {
+            return {
+                group: undefined,
+                record,
+            };
+        }
+        const stats = await fsp.stat(record.path);
+        const bytes = Math.max(stats.size, 1);
+        if (bytes > args.config.maxBundleSize) {
+            throw new Error(`bundler-discover-bundle-file-too-large :: ${normalizePathValue(path.relative(args.rootDir, record.path))}`);
+        }
+        return {
+            group,
+            record: {
+                ...record,
+                bytes,
+            },
+        };
+    }));
+    const passthrough = [];
+    const grouped = new Map();
+    for (const item of resolved) {
+        if (!item.group) {
+            passthrough.push(item.record);
+            continue;
+        }
+        const existing = grouped.get(item.group.name);
+        if (existing) {
+            existing.files.push(item.record);
+            continue;
+        }
+        grouped.set(item.group.name, {
+            files: [item.record],
+            group: item.group,
+        });
+    }
+    const bundledRecords = [];
+    for (const [groupName, value] of Array.from(grouped.entries()).sort(([a], [b]) => a.localeCompare(b))) {
+        const bundleId = createStableBundleId(JSON.stringify({
+            dir: args.config.dir,
+            exclude: args.config.exclude,
+            extensions: args.config.extensions,
+            groupName,
+            include: args.config.include,
+            maxBundleSize: args.config.maxBundleSize,
+            namePrefix: args.config.namePrefix,
+        }));
+        const chunks = splitEntriesByMaxSize({
+            entries: value.files.sort((a, b) => a.name.localeCompare(b.name) || a.path.localeCompare(b.path)),
+            maxSize: args.config.maxBundleSize,
+        });
+        chunks.forEach((chunk, index) => {
+            const suffix = chunks.length > 1 ? `-${index + 1}` : "";
+            const name = `bundle-${groupName}-${bundleId}${suffix}`;
+            bundledRecords.push({
+                contents: buildBundleContents({
+                    files: chunk,
+                    loader: value.group.loader,
+                    rootDir: args.rootDir,
+                }),
+                name,
+                path: `${VIRTUAL_ENTRY_PREFIX}${name}`,
+                source: "virtual",
+                virtualLoader: value.group.loader,
+            });
+        });
+    }
+    return [...passthrough, ...bundledRecords]
+        .sort((a, b) => a.name.localeCompare(b.name) || a.path.localeCompare(b.path));
+}
 async function walkDiscoveredEntries(config) {
     if (!fs.existsSync(config.dirAbs))
         return [];
@@ -217,7 +382,14 @@ async function walkDiscoveredEntries(config) {
 async function resolveBundlerEntries(options, rootDir, settings = {}) {
     const manual = normalizeManualEntries(options.entries, rootDir);
     const virtual = normalizeVirtualEntries(options.virtualEntries);
-    const discoveredGroups = await Promise.all(normalizeDiscoverOptions(rootDir, options.discover).map(walkDiscoveredEntries));
+    const discoveredGroups = await Promise.all(normalizeDiscoverOptions(rootDir, options.discover).map(async (config) => {
+        const records = await walkDiscoveredEntries(config);
+        return toBundledDiscoverEntries({
+            config,
+            records,
+            rootDir,
+        });
+    }));
     const discovered = discoveredGroups.flat();
     const deduped = dedupeEntriesBySourcePath([...manual, ...virtual, ...discovered]);
     const all = deduped.records;

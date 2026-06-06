@@ -15,12 +15,15 @@ type BundlerGenericLogMethod = LoggerAdapterGenericLogMethod;
 type BundlerLogEvent = LoggerAdapterEvent;
 type NormalizedBundlerLogger = NormalizedLoggerAdapter;
 
+type BundlerVirtualEntryLoader = "css" | "ts";
+
 type BundlerDiscoverOptions = {
   dir: string;
   include?: string[];
   exclude?: string[];
   extensions?: string[];
   ignoreDirs?: string[];
+  maxBundleSize?: number | string;
   namePrefix?: string;
 };
 
@@ -39,6 +42,7 @@ type BundlerEntryRecord = {
   name: string;
   path: string;
   source: BundlerEntrySource;
+  virtualLoader?: BundlerVirtualEntryLoader;
 };
 
 type BundlerDerivedManifestEntry = {
@@ -248,6 +252,7 @@ export type {
   BundlerResolvedEntriesInput,
   BundlerTsconfigPaths,
   BundlerVirtualEntries,
+  BundlerVirtualEntryLoader,
   BundlerWatchSession,
   LoadedBundlerConfig,
   NormalizedBundlerLogger,

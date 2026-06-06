@@ -102,10 +102,9 @@ Set `discover` when you want `@trebired/bundler` to walk the source tree and bui
 await bundle({
   discover: {
     dir: "./src/frontend",
-    include: ["**/*.tsx", "global/**/*.scss"],
+    include: ["**/*.tsx", "**/*.js", "**/*.ts", "**/*.css", "**/*.scss"],
     exclude: ["**/*.test.tsx"],
-    ignoreDirs: ["legacy"],
-    namePrefix: "frontend",
+    maxBundleSize: "50mb",
   },
   outDir: "./dist",
 });
@@ -115,8 +114,15 @@ The package:
 
 - walks the configured directory recursively
 - matches files by extension plus optional include and exclude patterns
-- derives entry names from relative paths
+- groups discovered `.js` and `.ts` files into auto-named script bundles
+- groups discovered `.css` and `.scss` files into auto-named style bundles
+- leaves discovered `.jsx` and `.tsx` files as normal per-file entries
 - rebuilds the entry list during watch mode when matching files are added or removed
+
+- grouped bundles are auto-named like `bundle-scripts-abc123.js` and `bundle-styles-abc123-2.css`
+- `maxBundleSize` defaults to `50mb`
+- `maxBundleSize` accepts bytes or strings like `"50mb"` and splits bundles by summed discovered source-file size before handing each group to `esbuild`
+- if one discovered grouped file is larger than `maxBundleSize`, the build fails
 
 You can combine manual `entries` with `discover`. If both resolve the same entry name to different files, the build fails so the collision is explicit.
 

@@ -1,7 +1,7 @@
 import type { Plugin } from "esbuild";
 
 import { VIRTUAL_ENTRY_PREFIX } from "../core/discovery.js";
-import type { BundlerEntryRecord, NormalizedBundlerLogger } from "../types.js";
+import type { BundlerEntryRecord, BundlerVirtualEntryLoader, NormalizedBundlerLogger } from "../types.js";
 
 const VIRTUAL_ENTRY_NAMESPACE = "trebired-virtual-entry";
 
@@ -15,7 +15,10 @@ function createVirtualEntriesPlugin(options: VirtualEntriesPluginOptions): Plugi
   const byName = new Map(
     options.entries
       .filter((entry) => entry.source === "virtual")
-      .map((entry) => [entry.name, entry.contents || ""]),
+      .map((entry) => [entry.name, {
+        contents: entry.contents || "",
+        loader: entry.virtualLoader || "ts" as BundlerVirtualEntryLoader,
+      }]),
   );
 
   return {
@@ -36,11 +39,14 @@ function createVirtualEntriesPlugin(options: VirtualEntriesPluginOptions): Plugi
       });
 
       build.onLoad({ filter: /.*/, namespace: VIRTUAL_ENTRY_NAMESPACE }, async (args) => {
-        const contents = byName.get(args.path) || "";
+        const entry = byName.get(args.path) || {
+          contents: "",
+          loader: "ts" as BundlerVirtualEntryLoader,
+        };
 
         return {
-          contents,
-          loader: "ts",
+          contents: entry.contents,
+          loader: entry.loader,
           resolveDir: options.rootDir,
         };
       });

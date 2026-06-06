@@ -256,6 +256,121 @@ export const message = "watch-updated";
     expect(adapterRows.some((row) => row.severity === "info" && row.line.includes("bundler.build :: complete :: outputs="))).toBe(true);
   });
 
+  test("bundles discovered scripts and styles together when they fit under the size limit", async () => {
+    const root = tempDir();
+
+    writeFile(root, "src/app.tsx", `
+export const view = <main>standalone-tsx-entry</main>;
+`);
+
+    writeFile(root, "src/scripts/alpha.ts", `
+console.log("alpha");
+`);
+
+    writeFile(root, "src/scripts/nested/bravo.js", `
+console.log("bravo");
+`);
+
+    writeFile(root, "src/styles/alpha.css", `
+.alpha { color: red; }
+`);
+
+    writeFile(root, "src/styles/nested/bravo.scss", `
+.bravo { color: blue; }
+`);
+
+    const result = await bundle({
+      discover: {
+        dir: "./src",
+        include: ["**/*.tsx", "**/*.ts", "**/*.js", "**/*.css", "**/*.scss"],
+        maxBundleSize: "50mb",
+      },
+      outDir: "./dist",
+      rootDir: root,
+    });
+
+    const outputNames = result.outputs.map((filePath) => path.basename(filePath)).sort();
+    const scriptBundles = outputNames.filter((name) => /^bundle-scripts-[a-z0-9]+(?:-\d+)?\.js$/.test(name));
+    const styleBundles = outputNames.filter((name) => /^bundle-styles-[a-z0-9]+(?:-\d+)?\.css$/.test(name));
+
+    expect(outputNames).toContain("app.js");
+    expect(scriptBundles).toHaveLength(1);
+    expect(styleBundles).toHaveLength(1);
+    expect(readFile(root, `dist/${scriptBundles[0]}`)).toContain("alpha");
+    expect(readFile(root, `dist/${scriptBundles[0]}`)).toContain("bravo");
+    expect(readFile(root, `dist/${styleBundles[0]}`)).toContain(".alpha");
+    expect(readFile(root, `dist/${styleBundles[0]}`)).toContain(".bravo");
+  });
+
+  test("splits discovered grouped bundles when they exceed the size limit", async () => {
+    const root = tempDir();
+
+    writeFile(root, "src/app.tsx", `
+export const view = <main>standalone-tsx-entry</main>;
+`);
+
+    writeFile(root, "src/scripts/alpha.ts", `
+console.log("alpha-${"x".repeat(80)}");
+`);
+
+    writeFile(root, "src/scripts/nested/bravo.js", `
+console.log("bravo-${"y".repeat(80)}");
+`);
+
+    writeFile(root, "src/styles/alpha.css", `
+.alpha { color: red; }
+/* ${"a".repeat(120)} */
+`);
+
+    writeFile(root, "src/styles/nested/bravo.scss", `
+.bravo { color: blue; }
+/* ${"b".repeat(120)} */
+`);
+
+    const result = await bundle({
+      discover: {
+        dir: "./src",
+        include: ["**/*.tsx", "**/*.ts", "**/*.js", "**/*.css", "**/*.scss"],
+        maxBundleSize: 200,
+      },
+      outDir: "./dist",
+      rootDir: root,
+    });
+
+    const outputNames = result.outputs.map((filePath) => path.basename(filePath)).sort();
+    const scriptBundles = outputNames.filter((name) => /^bundle-scripts-[a-z0-9]+(?:-\d+)?\.js$/.test(name));
+    const styleBundles = outputNames.filter((name) => /^bundle-styles-[a-z0-9]+(?:-\d+)?\.css$/.test(name));
+
+    expect(outputNames).toContain("app.js");
+    expect(scriptBundles.length).toBe(2);
+    expect(styleBundles.length).toBe(2);
+    expect(scriptBundles.every((name) => name.startsWith("bundle-scripts-"))).toBe(true);
+    expect(styleBundles.every((name) => name.startsWith("bundle-styles-"))).toBe(true);
+    expect(scriptBundles.some((name) => readFile(root, `dist/${name}`).includes("alpha-"))).toBe(true);
+    expect(scriptBundles.some((name) => readFile(root, `dist/${name}`).includes("bravo-"))).toBe(true);
+    expect(styleBundles.some((name) => readFile(root, `dist/${name}`).includes(".alpha"))).toBe(true);
+    expect(styleBundles.some((name) => readFile(root, `dist/${name}`).includes(".bravo"))).toBe(true);
+  });
+
+  test("fails when a discovered grouped file is larger than the max size", async () => {
+    const root = tempDir();
+
+    writeFile(root, "src/styles/oversized.scss", `
+.oversized { color: red; }
+/* ${"z".repeat(256)} */
+`);
+
+    await expect(bundle({
+      discover: {
+        dir: "./src",
+        include: ["**/*.scss"],
+        maxBundleSize: 64,
+      },
+      outDir: "./dist",
+      rootDir: root,
+    })).rejects.toThrow("bundler-discover-bundle-file-too-large :: src/styles/oversized.scss");
+  });
+
   test("prunes duplicate entry paths and keeps the first highest-priority entry", async () => {
     const root = tempDir();
     createFixtureProject(root);
@@ -304,17 +419,25 @@ export const message = "watch-updated";
       rootDir: root,
     });
 
-    expect(result.entries).toEqual({
-      app: "src/app.tsx",
-      theme: "src/theme.css",
-    });
+    const entryNames = Object.keys(result.entries).sort();
+    const styleEntryName = entryNames.find((value) => value.startsWith("bundle-styles-"));
+
+    expect(entryNames).toContain("app");
+    expect(styleEntryName).toBeDefined();
+    expect(result.entries.app).toBe("src/app.tsx");
+    expect(result.entries[styleEntryName!]).toBe(`virtual:${styleEntryName}`);
     expect(result.manifestPath?.endsWith("/dist/bundler-manifest.json")).toBe(true);
 
     const manifest = JSON.parse(readFile(root, "dist/bundler-manifest.json"));
     expect(manifest.resolvedEntries.app.path).toBe("src/app.tsx");
     expect(manifest.resolvedEntries.app.source).toBe("discover");
+    expect(manifest.resolvedEntries[styleEntryName!]).toEqual({
+      path: `virtual:${styleEntryName}`,
+      source: "virtual",
+    });
     expect(manifest.entries["dist/app.js"].entryOutput).toBe("dist/app.js");
     expect(manifest.entries["dist/app.js"].css).toContain("dist/app.css");
+    expect(Object.keys(manifest.entries).some((key) => /^dist\/bundle-styles-[a-z0-9]+\.css$/.test(key))).toBe(true);
   });
 
   test("watch mode picks up new discovered entry files", async () => {
