@@ -13,8 +13,30 @@ import { defineBundlerConfig } from ${JSON.stringify(sourceUrl)};
 
 export default defineBundlerConfig({
   annotateSources: true,
-  entries: {
-    app: "./src/app.tsx",
+  discover: {
+    dir: "./src",
+    rules: [
+      {
+        key: "client",
+        include: ["**/*.client.ts", "**/*.client.tsx"],
+        strategy: "entry",
+      },
+      {
+        key: "defer",
+        include: ["**/*.defer.ts"],
+        strategy: "entry",
+      },
+      {
+        key: "global-style",
+        include: ["css/**/*.css", "css/**/*.scss"],
+        strategy: "bundle",
+      },
+      {
+        key: "shared-script",
+        include: ["shared/**/*.ts", "shared/**/*.js"],
+        strategy: "bundle",
+      },
+    ],
   },
   outDir: "./dist",
 });
@@ -43,7 +65,7 @@ describe("trebired-bundler CLI", () => {
     expect(result.exitCode).toBe(0);
     expect(stderr).toBe("");
     expect(stdout).toContain("\"warnings\":0");
-    expect(exists(root, "dist/app.js")).toBe(true);
+    expect(exists(root, "dist/src/app.client.js")).toBe(true);
   });
 
   test("loads config modules for watch", async () => {
@@ -68,6 +90,6 @@ describe("trebired-bundler CLI", () => {
     expect(result.exitCode).toBe(0);
     expect(stderr).toBe("");
     expect(stdout).toContain("Watching for changes.");
-    expect(exists(root, "dist/app.js")).toBe(true);
+    expect(exists(root, "dist/src/app.client.js")).toBe(true);
   });
 });

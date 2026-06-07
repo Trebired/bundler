@@ -4,6 +4,18 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 2.1.0
+
+- Rebuilt `@trebired/bundler` around discover-only configuration and removed public manual `entries`.
+- Removed public `virtualEntries`; grouped bundle entry modules are now internal implementation detail only.
+- Removed package-owned build `mode` profiles in favor of explicit `minify`, `stripComments`, `sourcemap`, and related esbuild-like flags.
+- Replaced top-level discover include/exclude behavior with ordered discover `rules` using `entry`, `bundle`, and `ignore` strategies.
+- Added per-rule `maxBundleSize` for grouped bundles, still defaulting to `50mb`.
+- Kept grouped bundle filenames package-owned under the `bundle-...` naming scheme.
+- Added source ownership metadata to build results and watch hooks so runtime code can resolve source file -> owning entry key.
+- Redesigned the runtime asset manifest around `entries`, `sources`, `entryOutputs`, `outputs`, and `rules`, including grouped bundle membership and ignored-source tracking.
+- Made `.client.*` and `.defer.*` entries fail when they import JS or TS files owned by grouped bundle rules.
+
 ## 2.0.0
 
 - Changed `discover` to group discovered `.js` and `.ts` files into auto-named script bundles by default.

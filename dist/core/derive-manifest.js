@@ -1,9 +1,13 @@
 import path from "node:path";
+import { VIRTUAL_ENTRY_NAMESPACE } from "../plugins/virtual-entries.js";
 import { toPosixPath } from "./discovery.js";
 import { VIRTUAL_ENTRY_PREFIX } from "./discovery.js";
 function normalizeFilePath(filePath, rootDir) {
     if (filePath.startsWith(VIRTUAL_ENTRY_PREFIX)) {
         return `virtual:${filePath.slice(VIRTUAL_ENTRY_PREFIX.length)}`;
+    }
+    if (filePath.startsWith(`${VIRTUAL_ENTRY_NAMESPACE}:`)) {
+        return `virtual:${filePath.slice(VIRTUAL_ENTRY_NAMESPACE.length + 1)}`;
     }
     const absolute = path.isAbsolute(filePath) ? filePath : path.resolve(rootDir, filePath);
     return toPosixPath(path.relative(rootDir, absolute));

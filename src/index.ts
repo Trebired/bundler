@@ -8,26 +8,31 @@ export { defineBundlerConfig } from "./config/index.js";
 export { resolveLogger } from "./logging.js";
 export { buildSourceAnnotation, injectSourceAnnotation, resolveSourceLabel } from "./plugins/source-annotations.js";
 export { createScssPlugin } from "./plugins/scss.js";
-export { createVirtualEntriesPlugin } from "./plugins/virtual-entries.js";
 export { runCli } from "./cli/run-cli.js";
 
 export type {
   BundlerAssetManifest,
   BundlerAssetManifestEntry,
   BundlerAssetManifestOutput,
+  BundlerAssetManifestRule,
+  BundlerAssetManifestSource,
   BundlerBuildAssetManifestOptions,
   BundlerBuildResult,
   BundlerCollectedAssetLinks,
   BundlerCollectAssetLinksLookup,
   BundlerCollectAssetLinksOptions,
   BundlerDiscoverOptions,
+  BundlerDiscoverRule,
+  BundlerDiscoverRuleStrategy,
   BundlerDerivedManifest,
   BundlerDerivedManifestChunk,
   BundlerDerivedManifestEntry,
   BundlerDerivedManifestOutput,
   BundlerDerivedManifestOutputKind,
+  BundlerEntryKind,
   BundlerEntryRecord,
   BundlerEntrySource,
+  BundlerEnvironment,
   BundlerGenericLogMethod,
   BundlerImportGraph,
   BundlerImportGraphFile,
@@ -40,11 +45,10 @@ export type {
   BundlerLoggerAdapter,
   BundlerLogMethod,
   BundlerManifestOptions,
-  BundlerMode,
   BundlerOptions,
-  BundlerResolvedEntriesInput,
+  BundlerResolvedDiscovery,
+  BundlerResolvedRule,
   BundlerTsconfigPaths,
-  BundlerVirtualEntries,
   BundlerWatchSession,
   LoadedBundlerConfig,
   NormalizedBundlerLogger,

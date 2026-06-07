@@ -6,7 +6,6 @@ import { createSourceAnnotationsPlugin } from "../plugins/source-annotations.js"
 import { createVirtualEntriesPlugin } from "../plugins/virtual-entries.js";
 import type {
   BundlerEntryRecord,
-  BundlerMode,
   BundlerOptions,
   NormalizedBundlerLogger,
 } from "../types.js";
@@ -17,7 +16,6 @@ type NormalizedBundlerOptions = {
   clean: boolean;
   define?: Record<string, string>;
   environment?: BundlerOptions["environment"];
-  entries?: string[] | Record<string, string>;
   entryRecords?: BundlerEntryRecord[];
   external?: string[];
   format?: BundlerOptions["format"];
@@ -25,7 +23,6 @@ type NormalizedBundlerOptions = {
   loggerAdapter?: BundlerOptions["loggerAdapter"];
   manifest: ReturnType<typeof normalizeManifestOptions>;
   minify: boolean;
-  mode: BundlerMode;
   onEntrySetChanged?: BundlerOptions["onEntrySetChanged"];
   onRebuilt?: BundlerOptions["onRebuilt"];
   outDir: string;
@@ -37,30 +34,9 @@ type NormalizedBundlerOptions = {
   target?: string | string[];
 };
 
-type ResolvedModeDefaults = {
-  minify: boolean;
-  stripComments: boolean;
-};
-
-function resolveModeDefaults(mode: BundlerMode): ResolvedModeDefaults {
-  if (mode === "debug") {
-    return {
-      minify: false,
-      stripComments: false,
-    };
-  }
-
-  return {
-    minify: true,
-    stripComments: true,
-  };
-}
-
 function normalizeBundlerOptions(options: BundlerOptions): NormalizedBundlerOptions {
   const rootDir = path.resolve(String(options.rootDir || "").trim() || process.cwd());
   const outDir = String(options.outDir || "").trim();
-  const mode = options.mode || "compact";
-  const defaults = resolveModeDefaults(mode);
 
   if (!outDir) {
     throw new Error("bundler-missing-out-dir");
@@ -72,14 +48,12 @@ function normalizeBundlerOptions(options: BundlerOptions): NormalizedBundlerOpti
     clean: options.clean !== false,
     define: options.define,
     environment: options.environment,
-    entries: options.entries,
     external: options.external,
     format: options.format,
     logger: options.logger,
     loggerAdapter: options.loggerAdapter,
     manifest: normalizeManifestOptions(options.manifest),
-    minify: options.minify ?? defaults.minify,
-    mode,
+    minify: Boolean(options.minify),
     onEntrySetChanged: options.onEntrySetChanged,
     onRebuilt: options.onRebuilt,
     outDir: resolvedOutDir,
@@ -87,7 +61,7 @@ function normalizeBundlerOptions(options: BundlerOptions): NormalizedBundlerOpti
     rootDir,
     sourcemap: options.sourcemap,
     splitting: Boolean(options.splitting),
-    stripComments: options.stripComments ?? defaults.stripComments,
+    stripComments: Boolean(options.stripComments),
     target: options.target,
   };
 }
@@ -98,17 +72,15 @@ function createEsbuildOptions(
 ): BuildOptions {
   const entryPoints = options.entryRecords
     ? toEntryPointMap(options.entryRecords, options.rootDir)
-    : options.entries;
+    : undefined;
 
-  if (!entryPoints || (typeof entryPoints === "object" && !Array.isArray(entryPoints) && Object.keys(entryPoints).length === 0)) {
+  if (!entryPoints || Object.keys(entryPoints).length === 0) {
     throw new Error("bundler-missing-entries");
   }
 
   if (options.annotateSources) {
     logger.info("annotate", "inline source annotations enabled");
   }
-
-  logger.info("build", `mode :: ${options.mode}`);
 
   if (options.minify) {
     logger.info("build", "minify enabled");

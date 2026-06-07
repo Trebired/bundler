@@ -1,31 +1,15 @@
 import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
-const DEFAULT_DISCOVERY_EXTENSIONS = [".css", ".js", ".jsx", ".scss", ".ts", ".tsx"];
-const DEFAULT_IGNORE_DIRS = [".git", "coverage", "dist", "node_modules"];
+import { walkImportGraph } from "./import-graph.js";
 const DEFAULT_DISCOVERY_BUNDLE_MAX_SIZE = 50 * 1024 * 1024;
-const DEFAULT_DISCOVERY_BUNDLE_GROUPS = [
-    {
-        name: "scripts",
-        extensions: [".js", ".ts"],
-        loader: "ts",
-    },
-    {
-        name: "styles",
-        extensions: [".css", ".scss"],
-        loader: "css",
-    },
-];
-const NORMALIZED_DISCOVERY_BUNDLE_GROUPS = DEFAULT_DISCOVERY_BUNDLE_GROUPS.map((group) => ({
-    ...group,
-    extensions: new Set(group.extensions),
-}));
+const DEFAULT_IGNORE_DIRS = [".git", "coverage", "dist", "node_modules"];
 const VIRTUAL_ENTRY_PREFIX = "trebired-virtual:";
 function toPosixPath(value) {
     return value.replace(/\\/g, "/");
 }
 function normalizePathValue(value) {
-    return toPosixPath(String(value || "").trim()).replace(/^\.\/+/, "");
+    return toPosixPath(String(value || "").trim()).replace(/^\.\/+/, "").replace(/^\/+|\/+$/g, "");
 }
 function globToRegExp(pattern) {
     const normalized = normalizePathValue(pattern);
@@ -74,9 +58,6 @@ function matchesAnyPattern(value, patterns) {
         return globToRegExp(normalizedPattern).test(normalized);
     });
 }
-function normalizeStringList(values) {
-    return (values || []).map(normalizePathValue).filter(Boolean);
-}
 function parseBundleMaxSize(value) {
     if (typeof value === "number") {
         if (!Number.isFinite(value) || value <= 0) {
@@ -106,9 +87,36 @@ function parseBundleMaxSize(value) {
     }
     return resolved;
 }
+function normalizeStringList(values) {
+    return (values || []).map(normalizePathValue).filter(Boolean);
+}
+function normalizeDiscoverRule(rule) {
+    const key = normalizePathValue(rule.key);
+    const include = normalizeStringList(rule.include);
+    const exclude = normalizeStringList(rule.exclude);
+    if (!key) {
+        throw new Error("bundler-discover-rule-missing-key");
+    }
+    if (include.length === 0) {
+        throw new Error(`bundler-discover-rule-missing-include :: ${key}`);
+    }
+    if (rule.strategy !== "bundle" && rule.maxBundleSize != null) {
+        throw new Error(`bundler-discover-rule-invalid-max-size-strategy :: ${key}`);
+    }
+    return {
+        exclude,
+        include,
+        key,
+        maxBundleSize: rule.strategy === "bundle" ? parseBundleMaxSize(rule.maxBundleSize) : undefined,
+        strategy: rule.strategy,
+    };
+}
 function normalizeDiscoverOptions(rootDir, discover) {
     const list = Array.isArray(discover) ? discover : discover ? [discover] : [];
-    return list
+    if (list.length === 0) {
+        throw new Error("bundler-missing-discover");
+    }
+    const normalized = list
         .map((item) => item && typeof item === "object" ? item : null)
         .filter(Boolean)
         .map((item) => {
@@ -116,109 +124,30 @@ function normalizeDiscoverOptions(rootDir, discover) {
         if (!dir) {
             throw new Error("bundler-discover-missing-dir");
         }
-        const extensions = (item.extensions && item.extensions.length ? item.extensions : DEFAULT_DISCOVERY_EXTENSIONS)
-            .map((value) => String(value || "").trim().toLowerCase())
-            .filter(Boolean)
-            .map((value) => value.startsWith(".") ? value : `.${value}`);
+        const rules = (item.rules || []).map(normalizeDiscoverRule);
+        if (rules.length === 0) {
+            throw new Error(`bundler-discover-missing-rules :: ${dir}`);
+        }
         return {
             dir,
             dirAbs: path.resolve(rootDir, dir),
-            exclude: normalizeStringList(item.exclude),
-            extensions,
             ignoreDirs: new Set([
                 ...DEFAULT_IGNORE_DIRS,
                 ...normalizeStringList(item.ignoreDirs),
             ].map((value) => path.basename(value))),
-            include: normalizeStringList(item.include),
-            maxBundleSize: parseBundleMaxSize(item.maxBundleSize),
-            namePrefix: normalizePathValue(item.namePrefix || ""),
+            rules,
         };
     });
-}
-function normalizeManualEntries(entries, rootDir) {
-    if (!entries)
-        return [];
-    if (Array.isArray(entries)) {
-        return entries
-            .map((value) => String(value || "").trim())
-            .filter(Boolean)
-            .map((value) => {
-            const rel = normalizePathValue(value);
-            const ext = path.extname(rel);
-            const noExt = ext ? rel.slice(0, -ext.length) : rel;
-            return {
-                name: noExt,
-                path: path.resolve(rootDir, rel),
-                source: "manual",
-            };
-        });
-    }
-    if (typeof entries === "object") {
-        return Object.entries(entries)
-            .map(([key, value]) => ({
-            name: normalizePathValue(key),
-            path: path.resolve(rootDir, String(value || "").trim()),
-            source: "manual",
-        }))
-            .filter((entry) => Boolean(entry.name && entry.path));
-    }
-    return [];
-}
-function normalizeVirtualEntries(virtualEntries) {
-    if (!virtualEntries || typeof virtualEntries !== "object")
-        return [];
-    return Object.entries(virtualEntries)
-        .map(([key, value]) => ({
-        name: normalizePathValue(key),
-        path: `${VIRTUAL_ENTRY_PREFIX}${normalizePathValue(key)}`,
-        source: "virtual",
-        contents: String(value || ""),
-    }))
-        .filter((entry) => Boolean(entry.name));
-}
-function resolveEntryPriority(record) {
-    if (record.source === "manual")
-        return 0;
-    if (record.source === "virtual")
-        return 1;
-    return 2;
-}
-function compareEntries(a, b) {
-    return resolveEntryPriority(a) - resolveEntryPriority(b)
-        || a.name.localeCompare(b.name)
-        || a.path.localeCompare(b.path);
-}
-function dedupeEntriesBySourcePath(records) {
-    const duplicates = [];
-    const keptByPath = new Map();
-    for (const record of [...records].sort(compareEntries)) {
-        if (record.source === "virtual") {
-            const virtualKey = `virtual:${record.name}`;
-            if (!keptByPath.has(virtualKey)) {
-                keptByPath.set(virtualKey, record);
+    const seenRuleKeys = new Set();
+    for (const config of normalized) {
+        for (const rule of config.rules) {
+            if (seenRuleKeys.has(rule.key)) {
+                throw new Error(`bundler-discover-duplicate-rule-key :: ${rule.key}`);
             }
-            continue;
+            seenRuleKeys.add(rule.key);
         }
-        const key = toPosixPath(path.resolve(record.path));
-        const existing = keptByPath.get(key);
-        if (!existing) {
-            keptByPath.set(key, record);
-            continue;
-        }
-        duplicates.push({
-            dropped: record,
-            kept: existing,
-        });
     }
-    return {
-        duplicates: duplicates.sort((a, b) => compareEntries(a.dropped, b.dropped)),
-        records: Array.from(keptByPath.values()).sort((a, b) => a.name.localeCompare(b.name) || a.path.localeCompare(b.path)),
-    };
-}
-function buildDiscoveredEntryName(args) {
-    const ext = path.extname(args.relativePath);
-    const withoutExt = ext ? args.relativePath.slice(0, -ext.length) : args.relativePath;
-    return normalizePathValue([args.config.namePrefix, withoutExt].filter(Boolean).join("/"));
+    return normalized;
 }
 function createStableBundleId(value) {
     let hash = 2166136261;
@@ -228,10 +157,6 @@ function createStableBundleId(value) {
     }
     return (hash >>> 0).toString(36);
 }
-function resolveBundleGroup(entry) {
-    const ext = path.extname(entry.path).toLowerCase();
-    return NORMALIZED_DISCOVERY_BUNDLE_GROUPS.find((group) => group.extensions.has(ext));
-}
 function toRootImportSpecifier(rootDir, absPath) {
     const rel = normalizePathValue(path.relative(rootDir, absPath));
     return rel.startsWith(".") ? rel : `./${rel}`;
@@ -239,202 +164,276 @@ function toRootImportSpecifier(rootDir, absPath) {
 function buildBundleContents(args) {
     if (args.loader === "css") {
         return args.files
-            .map((file) => `@import ${JSON.stringify(toRootImportSpecifier(args.rootDir, file.path))};`)
+            .map((file) => `@import ${JSON.stringify(toRootImportSpecifier(args.rootDir, file.absPath))};`)
             .join("\n");
     }
     return args.files
-        .map((file) => `import ${JSON.stringify(toRootImportSpecifier(args.rootDir, file.path))};`)
+        .map((file) => `import ${JSON.stringify(toRootImportSpecifier(args.rootDir, file.absPath))};`)
         .join("\n");
 }
-function splitEntriesByMaxSize(args) {
-    const chunks = [];
-    let current = [];
-    let currentSize = 0;
-    for (const entry of args.entries) {
-        const nextSize = currentSize + entry.bytes;
-        if (current.length > 0 && nextSize > args.maxSize) {
-            chunks.push(current);
-            current = [];
-            currentSize = 0;
-        }
-        current.push(entry);
-        currentSize += entry.bytes;
-    }
-    if (current.length > 0) {
-        chunks.push(current);
-    }
-    return chunks;
+function buildEntryKey(args) {
+    const ext = path.extname(args.rootRel);
+    const withoutExt = ext ? args.rootRel.slice(0, -ext.length) : args.rootRel;
+    return `entry:${args.ruleKey}:${normalizePathValue(withoutExt)}`;
 }
-async function toBundledDiscoverEntries(args) {
-    const resolved = await Promise.all(args.records.map(async (record) => {
-        const group = resolveBundleGroup(record);
-        if (!group) {
-            return {
-                group: undefined,
-                record,
-            };
-        }
-        const stats = await fsp.stat(record.path);
-        const bytes = Math.max(stats.size, 1);
-        if (bytes > args.config.maxBundleSize) {
-            throw new Error(`bundler-discover-bundle-file-too-large :: ${normalizePathValue(path.relative(args.rootDir, record.path))}`);
-        }
-        return {
-            group,
-            record: {
-                ...record,
-                bytes,
-            },
-        };
-    }));
-    const passthrough = [];
-    const grouped = new Map();
-    for (const item of resolved) {
-        if (!item.group) {
-            passthrough.push(item.record);
-            continue;
-        }
-        const existing = grouped.get(item.group.name);
-        if (existing) {
-            existing.files.push(item.record);
-            continue;
-        }
-        grouped.set(item.group.name, {
-            files: [item.record],
-            group: item.group,
-        });
-    }
-    const bundledRecords = [];
-    for (const [groupName, value] of Array.from(grouped.entries()).sort(([a], [b]) => a.localeCompare(b))) {
-        const bundleId = createStableBundleId(JSON.stringify({
-            dir: args.config.dir,
-            exclude: args.config.exclude,
-            extensions: args.config.extensions,
-            groupName,
-            include: args.config.include,
-            maxBundleSize: args.config.maxBundleSize,
-            namePrefix: args.config.namePrefix,
-        }));
-        const chunks = splitEntriesByMaxSize({
-            entries: value.files.sort((a, b) => a.name.localeCompare(b.name) || a.path.localeCompare(b.path)),
-            maxSize: args.config.maxBundleSize,
-        });
-        chunks.forEach((chunk, index) => {
-            const suffix = chunks.length > 1 ? `-${index + 1}` : "";
-            const name = `bundle-${bundleId}${suffix}`;
-            bundledRecords.push({
-                contents: buildBundleContents({
-                    files: chunk,
-                    loader: value.group.loader,
-                    rootDir: args.rootDir,
-                }),
-                name,
-                path: `${VIRTUAL_ENTRY_PREFIX}${name}`,
-                source: "virtual",
-                virtualLoader: value.group.loader,
-            });
-        });
-    }
-    return [...passthrough, ...bundledRecords]
-        .sort((a, b) => a.name.localeCompare(b.name) || a.path.localeCompare(b.path));
+function buildBundleEntryKey(ruleKey, part) {
+    return `bundle:${ruleKey}:${part}`;
 }
-async function walkDiscoveredEntries(config) {
+function resolveBundleLoader(filePath) {
+    if (/\.(?:css|scss)$/i.test(filePath))
+        return "css";
+    if (/\.(?:[mc]?[jt]sx?)$/i.test(filePath))
+        return "ts";
+    return undefined;
+}
+async function scanDiscoveredFiles(config, rootDir) {
     if (!fs.existsSync(config.dirAbs))
         return [];
-    const records = [];
+    const files = [];
     const visit = async (currentAbs) => {
         const entries = await fsp.readdir(currentAbs, { withFileTypes: true });
         for (const entry of entries) {
             const abs = path.join(currentAbs, entry.name);
-            const relFromDiscover = normalizePathValue(path.relative(config.dirAbs, abs));
-            if (!relFromDiscover)
+            const discoverRel = normalizePathValue(path.relative(config.dirAbs, abs));
+            if (!discoverRel)
                 continue;
             if (entry.isDirectory()) {
                 if (config.ignoreDirs.has(entry.name))
-                    continue;
-                if (matchesAnyPattern(relFromDiscover, config.exclude))
                     continue;
                 await visit(abs);
                 continue;
             }
             if (!entry.isFile())
                 continue;
-            const ext = path.extname(entry.name).toLowerCase();
-            if (!config.extensions.includes(ext))
-                continue;
-            if (config.include.length && !matchesAnyPattern(relFromDiscover, config.include))
-                continue;
-            if (matchesAnyPattern(relFromDiscover, config.exclude))
-                continue;
-            records.push({
-                name: buildDiscoveredEntryName({
-                    config,
-                    relativePath: relFromDiscover,
-                }),
-                path: abs,
-                source: "discover",
+            files.push({
+                absPath: abs,
+                discoverRel,
+                rootRel: normalizePathValue(path.relative(rootDir, abs)),
             });
         }
     };
     await visit(config.dirAbs);
-    return records.sort((a, b) => a.name.localeCompare(b.name) || a.path.localeCompare(b.path));
+    return files.sort((a, b) => a.rootRel.localeCompare(b.rootRel));
+}
+function classifyFile(args) {
+    return args.config.rules.find((rule) => {
+        if (!matchesAnyPattern(args.file.discoverRel, rule.include))
+            return false;
+        if (matchesAnyPattern(args.file.discoverRel, rule.exclude))
+            return false;
+        return true;
+    });
+}
+function splitByMaxSize(args) {
+    const chunks = [];
+    let current = [];
+    let currentSize = 0;
+    for (const file of args.files) {
+        const nextSize = currentSize + file.bytes;
+        if (current.length > 0 && nextSize > args.maxBundleSize) {
+            chunks.push(current);
+            current = [];
+            currentSize = 0;
+        }
+        current.push(file);
+        currentSize += file.bytes;
+    }
+    if (current.length > 0) {
+        chunks.push(current);
+    }
+    return chunks;
+}
+async function validateGroupedBootImports(args) {
+    const groupedScriptSources = new Set(args.entries
+        .filter((entry) => entry.strategy === "bundle" && entry.virtualLoader === "ts")
+        .flatMap((entry) => entry.ownedSources));
+    if (groupedScriptSources.size === 0)
+        return;
+    const bootEntries = args.entries.filter((entry) => {
+        if (entry.strategy !== "entry" || !entry.entrySource)
+            return false;
+        return /\.(?:client\.tsx?|defer\.ts)$/i.test(entry.entrySource);
+    });
+    for (const bootEntry of bootEntries) {
+        const graph = await walkImportGraph({
+            entries: bootEntry.entrySource,
+            rootDir: args.rootDir,
+        });
+        const groupedDependency = Object.keys(graph.files)
+            .sort()
+            .find((sourcePath) => sourcePath !== bootEntry.entrySource && groupedScriptSources.has(sourcePath));
+        if (groupedDependency) {
+            throw new Error(`bundler-discover-entry-imports-grouped-source :: ${bootEntry.entrySource} -> ${groupedDependency}`);
+        }
+    }
 }
 async function resolveBundlerEntries(options, rootDir, settings = {}) {
-    const manual = normalizeManualEntries(options.entries, rootDir);
-    const virtual = normalizeVirtualEntries(options.virtualEntries);
-    const discoveredGroups = await Promise.all(normalizeDiscoverOptions(rootDir, options.discover).map(async (config) => {
-        const records = await walkDiscoveredEntries(config);
-        return toBundledDiscoverEntries({
-            config,
-            records,
-            rootDir,
-        });
-    }));
-    const discovered = discoveredGroups.flat();
-    const deduped = dedupeEntriesBySourcePath([...manual, ...virtual, ...discovered]);
-    const all = deduped.records;
-    if (!all.length && !settings.allowEmpty) {
+    const configs = normalizeDiscoverOptions(rootDir, options.discover);
+    const resolvedEntries = [];
+    const rules = new Map();
+    const sourceOwners = new Map();
+    const emittedNames = new Set();
+    const emittedKeys = new Set();
+    for (const config of configs) {
+        const files = await scanDiscoveredFiles(config, rootDir);
+        const matchedByRule = new Map();
+        for (const rule of config.rules) {
+            rules.set(rule.key, {
+                entryKeys: [],
+                ignoredSources: [],
+                ruleKey: rule.key,
+                strategy: rule.strategy,
+            });
+            matchedByRule.set(rule.key, []);
+        }
+        for (const file of files) {
+            const matchedRule = classifyFile({
+                config,
+                file,
+            });
+            if (!matchedRule) {
+                throw new Error(`bundler-discover-unmatched-file :: ${file.rootRel}`);
+            }
+            matchedByRule.get(matchedRule.key).push(file);
+        }
+        for (const rule of config.rules) {
+            const matchedFiles = (matchedByRule.get(rule.key) || []).sort((a, b) => a.rootRel.localeCompare(b.rootRel));
+            const ruleRecord = rules.get(rule.key);
+            if (rule.strategy === "ignore") {
+                ruleRecord.ignoredSources = matchedFiles.map((file) => file.rootRel);
+                continue;
+            }
+            if (rule.strategy === "entry") {
+                for (const file of matchedFiles) {
+                    const ext = path.extname(file.rootRel);
+                    const withoutExt = ext ? file.rootRel.slice(0, -ext.length) : file.rootRel;
+                    const record = {
+                        entrySource: file.rootRel,
+                        key: buildEntryKey({
+                            rootRel: file.rootRel,
+                            ruleKey: rule.key,
+                        }),
+                        kind: "entry",
+                        name: normalizePathValue(withoutExt),
+                        ownedSources: [file.rootRel],
+                        path: file.absPath,
+                        ruleKey: rule.key,
+                        source: "discover",
+                        strategy: "entry",
+                    };
+                    if (emittedKeys.has(record.key)) {
+                        throw new Error(`bundler-discover-entry-key-conflict :: ${record.key}`);
+                    }
+                    if (emittedNames.has(record.name)) {
+                        throw new Error(`bundler-discover-output-name-conflict :: ${record.name}`);
+                    }
+                    emittedKeys.add(record.key);
+                    emittedNames.add(record.name);
+                    resolvedEntries.push(record);
+                    ruleRecord.entryKeys.push(record.key);
+                    sourceOwners.set(file.rootRel, record.key);
+                }
+                continue;
+            }
+            const filesWithStats = await Promise.all(matchedFiles.map(async (file) => {
+                const stats = await fsp.stat(file.absPath);
+                const bytes = Math.max(stats.size, 1);
+                if (bytes > rule.maxBundleSize) {
+                    throw new Error(`bundler-discover-bundle-file-too-large :: ${file.rootRel}`);
+                }
+                return {
+                    ...file,
+                    bytes,
+                };
+            }));
+            if (filesWithStats.length === 0) {
+                continue;
+            }
+            const loaders = new Set(filesWithStats.map((file) => resolveBundleLoader(file.rootRel)).filter(Boolean));
+            if (loaders.size !== 1) {
+                throw new Error(`bundler-discover-rule-mixed-loaders :: ${rule.key}`);
+            }
+            const loader = Array.from(loaders)[0];
+            const stableId = createStableBundleId(JSON.stringify({
+                dir: config.dir,
+                ruleKey: rule.key,
+                sources: filesWithStats.map((file) => file.rootRel),
+            }));
+            const chunks = splitByMaxSize({
+                files: filesWithStats.sort((a, b) => a.rootRel.localeCompare(b.rootRel)),
+                maxBundleSize: rule.maxBundleSize,
+            });
+            chunks.forEach((chunk, index) => {
+                const part = index + 1;
+                const name = chunks.length === 1 ? `bundle-${stableId}` : `bundle-${stableId}-${part}`;
+                const key = buildBundleEntryKey(rule.key, part);
+                const ownedSources = chunk.map((file) => file.rootRel);
+                if (emittedKeys.has(key)) {
+                    throw new Error(`bundler-discover-entry-key-conflict :: ${key}`);
+                }
+                if (emittedNames.has(name)) {
+                    throw new Error(`bundler-discover-output-name-conflict :: ${name}`);
+                }
+                emittedKeys.add(key);
+                emittedNames.add(name);
+                resolvedEntries.push({
+                    contents: buildBundleContents({
+                        files: chunk,
+                        loader,
+                        rootDir,
+                    }),
+                    key,
+                    kind: "bundle",
+                    name,
+                    ownedSources,
+                    path: `${VIRTUAL_ENTRY_PREFIX}${name}`,
+                    ruleKey: rule.key,
+                    source: "internal",
+                    strategy: "bundle",
+                    virtualLoader: loader,
+                });
+                ruleRecord.entryKeys.push(key);
+                for (const sourcePath of ownedSources) {
+                    sourceOwners.set(sourcePath, key);
+                }
+            });
+        }
+    }
+    await validateGroupedBootImports({
+        entries: resolvedEntries,
+        rootDir,
+    });
+    if (resolvedEntries.length === 0 && !settings.allowEmpty) {
         throw new Error("bundler-missing-entries");
     }
-    const byName = new Map();
-    for (const record of all) {
-        const existing = byName.get(record.name);
-        if (!existing) {
-            byName.set(record.name, record);
-            continue;
-        }
-        if (existing.path === record.path)
-            continue;
-        throw new Error(`bundler-entry-name-conflict :: ${record.name}`);
-    }
-    const records = Array.from(byName.values()).sort((a, b) => a.name.localeCompare(b.name) || a.path.localeCompare(b.path));
-    const signature = JSON.stringify(records.map((record) => ({
-        contents: record.source === "virtual" ? record.contents || "" : undefined,
-        name: record.name,
-        path: record.source === "virtual"
-            ? `virtual:${record.name}`
-            : normalizePathValue(path.relative(rootDir, record.path)),
-        source: record.source,
-    })));
+    const discovery = {
+        entries: resolvedEntries.sort((a, b) => a.key.localeCompare(b.key)),
+        rules: Object.fromEntries(Array.from(rules.entries()).sort(([a], [b]) => a.localeCompare(b))),
+        sourceOwners: Object.fromEntries(Array.from(sourceOwners.entries()).sort(([a], [b]) => a.localeCompare(b))),
+    };
     return {
-        duplicates: deduped.duplicates,
-        records,
-        signature,
+        ...discovery,
+        signature: JSON.stringify({
+            entries: discovery.entries.map((entry) => ({
+                entrySource: entry.entrySource,
+                key: entry.key,
+                kind: entry.kind,
+                name: entry.name,
+                ownedSources: entry.ownedSources,
+                path: entry.source === "internal" ? `virtual:${entry.name}` : entry.path,
+                ruleKey: entry.ruleKey,
+                strategy: entry.strategy,
+            })),
+            rules: discovery.rules,
+            sourceOwners: discovery.sourceOwners,
+        }),
     };
 }
 function toEntryPointMap(records, rootDir) {
     return Object.fromEntries(records.map((record) => [
         record.name,
-        record.source === "virtual"
+        record.source === "internal"
             ? record.path
-            : normalizePathValue(path.relative(rootDir, record.path)),
-    ]));
-}
-function toPublicEntryMap(records, rootDir) {
-    return Object.fromEntries(records.map((record) => [
-        record.name,
-        record.source === "virtual"
-            ? `virtual:${record.name}`
             : normalizePathValue(path.relative(rootDir, record.path)),
     ]));
 }
@@ -466,5 +465,5 @@ function normalizeDiscoverRoots(rootDir, discover) {
     });
     return Array.from(new Set(roots));
 }
-export { normalizeDiscoverRoots, normalizeManifestOptions, resolveBundlerEntries, toPublicEntryMap, toEntryPointMap, toPosixPath, VIRTUAL_ENTRY_PREFIX, };
+export { normalizeDiscoverRoots, normalizeManifestOptions, resolveBundlerEntries, toEntryPointMap, toPosixPath, VIRTUAL_ENTRY_PREFIX, };
 //# sourceMappingURL=discovery.js.map

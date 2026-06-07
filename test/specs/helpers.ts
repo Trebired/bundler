@@ -24,27 +24,38 @@ function exists(root: string, rel: string): boolean {
 }
 
 function createFixtureProject(root: string): void {
-  writeFile(root, "src/app.tsx", `
-/* app entry comment */
-import "./styles/site.scss";
-import { message } from "./lib/message";
+  writeFile(root, "src/app.client.tsx", `
+/* app client entry comment */
+import "./css/site.scss";
 
-export const view = <section className="app">{message}</section>;
+export const view = <section className="app">hello-bundle</section>;
 
-console.log(message);
+console.log("app-client");
 `);
 
-  writeFile(root, "src/lib/message.ts", `
-// message comment
+  writeFile(root, "src/feature.client.ts", `
+console.log("feature-client");
+`);
+
+  writeFile(root, "src/prefetch.defer.ts", `
+console.log("prefetch-defer");
+`);
+
+  writeFile(root, "src/shared/message.ts", `
+// grouped message comment
 export const message = "hello-bundle";
 `);
 
-  writeFile(root, "src/styles/_tokens.scss", `
+  writeFile(root, "src/shared/secondary.js", `
+console.log("secondary-bundle");
+`);
+
+  writeFile(root, "src/css/_tokens.scss", `
 $brand: blue;
 `);
 
-  writeFile(root, "src/styles/site.scss", `
-/* site stylesheet comment */
+  writeFile(root, "src/css/site.scss", `
+/* site global stylesheet comment */
 @use "./tokens" as *;
 
 .app {
@@ -53,7 +64,7 @@ $brand: blue;
 }
 `);
 
-  writeFile(root, "src/theme.css", `
+  writeFile(root, "src/css/theme.css", `
 @charset "UTF-8";
 /* theme stylesheet comment */
 

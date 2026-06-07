@@ -3,23 +3,9 @@ import { createScssPlugin } from "../plugins/scss.js";
 import { createSourceAnnotationsPlugin } from "../plugins/source-annotations.js";
 import { createVirtualEntriesPlugin } from "../plugins/virtual-entries.js";
 import { normalizeManifestOptions, toEntryPointMap } from "./discovery.js";
-function resolveModeDefaults(mode) {
-    if (mode === "debug") {
-        return {
-            minify: false,
-            stripComments: false,
-        };
-    }
-    return {
-        minify: true,
-        stripComments: true,
-    };
-}
 function normalizeBundlerOptions(options) {
     const rootDir = path.resolve(String(options.rootDir || "").trim() || process.cwd());
     const outDir = String(options.outDir || "").trim();
-    const mode = options.mode || "compact";
-    const defaults = resolveModeDefaults(mode);
     if (!outDir) {
         throw new Error("bundler-missing-out-dir");
     }
@@ -29,14 +15,12 @@ function normalizeBundlerOptions(options) {
         clean: options.clean !== false,
         define: options.define,
         environment: options.environment,
-        entries: options.entries,
         external: options.external,
         format: options.format,
         logger: options.logger,
         loggerAdapter: options.loggerAdapter,
         manifest: normalizeManifestOptions(options.manifest),
-        minify: options.minify ?? defaults.minify,
-        mode,
+        minify: Boolean(options.minify),
         onEntrySetChanged: options.onEntrySetChanged,
         onRebuilt: options.onRebuilt,
         outDir: resolvedOutDir,
@@ -44,21 +28,20 @@ function normalizeBundlerOptions(options) {
         rootDir,
         sourcemap: options.sourcemap,
         splitting: Boolean(options.splitting),
-        stripComments: options.stripComments ?? defaults.stripComments,
+        stripComments: Boolean(options.stripComments),
         target: options.target,
     };
 }
 function createEsbuildOptions(options, logger) {
     const entryPoints = options.entryRecords
         ? toEntryPointMap(options.entryRecords, options.rootDir)
-        : options.entries;
-    if (!entryPoints || (typeof entryPoints === "object" && !Array.isArray(entryPoints) && Object.keys(entryPoints).length === 0)) {
+        : undefined;
+    if (!entryPoints || Object.keys(entryPoints).length === 0) {
         throw new Error("bundler-missing-entries");
     }
     if (options.annotateSources) {
         logger.info("annotate", "inline source annotations enabled");
     }
-    logger.info("build", `mode :: ${options.mode}`);
     if (options.minify) {
         logger.info("build", "minify enabled");
     }

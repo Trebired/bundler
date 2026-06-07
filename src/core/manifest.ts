@@ -2,9 +2,8 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { Metafile } from "esbuild";
 
-import type { BundlerEntryRecord } from "../types.js";
+import type { BundlerResolvedDiscovery } from "../types.js";
 import { buildAssetManifest } from "./asset-manifest.js";
-import { toPosixPath } from "./discovery.js";
 import type { NormalizedManifestOptions } from "./discovery.js";
 import { deriveManifest } from "./derive-manifest.js";
 
@@ -13,10 +12,10 @@ type ManifestWriteResult = {
 };
 
 async function writeBundlerManifest(args: {
-  entries: BundlerEntryRecord[];
   metafile?: Metafile;
   manifest: NormalizedManifestOptions;
   outDir: string;
+  resolvedDiscovery: BundlerResolvedDiscovery;
   rootDir: string;
 }): Promise<ManifestWriteResult> {
   if (!args.manifest.enabled || !args.manifest.file || !args.metafile) {
@@ -28,22 +27,12 @@ async function writeBundlerManifest(args: {
 
   const body = {
     generatedAt: new Date().toISOString(),
-    resolvedEntries: Object.fromEntries(
-      args.entries.map((entry) => [
-        entry.name,
-        {
-          path: entry.source === "virtual"
-            ? `virtual:${entry.name}`
-            : toPosixPath(path.relative(args.rootDir, entry.path)),
-          source: entry.source,
-        },
-      ]),
-    ),
+    resolvedDiscovery: args.resolvedDiscovery,
     assetManifest: buildAssetManifest({
       metafile: args.metafile,
       outDir: args.outDir,
+      resolvedDiscovery: args.resolvedDiscovery,
       rootDir: args.rootDir,
-      resolvedEntries: args.entries,
     }),
     ...deriveManifest(args.metafile, {
       outDir: args.outDir,

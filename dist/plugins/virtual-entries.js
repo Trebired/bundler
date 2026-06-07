@@ -2,7 +2,7 @@ import { VIRTUAL_ENTRY_PREFIX } from "../core/discovery.js";
 const VIRTUAL_ENTRY_NAMESPACE = "trebired-virtual-entry";
 function createVirtualEntriesPlugin(options) {
     const byName = new Map(options.entries
-        .filter((entry) => entry.source === "virtual")
+        .filter((entry) => entry.source === "internal")
         .map((entry) => [entry.name, {
             contents: entry.contents || "",
             loader: entry.virtualLoader || "ts",

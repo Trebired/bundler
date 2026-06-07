@@ -2,10 +2,12 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { BuildResult, Message } from "esbuild";
 
-import type { BundlerBuildResult, BundlerEntryRecord, NormalizedBundlerLogger } from "../types.js";
+import type {
+  BundlerBuildResult,
+  BundlerResolvedDiscovery,
+  NormalizedBundlerLogger,
+} from "../types.js";
 import { buildAssetManifest } from "./asset-manifest.js";
-import { toPublicEntryMap } from "./discovery.js";
-import type { DuplicateBundlerEntryRecord } from "./discovery.js";
 import { writeBundlerManifest } from "./manifest.js";
 import type { NormalizedManifestOptions } from "./discovery.js";
 
@@ -23,29 +25,6 @@ function logWarnings(logger: NormalizedBundlerLogger, warnings: Message[]): void
   }
 }
 
-function formatEntryPath(record: BundlerEntryRecord, rootDir: string): string {
-  return record.source === "virtual"
-    ? `virtual:${record.name}`
-    : toPublicEntryMap([record], rootDir)[record.name] || record.path;
-}
-
-function logDuplicateEntries(args: {
-  duplicates: DuplicateBundlerEntryRecord[];
-  logger: NormalizedBundlerLogger;
-  rootDir: string;
-}): void {
-  for (const duplicate of args.duplicates) {
-    args.logger.warn("entries", "duplicate-entry-pruned", {
-      dropped_entry: duplicate.dropped.name,
-      dropped_path: formatEntryPath(duplicate.dropped, args.rootDir),
-      dropped_source: duplicate.dropped.source,
-      kept_entry: duplicate.kept.name,
-      kept_path: formatEntryPath(duplicate.kept, args.rootDir),
-      kept_source: duplicate.kept.source,
-    });
-  }
-}
-
 function resolveOutputs(result: BuildResult<any>, rootDir: string): string[] {
   if (!result.metafile) return [];
 
@@ -55,9 +34,9 @@ function resolveOutputs(result: BuildResult<any>, rootDir: string): string[] {
 }
 
 async function toBuildResult(args: {
-  entries: BundlerEntryRecord[];
   manifest: NormalizedManifestOptions;
   outDir: string;
+  resolvedDiscovery: BundlerResolvedDiscovery;
   result: BuildResult<any>;
   rootDir: string;
   startedAt: number;
@@ -67,26 +46,27 @@ async function toBuildResult(args: {
     ? buildAssetManifest({
       metafile: args.result.metafile,
       outDir: args.outDir,
+      resolvedDiscovery: args.resolvedDiscovery,
       rootDir: args.rootDir,
-      resolvedEntries: args.entries,
     })
     : undefined;
   const manifestWrite = await writeBundlerManifest({
-    entries: args.entries,
     metafile: args.result.metafile,
     manifest: args.manifest,
     outDir: args.outDir,
+    resolvedDiscovery: args.resolvedDiscovery,
     rootDir: args.rootDir,
   });
 
   return {
-    entries: toPublicEntryMap(args.entries, args.rootDir),
+    entries: args.resolvedDiscovery.sourceOwners,
     outputs,
     warnings: args.result.warnings.length,
     metafile: args.result.metafile,
     assetManifest,
     manifestPath: manifestWrite.manifestPath,
     durationMs: Date.now() - args.startedAt,
+    resolvedDiscovery: args.resolvedDiscovery,
   };
 }
 
@@ -103,4 +83,4 @@ function formatFailure(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-export { cleanOutDir, formatFailure, logDuplicateEntries, logWarnings, toBuildResult };
+export { cleanOutDir, formatFailure, logWarnings, toBuildResult };

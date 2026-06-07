@@ -8,6 +8,7 @@ import type {
   BundlerDerivedManifestOutput,
   BundlerDerivedManifestOutputKind,
 } from "../types.js";
+import { VIRTUAL_ENTRY_NAMESPACE } from "../plugins/virtual-entries.js";
 import { toPosixPath } from "./discovery.js";
 import { VIRTUAL_ENTRY_PREFIX } from "./discovery.js";
 
@@ -19,6 +20,10 @@ type DeriveManifestOptions = {
 function normalizeFilePath(filePath: string, rootDir: string): string {
   if (filePath.startsWith(VIRTUAL_ENTRY_PREFIX)) {
     return `virtual:${filePath.slice(VIRTUAL_ENTRY_PREFIX.length)}`;
+  }
+
+  if (filePath.startsWith(`${VIRTUAL_ENTRY_NAMESPACE}:`)) {
+    return `virtual:${filePath.slice(VIRTUAL_ENTRY_NAMESPACE.length + 1)}`;
   }
 
   const absolute = path.isAbsolute(filePath) ? filePath : path.resolve(rootDir, filePath);

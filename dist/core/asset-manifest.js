@@ -30,30 +30,12 @@ function normalizeOutputPath(value, rootDir, outDir) {
     return normalized;
 }
 function toStableList(values) {
-    return Array.from(new Set(Array.from(values).filter(Boolean)));
+    return Array.from(new Set(Array.from(values).filter(Boolean))).sort();
 }
-function normalizeResolvedEntries(resolvedEntries, rootDir) {
-    const out = new Map();
-    if (!resolvedEntries)
-        return out;
-    if (Array.isArray(resolvedEntries)) {
-        for (const entry of resolvedEntries) {
-            const entryKey = entry.source === "virtual"
-                ? `virtual:${normalizeKey(entry.name)}`
-                : normalizeSourcePath(entry.path, rootDir);
-            if (!entryKey || !entry.name)
-                continue;
-            out.set(entryKey, entry.name);
-        }
-        return out;
-    }
-    for (const [entryName, entryPath] of Object.entries(resolvedEntries)) {
-        const entryKey = normalizeSourcePath(entryPath, rootDir);
-        if (!entryKey || !entryName)
-            continue;
-        out.set(entryKey, normalizeKey(entryName));
-    }
-    return out;
+function toEntryPointLookupKey(entry) {
+    return entry.source === "internal"
+        ? `virtual:${normalizeKey(entry.name)}`
+        : normalizeKey(entry.entrySource || "");
 }
 function collectReachableOutputs(args) {
     const seen = new Set();
@@ -81,13 +63,17 @@ function collectReachableOutputs(args) {
 }
 function createEntryRecord(args) {
     const js = toStableList(args.js);
-    const css = toStableList(args.css);
+    const css = toStableList(args.outputs.filter((value) => value.endsWith(".css")));
     const outputs = toStableList(args.outputs);
     const jsSet = new Set(js);
     const cssSet = new Set(css);
     return {
-        entryName: args.entryName,
-        entrySource: args.entrySource,
+        key: args.entry.key,
+        kind: args.entry.kind,
+        ruleKey: args.entry.ruleKey,
+        strategy: args.entry.strategy,
+        entrySource: args.entry.entrySource,
+        sources: args.entry.ownedSources.slice().sort(),
         file: args.entryOutput,
         entryOutput: args.entryOutput,
         outputs,
@@ -104,73 +90,89 @@ function buildAssetManifest(options) {
         outDir,
         rootDir,
     });
-    const resolvedEntryNames = normalizeResolvedEntries(options.resolvedEntries, rootDir);
+    const resolvedDiscovery = options.resolvedDiscovery || {
+        entries: [],
+        rules: {},
+        sourceOwners: {},
+    };
     const entries = {};
-    const entryNames = {};
-    const entrySources = {};
+    const sources = {};
     const entryOutputs = {};
     const outputs = {};
+    const rules = Object.fromEntries(Object.entries(resolvedDiscovery.rules).map(([ruleKey, rule]) => [
+        ruleKey,
+        {
+            entryKeys: rule.entryKeys.slice().sort(),
+            ignoredSources: rule.ignoredSources.slice().sort(),
+            ruleKey: rule.ruleKey,
+            strategy: rule.strategy,
+        },
+    ]));
+    const entryByLookupKey = new Map(resolvedDiscovery.entries
+        .map((entry) => [toEntryPointLookupKey(entry), entry])
+        .filter(([lookupKey]) => Boolean(lookupKey)));
+    const entryKeyByOutput = new Map();
     for (const output of Object.values(derived.allOutputs)) {
-        const entrySource = output.entryPoint
-            ? normalizeSourcePath(output.entryPoint, rootDir)
-            : undefined;
-        const entryName = entrySource
-            ? resolvedEntryNames.get(entrySource) || output.entryName
-            : output.entryName;
+        const lookupKey = output.entryPoint ? normalizeSourcePath(output.entryPoint, rootDir) : "";
+        const entry = lookupKey ? entryByLookupKey.get(lookupKey) : undefined;
         const outputKey = normalizeOutputPath(output.output, rootDir, outDir);
         if (!outputKey)
             continue;
+        if (entry && output.kind === "entry") {
+            entryKeyByOutput.set(output.output, entry.key);
+        }
         outputs[outputKey] = {
             output: outputKey,
             kind: output.kind,
-            entryName,
-            entrySource,
-            entryPoint: entrySource,
+            entryKey: entry?.key,
+            entryPoint: entry?.entrySource,
             inputs: output.inputs.map((value) => normalizeSourcePath(value, rootDir)).filter(Boolean),
             css: output.css.map((value) => normalizeOutputPath(value, rootDir, outDir)).filter(Boolean),
             imports: output.imports.map((value) => normalizeOutputPath(value, rootDir, outDir)).filter(Boolean),
             bytes: output.bytes,
+            ruleKey: entry?.ruleKey,
+            strategy: entry?.strategy,
         };
     }
-    for (const entry of Object.values(derived.entries)) {
-        const outputInfo = derived.allOutputs[entry.entryOutput];
-        const entrySource = outputInfo?.entryPoint
-            ? normalizeSourcePath(outputInfo.entryPoint, rootDir)
-            : undefined;
-        const entryName = entrySource
-            ? resolvedEntryNames.get(entrySource) || outputInfo?.entryName || entry.entryName
-            : outputInfo?.entryName || entry.entryName;
-        const entryKey = entrySource || normalizeOutputPath(entry.entryOutput, rootDir, outDir);
-        const entryOutput = normalizeOutputPath(entry.entryOutput, rootDir, outDir);
+    for (const entry of resolvedDiscovery.entries) {
+        const lookupKey = toEntryPointLookupKey(entry);
+        const derivedEntry = Object.values(derived.entries).find((item) => {
+            const output = derived.allOutputs[item.entryOutput];
+            return output?.entryPoint && normalizeSourcePath(output.entryPoint, rootDir) === lookupKey;
+        });
+        if (!derivedEntry)
+            continue;
+        const entryOutput = normalizeOutputPath(derivedEntry.entryOutput, rootDir, outDir);
+        if (!entryOutput)
+            continue;
         const reachableOutputs = collectReachableOutputs({
-            entryOutput: entry.entryOutput,
+            entryOutput: derivedEntry.entryOutput,
             outputs: derived.allOutputs,
         }).map((value) => normalizeOutputPath(value, rootDir, outDir)).filter(Boolean);
-        if (!entryKey || !entryOutput)
-            continue;
-        entries[entryKey] = createEntryRecord({
-            entryName,
+        entries[entry.key] = createEntryRecord({
+            entry,
             entryOutput,
-            entrySource,
             outputs: reachableOutputs,
-            js: entry.js.map((value) => normalizeOutputPath(value, rootDir, outDir)).filter(Boolean),
-            css: entry.css.map((value) => normalizeOutputPath(value, rootDir, outDir)).filter(Boolean),
-            imports: entry.imports.map((value) => normalizeOutputPath(value, rootDir, outDir)).filter(Boolean),
+            js: derivedEntry.js.map((value) => normalizeOutputPath(value, rootDir, outDir)).filter(Boolean),
+            imports: derivedEntry.imports.map((value) => normalizeOutputPath(value, rootDir, outDir)).filter(Boolean),
         });
-        if (entryName) {
-            entryNames[entryName] = entryKey;
+        entryOutputs[entryOutput] = entry.key;
+        for (const sourcePath of entry.ownedSources) {
+            sources[sourcePath] = {
+                source: sourcePath,
+                entryKey: entry.key,
+                ruleKey: entry.ruleKey,
+                strategy: entry.strategy,
+                outputs: reachableOutputs,
+            };
         }
-        if (entrySource) {
-            entrySources[entrySource] = entryKey;
-        }
-        entryOutputs[entryOutput] = entryKey;
     }
     return {
         entries: Object.fromEntries(Object.entries(entries).sort(([a], [b]) => a.localeCompare(b))),
-        entryNames: Object.fromEntries(Object.entries(entryNames).sort(([a], [b]) => a.localeCompare(b))),
-        entrySources: Object.fromEntries(Object.entries(entrySources).sort(([a], [b]) => a.localeCompare(b))),
+        sources: Object.fromEntries(Object.entries(sources).sort(([a], [b]) => a.localeCompare(b))),
         entryOutputs: Object.fromEntries(Object.entries(entryOutputs).sort(([a], [b]) => a.localeCompare(b))),
         outputs: Object.fromEntries(Object.entries(outputs).sort(([a], [b]) => a.localeCompare(b))),
+        rules: Object.fromEntries(Object.entries(rules).sort(([a], [b]) => a.localeCompare(b))),
     };
 }
 function toPublicPath(publicPath, value) {
@@ -189,19 +191,15 @@ function resolveEntryKey(manifest, entryId, from) {
     if (from === "entryKey") {
         return manifest.entries[normalizedId] ? normalizedId : "";
     }
-    if (from === "entryName") {
-        return manifest.entryNames[normalizedId] || "";
-    }
-    if (from === "entrySource") {
-        return manifest.entrySources[normalizedId] || "";
+    if (from === "source") {
+        return manifest.sources[normalizedId]?.entryKey || "";
     }
     if (from === "entryOutput") {
         return manifest.entryOutputs[normalizedId] || "";
     }
     return manifest.entries[normalizedId]
         ? normalizedId
-        : manifest.entryNames[normalizedId]
-            || manifest.entrySources[normalizedId]
+        : manifest.sources[normalizedId]?.entryKey
             || manifest.entryOutputs[normalizedId]
             || "";
 }

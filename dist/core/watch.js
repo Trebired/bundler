@@ -3,9 +3,9 @@ import { logPackageInitialized } from "@trebired/logger-adapter";
 import { BUNDLER_LOG_GROUP, BUNDLER_PACKAGE_NAME } from "../constants.js";
 import { resolveLogger } from "../logging.js";
 import { createEsbuildOptions, normalizeBundlerOptions } from "./esbuild-options.js";
-import { resolveBundlerEntries, normalizeDiscoverRoots, toPublicEntryMap } from "./discovery.js";
+import { resolveBundlerEntries, normalizeDiscoverRoots } from "./discovery.js";
 import { createDiscoveryWatcher } from "./discovery-watch.js";
-import { cleanOutDir, formatFailure, logDuplicateEntries, logWarnings, toBuildResult } from "./shared.js";
+import { cleanOutDir, formatFailure, logWarnings, toBuildResult } from "./shared.js";
 async function watch(options) {
     const normalized = normalizeBundlerOptions(options || {});
     const logger = resolveLogger(normalized.logger, normalized.loggerAdapter);
@@ -21,17 +21,9 @@ async function watch(options) {
         await cleanOutDir(normalized.outDir);
     }
     let disposed = false;
-    let currentEntries = await resolveBundlerEntries(options || {}, normalized.rootDir, {
+    let currentDiscovery = await resolveBundlerEntries(options || {}, normalized.rootDir, {
         allowEmpty: true,
     });
-    let duplicateSignature = JSON.stringify(currentEntries.duplicates);
-    if (currentEntries.duplicates.length > 0) {
-        logDuplicateEntries({
-            duplicates: currentEntries.duplicates,
-            logger,
-            rootDir: normalized.rootDir,
-        });
-    }
     let currentContext = null;
     let queued = Promise.resolve();
     const callHook = async (args) => {
@@ -45,7 +37,7 @@ async function watch(options) {
             throw error;
         }
     };
-    const createWatchedContext = async (records = currentEntries.records) => {
+    const createWatchedContext = async (records = currentDiscovery.entries) => {
         const context = await createContext(createEsbuildOptions({
             ...normalized,
             entryRecords: records,
@@ -61,6 +53,11 @@ async function watch(options) {
                 warnings: 0,
                 manifestPath: undefined,
                 durationMs: 0,
+                resolvedDiscovery: {
+                    entries: [],
+                    rules: {},
+                    sourceOwners: {},
+                },
             };
             await callHook({
                 hook: normalized.onRebuilt,
@@ -73,9 +70,9 @@ async function watch(options) {
         const result = await currentContext.rebuild();
         logWarnings(logger, result.warnings);
         const summary = await toBuildResult({
-            entries: currentEntries.records,
             manifest: normalized.manifest,
             outDir: normalized.outDir,
+            resolvedDiscovery: currentDiscovery,
             result,
             rootDir: normalized.rootDir,
             startedAt,
@@ -89,37 +86,28 @@ async function watch(options) {
         return summary;
     };
     const refreshDiscovery = async () => {
-        const nextEntries = await resolveBundlerEntries(options || {}, normalized.rootDir, {
+        const nextDiscovery = await resolveBundlerEntries(options || {}, normalized.rootDir, {
             allowEmpty: true,
         });
-        const nextDuplicateSignature = JSON.stringify(nextEntries.duplicates);
-        if (nextEntries.duplicates.length > 0 && nextDuplicateSignature !== duplicateSignature) {
-            logDuplicateEntries({
-                duplicates: nextEntries.duplicates,
-                logger,
-                rootDir: normalized.rootDir,
-            });
-        }
-        duplicateSignature = nextDuplicateSignature;
-        if (nextEntries.signature === currentEntries.signature)
+        if (nextDiscovery.signature === currentDiscovery.signature)
             return;
-        logger.info("watch", `entry-set-changed :: count=${nextEntries.records.length}`);
+        logger.info("watch", `entry-set-changed :: count=${nextDiscovery.entries.length}`);
         await callHook({
             hook: normalized.onEntrySetChanged,
             name: "onEntrySetChanged",
-            payload: toPublicEntryMap(nextEntries.records, normalized.rootDir),
+            payload: nextDiscovery.sourceOwners,
         });
-        currentEntries = nextEntries;
+        currentDiscovery = nextDiscovery;
         if (currentContext) {
             await currentContext.dispose();
             currentContext = null;
         }
         await cleanOutDir(normalized.outDir);
-        if (currentEntries.records.length === 0) {
+        if (currentDiscovery.entries.length === 0) {
             logger.info("watch", "entry-set-empty");
             return;
         }
-        currentContext = await createWatchedContext(currentEntries.records);
+        currentContext = await createWatchedContext(currentDiscovery.entries);
         await executeRebuild();
     };
     const runExclusive = (task) => {
@@ -147,9 +135,9 @@ async function watch(options) {
         : null;
     try {
         logger.info("watch", "start");
-        logger.info("watch", `entries :: count=${currentEntries.records.length}`);
-        if (currentEntries.records.length > 0) {
-            currentContext = await createWatchedContext(currentEntries.records);
+        logger.info("watch", `entries :: count=${currentDiscovery.entries.length}`);
+        if (currentDiscovery.entries.length > 0) {
+            currentContext = await createWatchedContext(currentDiscovery.entries);
             await executeRebuild();
         }
         return {

@@ -14,7 +14,7 @@ type VirtualEntriesPluginOptions = {
 function createVirtualEntriesPlugin(options: VirtualEntriesPluginOptions): Plugin {
   const byName = new Map(
     options.entries
-      .filter((entry) => entry.source === "virtual")
+      .filter((entry) => entry.source === "internal")
       .map((entry) => [entry.name, {
         contents: entry.contents || "",
         loader: entry.virtualLoader || "ts" as BundlerVirtualEntryLoader,

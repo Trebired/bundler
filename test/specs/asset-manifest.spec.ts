@@ -3,76 +3,104 @@ import { describe, expect, test } from "bun:test";
 import { buildAssetManifest, bundle, collectAssetLinks } from "../../src/index";
 import { createFixtureProject, readFile, tempDir } from "./helpers";
 
+function createDiscoverConfig(root: string) {
+  return {
+    discover: {
+      dir: "./src",
+      rules: [
+        {
+          key: "client",
+          include: ["**/*.client.ts", "**/*.client.tsx"],
+          strategy: "entry" as const,
+        },
+        {
+          key: "defer",
+          include: ["**/*.defer.ts"],
+          strategy: "entry" as const,
+        },
+        {
+          key: "global-style",
+          include: ["css/**/*.css", "css/**/*.scss"],
+          strategy: "bundle" as const,
+        },
+        {
+          key: "shared-script",
+          include: ["shared/**/*.ts", "shared/**/*.js"],
+          strategy: "bundle" as const,
+        },
+      ],
+    },
+    outDir: "./dist",
+    rootDir: root,
+  };
+}
+
 describe("asset manifest helpers", () => {
-  test("exposes a runtime-friendly asset manifest on build results", async () => {
+  test("exposes source ownership, entry outputs, and grouped bundle membership", async () => {
     const root = tempDir();
     createFixtureProject(root);
 
     const result = await bundle({
-      entries: {
-        app: "./src/app.tsx",
-        theme: "./src/theme.css",
-      },
+      ...createDiscoverConfig(root),
       manifest: true,
-      outDir: "./dist",
-      rootDir: root,
     });
 
     expect(result.assetManifest).toBeDefined();
-    expect(result.assetManifest?.entryNames.app).toBe("src/app.tsx");
-    expect(result.assetManifest?.entryNames.theme).toBe("src/theme.css");
-    expect(result.assetManifest?.entryOutputs["app.js"]).toBe("src/app.tsx");
-    expect(result.assetManifest?.entries["src/app.tsx"].file).toBe("app.js");
-    expect(result.assetManifest?.entries["src/app.tsx"].css).toContain("app.css");
-    expect(result.assetManifest?.entries["src/theme.css"].file).toBe("theme.css");
+    expect(result.assetManifest?.sources["src/app.client.tsx"].entryKey).toBe("entry:client:src/app.client");
+
+    const sharedEntryKey = result.entries["src/shared/message.ts"];
+    expect(sharedEntryKey).toBeDefined();
+    expect(result.assetManifest?.entries[sharedEntryKey].sources).toContain("src/shared/message.ts");
+    expect(result.assetManifest?.entries[sharedEntryKey].ruleKey).toBe("shared-script");
+    expect(Object.keys(result.assetManifest?.entryOutputs || {}).some((key) => /^bundle-[a-z0-9]+\.js$/.test(key))).toBe(true);
 
     const manifest = buildAssetManifest({
       metafile: result.metafile!,
       outDir: "./dist",
       rootDir: root,
-      resolvedEntries: result.entries,
+      resolvedDiscovery: result.resolvedDiscovery,
     });
 
     expect(manifest).toEqual(result.assetManifest);
 
-    const links = collectAssetLinks(manifest, ["app", "src/theme.css"], {
+    const links = collectAssetLinks(manifest, ["src/app.client.tsx", "src/shared/message.ts"], {
+      from: "source",
       publicPath: "/",
     });
 
-    expect(links.entryKeys).toEqual(["src/app.tsx", "src/theme.css"]);
-    expect(links.scripts).toEqual(["/app.js"]);
-    expect(links.styles).toEqual(["/app.css", "/theme.css"]);
-    expect(links.outputs).toEqual(["/app.css", "/app.js", "/theme.css"]);
+    expect(links.entryKeys).toEqual([
+      "entry:client:src/app.client",
+      sharedEntryKey,
+    ]);
+    expect(links.scripts).toContain("/src/app.client.js");
+    expect(links.outputs.some((value) => value.endsWith(".js"))).toBe(true);
     expect(links.missing).toEqual([]);
 
     const writtenManifest = JSON.parse(readFile(root, "dist/bundler-manifest.json"));
-    expect(writtenManifest.assetManifest.entryNames.app).toBe("src/app.tsx");
-    expect(writtenManifest.assetManifest.entries["src/app.tsx"].file).toBe("app.js");
+    expect(writtenManifest.assetManifest.sources["src/app.client.tsx"].entryKey).toBe("entry:client:src/app.client");
+    expect(writtenManifest.assetManifest.entries[sharedEntryKey].ruleKey).toBe("shared-script");
   });
 
-  test("can collect assets by source path or emitted output", async () => {
+  test("can collect assets by source path, entry key, or emitted entry output", async () => {
     const root = tempDir();
     createFixtureProject(root);
 
-    const result = await bundle({
-      entries: {
-        app: "./src/app.tsx",
-      },
-      outDir: "./dist",
-      rootDir: root,
-    });
-
+    const result = await bundle(createDiscoverConfig(root));
     const manifest = result.assetManifest!;
-    const fromSource = collectAssetLinks(manifest, ["src/app.tsx"], {
-      from: "entrySource",
+    const appEntryKey = result.entries["src/app.client.tsx"];
+
+    const fromSource = collectAssetLinks(manifest, ["src/app.client.tsx"], {
+      from: "source",
     });
-    const fromOutput = collectAssetLinks(manifest, ["app.js"], {
+    const fromEntryKey = collectAssetLinks(manifest, [appEntryKey], {
+      from: "entryKey",
+    });
+    const fromOutput = collectAssetLinks(manifest, ["src/app.client.js"], {
       from: "entryOutput",
     });
 
-    expect(fromSource.scripts).toEqual(["app.js"]);
-    expect(fromSource.styles).toEqual(["app.css"]);
-    expect(fromOutput.scripts).toEqual(["app.js"]);
-    expect(fromOutput.styles).toEqual(["app.css"]);
+    expect(fromSource.scripts).toEqual(["src/app.client.js"]);
+    expect(fromEntryKey.scripts).toEqual(["src/app.client.js"]);
+    expect(fromOutput.scripts).toEqual(["src/app.client.js"]);
   });
 });

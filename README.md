@@ -1,10 +1,8 @@
 # @trebired/bundler
 
-Fast bundler wrapper around `esbuild` with SCSS support, compact build modes, watch mode, and inline source path annotations.
+Discover-only bundler wrapper around `esbuild` with SCSS support, watch mode, source annotations, and a runtime-friendly asset manifest.
 
-`@trebired/bundler` is not a full custom bundler. It keeps the package-owned API small and lets `esbuild` do the heavy lifting, while adding logging aligned with other packages published by Trebired, SCSS compilation through `sass-embedded`, built-in source walking, config-driven CLI commands, virtual entry modules, derived manifest helpers, and inline source path comments in generated output.
-
-The default build mode is `compact`. It enables minification and comment stripping unless you turn on source annotations.
+`@trebired/bundler` now has one public entry model: discovery rules. You describe what the bundler should find, whether each matched file should stay isolated, join a grouped bundle, or be ignored, and the package handles the rest.
 
 ## Install
 
@@ -14,38 +12,6 @@ Runtime support: Bun 1+ and Node.js 18+.
 npm install @trebired/bundler
 ```
 
-## What It Is For
-
-Use this when:
-
-- you want a bundling package that fits alongside other packages published by Trebired instead of wiring `esbuild` directly in every project
-- you need one package that handles `tsx`, `jsx`, `ts`, `js`, `scss`, and `css`
-- you want the package to discover entry files by walking your source tree
-- you want in-memory generated entry modules without writing temp files
-- you want watch mode and config-driven CLI commands without building a separate toolchain wrapper
-- you want newly created matching files to join the build without external entry regeneration code
-- you want a manifest describing resolved entries and generated outputs
-- you want a stable helper for turning esbuild metafiles into runtime asset graphs
-- you want a runtime-friendly asset manifest keyed by entry names and source paths
-- you want a package-owned helper for collecting script and stylesheet links for selected entries
-- you want a generic import graph walker with tsconfig path resolution for higher-level presets
-- you want rebuild hooks instead of scraping logger text
-- you want generated bundles to optionally include inline comments that point back to the original source file path
-- you want production-lean defaults with minified output and stripped comments
-- you want a stronger `extreme` mode for the most aggressive package-owned compacting defaults
-- you want package-owned logs routed through `@trebired/logger-adapter`
-
-## What It Does Not Do
-
-This package does not:
-
-- replace `esbuild`
-- provide a dev server or HMR
-- invent a separate package-specific module graph format
-- manage HTML templates or deployment assets for you
-
-If you want a fast bundling wrapper from the Trebired package ecosystem, use this package. If you want a fully custom bundler runtime, this package is intentionally not that.
-
 ## Quick Start
 
 ```ts
@@ -53,14 +19,37 @@ import { bundle } from "@trebired/bundler";
 
 await bundle({
   discover: {
-    dir: "./src",
-    include: ["app.tsx", "theme.css"],
-  },
-  virtualEntries: {
-    "entry-server": `
-import { message } from "./src/lib/message";
-export const rendered = message.toUpperCase();
-`,
+    dir: "./src/frontend",
+    rules: [
+      {
+        key: "client",
+        include: ["**/*.client.ts", "**/*.client.tsx"],
+        strategy: "entry",
+      },
+      {
+        key: "defer",
+        include: ["**/*.defer.ts"],
+        strategy: "entry",
+      },
+      {
+        key: "global-style",
+        include: ["css/**/*.css", "css/**/*.scss"],
+        strategy: "bundle",
+        maxBundleSize: "50mb",
+      },
+      {
+        key: "shared-script",
+        include: ["**/*.ts", "**/*.js"],
+        exclude: ["**/*.client.ts", "**/*.client.tsx", "**/*.defer.ts"],
+        strategy: "bundle",
+        maxBundleSize: "50mb",
+      },
+      {
+        key: "ignored-tests",
+        include: ["**/*.test.*", "**/*.spec.*"],
+        strategy: "ignore",
+      },
+    ],
   },
   outDir: "./dist",
   sourcemap: "external",
@@ -79,10 +68,25 @@ import { defineBundlerConfig } from "@trebired/bundler";
 export default defineBundlerConfig({
   discover: {
     dir: "./src/frontend",
-    include: ["**/*.tsx", "**/*.scss", "**/*.css"],
+    rules: [
+      {
+        key: "client",
+        include: ["**/*.client.ts", "**/*.client.tsx"],
+        strategy: "entry",
+      },
+      {
+        key: "global-style",
+        include: ["css/**/*.css", "css/**/*.scss"],
+        strategy: "bundle",
+      },
+      {
+        key: "shared-script",
+        include: ["shared/**/*.ts", "shared/**/*.js"],
+        strategy: "bundle",
+      },
+    ],
   },
   outDir: "./dist",
-  annotateSources: true,
   manifest: true,
 });
 ```
@@ -94,81 +98,82 @@ trebired-bundler build --config ./bundler.config.mjs
 trebired-bundler watch --config ./bundler.config.mjs
 ```
 
-## Discovery And Walking
+## Discover Rules
 
-Set `discover` when you want `@trebired/bundler` to walk the source tree and build the entry list itself.
+Rules are ordered. First match wins.
 
-```ts
-await bundle({
-  discover: {
-    dir: "./src/frontend",
-    include: ["**/*.tsx", "**/*.js", "**/*.ts", "**/*.css", "**/*.scss"],
-    exclude: ["**/*.test.tsx"],
-    maxBundleSize: "50mb",
-  },
-  outDir: "./dist",
-});
-```
+- `entry`: keep one output entry per matched file
+- `bundle`: group all matched files together, then split only when the whole group exceeds `maxBundleSize`
+- `ignore`: track the file as intentionally ignored and exclude it from outputs
 
-The package:
+Every discovered file must match exactly one rule. If a file is in scope and matches nothing, the build fails.
 
-- walks the configured directory recursively
-- matches files by extension plus optional include and exclude patterns
-- groups discovered `.js` and `.ts` files into auto-named script bundles
-- groups discovered `.css` and `.scss` files into auto-named style bundles
-- leaves discovered `.jsx` and `.tsx` files as normal per-file entries
-- rebuilds the entry list during watch mode when matching files are added or removed
+### `maxBundleSize`
 
-- grouped bundles are auto-named like `bundle-abc123.js` and `bundle-abc123-2.css`
-- `maxBundleSize` defaults to `50mb`
-- `maxBundleSize` accepts bytes or strings like `"50mb"` and splits bundles by summed discovered source-file size before handing each group to `esbuild`
-- if one discovered grouped file is larger than `maxBundleSize`, the build fails
+- only valid on `bundle` rules
+- defaults to `50mb`
+- accepts bytes or strings like `"512kb"`, `"50mb"`, or `"1gb"`
+- splits by summed source-file size before handing grouped parts to `esbuild`
+- fails the build if a single grouped file is larger than the configured limit
 
-You can combine manual `entries` with `discover`. If both resolve the same entry name to different files, the build fails so the collision is explicit.
+### Bundle Naming
+
+Grouped outputs always use package-owned names:
+
+- `bundle-<stable-id>.js`
+- `bundle-<stable-id>-2.js`
+- `bundle-<stable-id>.css`
+- `bundle-<stable-id>-2.css`
+
+Callers do not provide custom grouped bundle names.
+
+## Frontend Conventions
+
+This API is meant for conventions like:
+
+- `*.client.ts`
+- `*.client.tsx`
+- `*.defer.ts`
+- global `css/**/*.css`
+- global `css/**/*.scss`
+
+Typical setup:
+
+- client boot files use `strategy: "entry"`
+- defer boot files use `strategy: "entry"`
+- shared JS/TS helpers use `strategy: "bundle"`
+- global CSS/SCSS uses `strategy: "bundle"`
+- tests and non-runtime files use `strategy: "ignore"`
+
+Important behavior:
+
+- grouped `bundle` rules must stay style-only or script-only; mixing CSS/SCSS with JS/TS in one rule fails
+- `*.client.*` and `*.defer.*` entries may not import JS/TS files owned by a grouped bundle rule; that fails the build because those files are treated as shared standalone bundles, not implicit app-entry dependencies
 
 ## Manifest
 
-Set `manifest: true` to write `dist/bundler-manifest.json`, or pass `manifest: { file: "custom-name.json" }` to choose a different path inside `outDir`.
+Set `manifest: true` to write `dist/bundler-manifest.json`, or pass `manifest: { file: "custom-name.json" }`.
 
-The manifest contains:
-
-- resolved entries
-- whether each entry came from `manual` config or `discover`
-- generated output files
-- a runtime-friendly `assetManifest` keyed by entry source path, with lookup maps for entry names and emitted outputs
-
-If you want a runtime-friendly asset graph directly in app code, call `deriveManifest()` on the returned `metafile`:
-
-```ts
-import { bundle, deriveManifest } from "@trebired/bundler";
-
-const result = await bundle({
-  entries: {
-    app: "./src/app.tsx",
-  },
-  outDir: "./dist",
-});
-
-const manifest = deriveManifest(result.metafile!, {
-  rootDir: process.cwd(),
-  outDir: "./dist",
-});
-```
-
-The helper returns:
-
-- `entries`: entry output -> JS/CSS/import graph
-- `chunks`: shared output -> import/CSS graph
-- `allOutputs`: flat normalized output index
-
-If you want a manifest ready for runtime asset selection, use `buildAssetManifest()`:
+The build result also exposes `assetManifest` directly.
 
 ```ts
 import { buildAssetManifest, bundle, collectAssetLinks } from "@trebired/bundler";
 
 const result = await bundle({
-  entries: {
-    app: "./src/app.tsx",
+  discover: {
+    dir: "./src/frontend",
+    rules: [
+      {
+        key: "client",
+        include: ["**/*.client.ts", "**/*.client.tsx"],
+        strategy: "entry",
+      },
+      {
+        key: "global-style",
+        include: ["css/**/*.css", "css/**/*.scss"],
+        strategy: "bundle",
+      },
+    ],
   },
   outDir: "./dist",
 });
@@ -177,55 +182,79 @@ const assetManifest = result.assetManifest || buildAssetManifest({
   metafile: result.metafile!,
   outDir: "./dist",
   rootDir: process.cwd(),
-  resolvedEntries: result.entries,
+  resolvedDiscovery: result.resolvedDiscovery,
 });
 
-const assets = collectAssetLinks(assetManifest, ["app"], {
+const assets = collectAssetLinks(assetManifest, [
+  "src/frontend/home.client.tsx",
+], {
+  from: "source",
   publicPath: "/",
 });
 ```
 
-The runtime asset manifest exposes:
+### Asset Manifest Shape
 
-- `entries`: entry source path -> primary file, reachable JS, reachable CSS, and other emitted assets
-- `entryNames`: logical entry name -> entry source path
-- `entryOutputs`: emitted entry file -> entry source path
-- `outputs`: emitted output index relative to `outDir`
-
-## Virtual Entries
-
-Use `virtualEntries` when you want generated entry modules without writing temporary files:
+`result.entries` is a source ownership map:
 
 ```ts
-await bundle({
-  entries: {
-    app: "./src/app.tsx",
-  },
-  virtualEntries: {
-    "entry-server": `
-import { message } from "./src/lib/message";
-export const rendered = message.toUpperCase();
-`,
-    "global.client": `
-import "./src/styles/site.scss";
-console.log("global-client");
-`,
-  },
-  outDir: "./dist",
-});
+Record<string, string>
+// source path -> owning entry key
 ```
 
-Virtual entries are loaded as TypeScript/ESM modules and resolve relative imports from `rootDir`.
+`assetManifest` exposes:
 
-## Watch Hooks
+- `sources[sourcePath]`: source file -> owning entry key, rule key, strategy, outputs
+- `entries[entryKey]`: entry or grouped bundle -> owned sources, outputs, JS, CSS, assets
+- `entryOutputs[emittedFile]`: emitted entry output -> entry key
+- `outputs[outputFile]`: normalized output metadata
+- `rules[ruleKey]`: grouped entry keys plus ignored sources for that rule
 
-Use watch hooks when app code needs clean lifecycle points after rebuilds:
+This lets runtime code resolve either:
+
+- a source path to its owning entry key
+- an entry key to the emitted scripts/styles/assets
+- a grouped bundle back to the exact source files it owns
+
+### Collecting Runtime Links
+
+Use `collectAssetLinks()` when app code needs scripts and styles for one or more sources or entry keys.
+
+Supported lookup modes:
+
+- `from: "source"`
+- `from: "entryKey"`
+- `from: "entryOutput"`
+- `from: "auto"` (default)
+
+## Watch Mode
+
+`watch()` stays discover-driven.
+
+- added or removed matching files trigger a discovery rescan
+- if source ownership changes, the bundler rebuilds the esbuild context
+- `onEntrySetChanged()` receives the new source ownership map
+- `onRebuilt()` receives the full `BundlerBuildResult`
+- invalid intermediate states still surface failures, but the watcher keeps running and recovers on the next valid filesystem change
 
 ```ts
-await watch({
+import { watch } from "@trebired/bundler";
+
+const session = await watch({
   discover: {
-    dir: "./src/pages",
-    include: ["**/*.tsx"],
+    dir: "./src/frontend",
+    rules: [
+      {
+        key: "client",
+        include: ["**/*.client.ts", "**/*.client.tsx"],
+        strategy: "entry",
+      },
+      {
+        key: "shared-script",
+        include: ["shared/**/*.ts", "shared/**/*.js"],
+        strategy: "bundle",
+      },
+    ],
   },
   outDir: "./dist",
   async onEntrySetChanged(entries) {
@@ -235,13 +264,13 @@ await watch({
     console.log(result.outputs);
   },
 });
-```
 
-`onEntrySetChanged()` runs only when the resolved entry set changes. `onRebuilt()` runs after a successful rebuild result is assembled.
+await session.dispose();
+```
 
 ## Import Graph Walking
 
-Use `walkImportGraph()` when a higher-level preset needs to inspect internal source dependencies without reimplementing relative import or tsconfig-path resolution:
+Use `walkImportGraph()` when a higher-level tool needs to inspect internal source dependencies without bundling:
 
 ```ts
 import { walkImportGraph } from "@trebired/bundler";
@@ -252,131 +281,38 @@ const graph = await walkImportGraph({
 });
 ```
 
-The helper:
+It resolves:
 
-- walks static imports, re-exports, and string-literal dynamic imports
-- resolves relative imports and tsconfig `paths`
-- returns a root-relative file graph with resolved internal imports marked explicitly
+- relative imports
+- re-exports
+- string-literal dynamic imports
+- tsconfig `paths`
 
-## Optimization Defaults
-
-`@trebired/bundler` now defaults to production-lean output through `mode: "compact"`:
-
-- `mode` defaults to `"compact"`
-- `minify` defaults to `true`
-- `stripComments` defaults to `true`
-- source annotations stay opt-in through `annotateSources: true`
-
-Available modes:
-
-- `debug`: readable output, no minification, no comment stripping by default
-- `compact`: minified output with stripped preserved comments by default
-- `extreme`: compact mode with the strongest package-owned compacting profile, without renaming classes or artifacts
-
-If you want a more readable debug build:
+## Public Config Shape
 
 ```ts
-await bundle({
-  entries: {
-    app: "./src/app.tsx",
-  },
-  mode: "debug",
-  minify: false,
-  outDir: "./dist",
-  stripComments: false,
-});
-```
+type BundlerDiscoverRuleStrategy = "entry" | "bundle" | "ignore";
 
-## Extreme Mode
+type BundlerDiscoverRule = {
+  key: string;
+  include: string[];
+  exclude?: string[];
+  strategy: BundlerDiscoverRuleStrategy;
+  maxBundleSize?: number | string;
+};
 
-Use `mode: "extreme"` when you want the package to apply its strongest built-in compacting profile:
+type BundlerDiscoverOptions = {
+  dir: string;
+  rules: BundlerDiscoverRule[];
+  ignoreDirs?: string[];
+};
 
-```ts
-await bundle({
-  entries: {
-    app: "./src/app.tsx",
-  },
-  mode: "extreme",
-  outDir: "./dist",
-});
-```
-
-This mode enables:
-
-- minification
-- stripped preserved comments
-- stable entry, chunk, and asset naming
-
-Today `extreme` intentionally keeps the same readable artifact and class names as other modes. The difference is its production-lean compacting profile, not obfuscation.
-
-## Source Annotation Comments
-
-Set `annotateSources: true` to inject preserved inline comments into bundled output.
-
-JavaScript and TypeScript modules are annotated like this:
-
-```js
-/*! source: src/app.tsx */
-```
-
-CSS and SCSS sources are annotated like this:
-
-```css
-/*! source: src/styles/site.scss */
-```
-
-These comments are emitted with project-relative POSIX-style paths so the generated bundle still points back to the original source file that contributed that segment.
-
-## Supported File Types
-
-The package supports:
-
-- `js`
-- `jsx`
-- `ts`
-- `tsx`
-- `css`
-- `scss`
-
-Plain JS, TS, JSX, TSX, and CSS are handled directly by `esbuild`. SCSS is compiled with `sass-embedded` and then passed back into the bundle pipeline as CSS.
-
-## Logging
-
-Package-owned logs are normalized through `@trebired/logger-adapter`, the same way other packages published by Trebired do it.
-
-You can pass:
-
-- a logger using the same call shape as other Trebired packages
-- an event sink logger
-- a common logger object
-- a custom `loggerAdapter(logger, event)` for exact output control
-
-## Public API
-
-```ts
 type BundlerOptions = {
-  entries?: string[] | Record<string, string>;
-  discover?: {
-    dir: string;
-    include?: string[];
-    exclude?: string[];
-    extensions?: string[];
-    ignoreDirs?: string[];
-    namePrefix?: string;
-  } | Array<{
-    dir: string;
-    include?: string[];
-    exclude?: string[];
-    extensions?: string[];
-    ignoreDirs?: string[];
-    namePrefix?: string;
-  }>;
-  virtualEntries?: Record<string, string>;
+  discover: BundlerDiscoverOptions | BundlerDiscoverOptions[];
   outDir: string;
   rootDir?: string;
-  mode?: "debug" | "compact" | "extreme";
   environment?: "browser" | "node" | "neutral";
-  format?: "esm" | "cjs" | "iife";
+  format?: Format;
   target?: string | string[];
   minify?: boolean;
   stripComments?: boolean;
@@ -387,45 +323,29 @@ type BundlerOptions = {
   define?: Record<string, string>;
   clean?: boolean;
   annotateSources?: boolean;
-  manifest?: boolean | {
-    file?: string;
-  };
+  manifest?: boolean | { file?: string };
   onRebuilt?: (result: BundlerBuildResult) => void | Promise<void>;
   onEntrySetChanged?: (entries: Record<string, string>) => void | Promise<void>;
-  logger?: unknown;
-  loggerAdapter?: (logger: unknown, event: unknown) => unknown;
+  logger?: BundlerLogger;
+  loggerAdapter?: BundlerLoggerAdapter;
 };
-
-declare function bundle(options: BundlerOptions): Promise<{
-  entries: Record<string, string>;
-  outputs: string[];
-  warnings: number;
-  metafile?: object;
-  manifestPath?: string;
-  durationMs: number;
-}>;
-
-declare function deriveManifest(
-  metafile: object,
-  options: {
-    rootDir: string;
-    outDir: string;
-  },
-): {
-  entries: Record<string, unknown>;
-  chunks: Record<string, unknown>;
-  allOutputs: Record<string, unknown>;
-};
-
-declare function watch(options: BundlerOptions): Promise<{
-  rebuild(): Promise<{
-    entries: Record<string, string>;
-    outputs: string[];
-    warnings: number;
-    metafile?: object;
-    manifestPath?: string;
-    durationMs: number;
-  }>;
-  dispose(): Promise<void>;
-}>;
 ```
+
+## Migration Notes
+
+This release removes the old mixed entry model.
+
+- `entries` is gone
+- public `virtualEntries` is gone
+- `mode` is gone
+- `discover.include` / `discover.exclude` at the top level is replaced by ordered `discover.rules`
+- runtime code using `entryNames` or `entrySources` should move to `assetManifest.sources` and `assetManifest.entries`
+
+## What It Does Not Do
+
+This package does not:
+
+- replace `esbuild`
+- provide a dev server or HMR
+- invent a custom runtime module system
+- auto-convert grouped shared JS/TS sources into dependency-safe page entry imports
