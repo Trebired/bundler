@@ -104,6 +104,7 @@ Rules are ordered. First match wins.
 
 - `entry`: keep one output entry per matched file
 - `bundle`: group all matched files together, then split only when the whole group exceeds `maxBundleSize`
+- `aggregate`: synthesize one internal entry module in memory from many discovered modules
 - `ignore`: track the file as intentionally ignored and exclude it from outputs
 
 Every discovered file must match exactly one rule. If a file is in scope and matches nothing, the build fails.
@@ -126,6 +127,55 @@ Grouped outputs always use package-owned names:
 - `bundle-<stable-id>-2.css`
 
 Callers do not provide custom grouped bundle names.
+
+### Aggregate Rules
+
+Use `strategy: "aggregate"` when you need one generated entry module without writing any temporary source file to disk.
+
+The first built-in aggregate kind is `module-map`. It:
+
+- optionally imports one configured root module
+- imports every matched module with namespace imports
+- resolves a configured export from each matched module
+- builds a map object keyed by normalized discovered path
+- exports the map, a resolver function, and optionally the root module binding
+- can also export a default object containing the same fields
+
+Example:
+
+```ts
+await bundle({
+  discover: {
+    dir: "./src/frontend",
+    rules: [
+      {
+        key: "ssr-pages",
+        include: ["pages/**/*.tsx"],
+        exclude: ["**/*.client.tsx", "**/*.defer.tsx", "**/*.spec.tsx", "**/*.test.tsx"],
+        strategy: "aggregate",
+        aggregate: {
+          kind: "module-map",
+          rootModule: "layouts/root_document.tsx",
+          collapseIndex: true,
+          exports: {
+            root: "rootDocument",
+            map: "pages",
+            resolver: "getPageComponent",
+            default: true,
+          },
+        },
+      },
+    ],
+  },
+  outDir: "./dist",
+});
+```
+
+Path keys default to the matched module path relative to the aggregate rule root, without the file extension:
+
+- `pages/home.tsx` -> `home`
+- `pages/blog/post.tsx` -> `blog/post`
+- `pages/settings/index.tsx` -> `settings` when `collapseIndex: true`
 
 ## Frontend Conventions
 
@@ -205,10 +255,10 @@ Record<string, string>
 `assetManifest` exposes:
 
 - `sources[sourcePath]`: source file -> owning entry key, rule key, strategy, outputs
-- `entries[entryKey]`: entry or grouped bundle -> owned sources, outputs, JS, CSS, assets
+- `entries[entryKey]`: entry or grouped bundle -> owned sources, outputs, JS, CSS, assets, plus generated/aggregate metadata when applicable
 - `entryOutputs[emittedFile]`: emitted entry output -> entry key
 - `outputs[outputFile]`: normalized output metadata
-- `rules[ruleKey]`: grouped entry keys plus ignored sources for that rule
+- `rules[ruleKey]`: grouped entry keys plus ignored sources for that rule, plus aggregate metadata when applicable
 
 This lets runtime code resolve either:
 
@@ -225,6 +275,7 @@ Supported lookup modes:
 - `from: "source"`
 - `from: "entryKey"`
 - `from: "entryOutput"`
+- `from: "ruleKey"`
 - `from: "auto"` (default)
 
 ## Watch Mode
@@ -291,15 +342,47 @@ It resolves:
 ## Public Config Shape
 
 ```ts
-type BundlerDiscoverRuleStrategy = "entry" | "bundle" | "ignore";
-
-type BundlerDiscoverRule = {
-  key: string;
-  include: string[];
-  exclude?: string[];
-  strategy: BundlerDiscoverRuleStrategy;
-  maxBundleSize?: number | string;
-};
+type BundlerDiscoverRule =
+  | {
+      key: string;
+      include: string[];
+      exclude?: string[];
+      strategy: "entry";
+    }
+  | {
+      key: string;
+      include: string[];
+      exclude?: string[];
+      strategy: "bundle";
+      maxBundleSize?: number | string;
+    }
+  | {
+      key: string;
+      include: string[];
+      exclude?: string[];
+      strategy: "ignore";
+    }
+  | {
+      key: string;
+      include: string[];
+      exclude?: string[];
+      strategy: "aggregate";
+      aggregate: {
+        kind: "module-map";
+        rootModule?: string;
+        rootModuleExportName?: string;
+        matchedModuleExportName?: string;
+        keyFromPath?: "relative-path";
+        collapseIndex?: boolean;
+        allowEmpty?: boolean;
+        exports?: {
+          root?: string;
+          map: string;
+          resolver: string;
+          default?: boolean;
+        };
+      };
+    };
 
 type BundlerDiscoverOptions = {
   dir: string;

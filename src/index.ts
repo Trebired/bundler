@@ -11,6 +11,11 @@ export { createScssPlugin } from "./plugins/scss.js";
 export { runCli } from "./cli/run-cli.js";
 
 export type {
+  BundlerAggregateEntryMetadata,
+  BundlerAggregateKind,
+  BundlerAggregateModuleMap,
+  BundlerAggregateModuleMapExports,
+  BundlerAggregateRuleMetadata,
   BundlerAssetManifest,
   BundlerAssetManifestEntry,
   BundlerAssetManifestOutput,
@@ -29,6 +34,10 @@ export type {
   BundlerDerivedManifestEntry,
   BundlerDerivedManifestOutput,
   BundlerDerivedManifestOutputKind,
+  BundlerDiscoverAggregateRule,
+  BundlerDiscoverBundleRule,
+  BundlerDiscoverEntryRule,
+  BundlerDiscoverIgnoreRule,
   BundlerEntryKind,
   BundlerEntryRecord,
   BundlerEntrySource,

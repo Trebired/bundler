@@ -1,12 +1,47 @@
-import type { BundlerDiscoverRuleStrategy, BundlerEntryRecord, BundlerManifestOptions, BundlerOptions, BundlerResolvedDiscovery } from "../types.js";
+import type { BundlerEntryRecord, BundlerManifestOptions, BundlerOptions, BundlerResolvedDiscovery } from "../types.js";
 declare const VIRTUAL_ENTRY_PREFIX = "trebired-virtual:";
-type NormalizedDiscoverRule = {
+type NormalizedAggregateModuleMap = {
+    allowEmpty: boolean;
+    collapseIndex: boolean;
+    exports: {
+        default: boolean;
+        map: string;
+        resolver: string;
+        root?: string;
+    };
+    kind: "module-map";
+    keyFromPath: "relative-path";
+    matchedModuleExportName: string;
+    rootModule?: string;
+    rootModuleExportName: string;
+};
+type NormalizedEntryRule = {
     exclude: string[];
     include: string[];
     key: string;
-    maxBundleSize?: number;
-    strategy: BundlerDiscoverRuleStrategy;
+    strategy: "entry";
 };
+type NormalizedBundleRule = {
+    exclude: string[];
+    include: string[];
+    key: string;
+    maxBundleSize: number;
+    strategy: "bundle";
+};
+type NormalizedIgnoreRule = {
+    exclude: string[];
+    include: string[];
+    key: string;
+    strategy: "ignore";
+};
+type NormalizedAggregateRule = {
+    aggregate: NormalizedAggregateModuleMap;
+    exclude: string[];
+    include: string[];
+    key: string;
+    strategy: "aggregate";
+};
+type NormalizedDiscoverRule = NormalizedEntryRule | NormalizedBundleRule | NormalizedIgnoreRule | NormalizedAggregateRule;
 type NormalizedDiscoverOptions = {
     dir: string;
     dirAbs: string;
@@ -28,5 +63,5 @@ declare function toEntryPointMap(records: BundlerEntryRecord[], rootDir: string)
 declare function normalizeManifestOptions(manifest: BundlerManifestOptions | undefined): NormalizedManifestOptions;
 declare function normalizeDiscoverRoots(rootDir: string, discover: BundlerOptions["discover"]): string[];
 export { normalizeDiscoverRoots, normalizeManifestOptions, resolveBundlerEntries, toEntryPointMap, toPosixPath, VIRTUAL_ENTRY_PREFIX, };
-export type { NormalizedDiscoverOptions, NormalizedDiscoverRule, NormalizedManifestOptions, ResolvedDiscovery, };
+export type { NormalizedAggregateModuleMap, NormalizedDiscoverOptions, NormalizedDiscoverRule, NormalizedManifestOptions, ResolvedDiscovery, };
 //# sourceMappingURL=discovery.d.ts.map

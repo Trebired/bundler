@@ -68,11 +68,13 @@ function createEntryRecord(args) {
     const jsSet = new Set(js);
     const cssSet = new Set(css);
     return {
+        aggregate: args.entry.aggregate,
         key: args.entry.key,
         kind: args.entry.kind,
         ruleKey: args.entry.ruleKey,
         strategy: args.entry.strategy,
         entrySource: args.entry.entrySource,
+        generated: args.entry.generated,
         sources: args.entry.ownedSources.slice().sort(),
         file: args.entryOutput,
         entryOutput: args.entryOutput,
@@ -102,6 +104,7 @@ function buildAssetManifest(options) {
     const rules = Object.fromEntries(Object.entries(resolvedDiscovery.rules).map(([ruleKey, rule]) => [
         ruleKey,
         {
+            aggregate: rule.aggregate,
             entryKeys: rule.entryKeys.slice().sort(),
             ignoredSources: rule.ignoredSources.slice().sort(),
             ruleKey: rule.ruleKey,
@@ -184,24 +187,32 @@ function toPublicPath(publicPath, value) {
         return normalizedValue ? `/${normalizedValue}` : "/";
     return `${base.replace(/\/+$/g, "")}/${normalizedValue.replace(/^\/+/g, "")}`;
 }
-function resolveEntryKey(manifest, entryId, from) {
+function resolveEntryKeys(manifest, entryId, from) {
     const normalizedId = normalizeKey(entryId);
     if (!normalizedId)
-        return "";
+        return [];
     if (from === "entryKey") {
-        return manifest.entries[normalizedId] ? normalizedId : "";
+        return manifest.entries[normalizedId] ? [normalizedId] : [];
     }
     if (from === "source") {
-        return manifest.sources[normalizedId]?.entryKey || "";
+        return manifest.sources[normalizedId]?.entryKey ? [manifest.sources[normalizedId].entryKey] : [];
     }
     if (from === "entryOutput") {
-        return manifest.entryOutputs[normalizedId] || "";
+        return manifest.entryOutputs[normalizedId] ? [manifest.entryOutputs[normalizedId]] : [];
     }
-    return manifest.entries[normalizedId]
-        ? normalizedId
-        : manifest.sources[normalizedId]?.entryKey
-            || manifest.entryOutputs[normalizedId]
-            || "";
+    if (from === "ruleKey") {
+        return manifest.rules[normalizedId]?.entryKeys.slice() || [];
+    }
+    if (manifest.entries[normalizedId]) {
+        return [normalizedId];
+    }
+    if (manifest.sources[normalizedId]?.entryKey) {
+        return [manifest.sources[normalizedId].entryKey];
+    }
+    if (manifest.entryOutputs[normalizedId]) {
+        return [manifest.entryOutputs[normalizedId]];
+    }
+    return manifest.rules[normalizedId]?.entryKeys.slice() || [];
 }
 function collectAssetLinks(manifest, entryIds, options = {}) {
     const from = options.from || "auto";
@@ -214,32 +225,34 @@ function collectAssetLinks(manifest, entryIds, options = {}) {
     const outputs = new Set();
     const seenKeys = new Set();
     for (const entryId of entryIds || []) {
-        const entryKey = resolveEntryKey(manifest, entryId, from);
-        if (!entryKey) {
+        const entryKeysForId = resolveEntryKeys(manifest, entryId, from);
+        if (entryKeysForId.length === 0) {
             const normalizedId = normalizeKey(entryId);
             if (normalizedId && !missing.includes(normalizedId)) {
                 missing.push(normalizedId);
             }
             continue;
         }
-        if (seenKeys.has(entryKey))
-            continue;
-        seenKeys.add(entryKey);
-        entryKeys.push(entryKey);
-        const entry = manifest.entries[entryKey];
-        if (!entry)
-            continue;
-        for (const output of entry.outputs) {
-            outputs.add(toPublicPath(publicPath, output));
-        }
-        for (const asset of entry.assets) {
-            assets.add(toPublicPath(publicPath, asset));
-        }
-        for (const style of entry.css) {
-            styles.add(toPublicPath(publicPath, style));
-        }
-        if (/\.(?:[mc]?js)$/i.test(entry.file)) {
-            scripts.add(toPublicPath(publicPath, entry.file));
+        for (const entryKey of entryKeysForId) {
+            if (seenKeys.has(entryKey))
+                continue;
+            seenKeys.add(entryKey);
+            entryKeys.push(entryKey);
+            const entry = manifest.entries[entryKey];
+            if (!entry)
+                continue;
+            for (const output of entry.outputs) {
+                outputs.add(toPublicPath(publicPath, output));
+            }
+            for (const asset of entry.assets) {
+                assets.add(toPublicPath(publicPath, asset));
+            }
+            for (const style of entry.css) {
+                styles.add(toPublicPath(publicPath, style));
+            }
+            if (/\.(?:[mc]?js)$/i.test(entry.file)) {
+                scripts.add(toPublicPath(publicPath, entry.file));
+            }
         }
     }
     return {

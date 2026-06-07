@@ -16,17 +16,64 @@ type BundlerLogEvent = LoggerAdapterEvent;
 type NormalizedBundlerLogger = NormalizedLoggerAdapter;
 
 type BundlerVirtualEntryLoader = "css" | "ts";
-type BundlerDiscoverRuleStrategy = "entry" | "bundle" | "ignore";
+type BundlerDiscoverRuleStrategy = "entry" | "bundle" | "ignore" | "aggregate";
 type BundlerEntryKind = "entry" | "bundle";
 type BundlerEntrySource = "discover" | "internal";
+type BundlerAggregateKind = "module-map";
 
-type BundlerDiscoverRule = {
+type BundlerAggregateModuleMapExports = {
+  root?: string;
+  map: string;
+  resolver: string;
+  default?: boolean;
+};
+
+type BundlerAggregateModuleMap = {
+  kind: "module-map";
+  rootModule?: string;
+  rootModuleExportName?: string;
+  matchedModuleExportName?: string;
+  keyFromPath?: "relative-path";
+  collapseIndex?: boolean;
+  allowEmpty?: boolean;
+  exports?: BundlerAggregateModuleMapExports;
+};
+
+type BundlerDiscoverEntryRule = {
   key: string;
   include: string[];
   exclude?: string[];
-  strategy: BundlerDiscoverRuleStrategy;
+  strategy: "entry";
+};
+
+type BundlerDiscoverBundleRule = {
+  key: string;
+  include: string[];
+  exclude?: string[];
+  strategy: "bundle";
   maxBundleSize?: number | string;
 };
+
+type BundlerDiscoverIgnoreRule = {
+  key: string;
+  include: string[];
+  exclude?: string[];
+  strategy: "ignore";
+};
+
+type BundlerDiscoverAggregateRule = {
+  key: string;
+  include: string[];
+  exclude?: string[];
+  strategy: "aggregate";
+  aggregate: BundlerAggregateModuleMap;
+};
+
+type BundlerDiscoverRule =
+  | BundlerDiscoverEntryRule
+  | BundlerDiscoverBundleRule
+  | BundlerDiscoverIgnoreRule
+  | BundlerDiscoverAggregateRule;
 
 type BundlerDiscoverOptions = {
   dir: string;
@@ -40,9 +87,22 @@ type BundlerManifestOptions = boolean | {
 
 type BundlerEnvironment = "browser" | "node" | "neutral";
 
+type BundlerAggregateEntryMetadata = {
+  kind: "module-map";
+  rootModule?: string;
+  matchedSources: string[];
+};
+
+type BundlerAggregateRuleMetadata = {
+  kind: "module-map";
+  rootModule?: string;
+};
+
 type BundlerEntryRecord = {
+  aggregate?: BundlerAggregateEntryMetadata;
   contents?: string;
   entrySource?: string;
+  generated: boolean;
   key: string;
   kind: BundlerEntryKind;
   name: string;
@@ -55,6 +115,7 @@ type BundlerEntryRecord = {
 };
 
 type BundlerResolvedRule = {
+  aggregate?: BundlerAggregateRuleMetadata;
   entryKeys: string[];
   ignoredSources: string[];
   ruleKey: string;
@@ -103,11 +164,13 @@ type BundlerDerivedManifest = {
 };
 
 type BundlerAssetManifestEntry = {
+  aggregate?: BundlerAggregateEntryMetadata;
   assets: string[];
   css: string[];
   entryOutput: string;
   entrySource?: string;
   file: string;
+  generated: boolean;
   imports: string[];
   js: string[];
   key: string;
@@ -127,6 +190,7 @@ type BundlerAssetManifestSource = {
 };
 
 type BundlerAssetManifestRule = {
+  aggregate?: BundlerAggregateRuleMetadata;
   entryKeys: string[];
   ignoredSources: string[];
   ruleKey: string;
@@ -161,7 +225,7 @@ type BundlerBuildAssetManifestOptions = {
   outDir: string;
 };
 
-type BundlerCollectAssetLinksLookup = "auto" | "entryKey" | "entryOutput" | "source";
+type BundlerCollectAssetLinksLookup = "auto" | "entryKey" | "entryOutput" | "ruleKey" | "source";
 
 type BundlerCollectAssetLinksOptions = {
   from?: BundlerCollectAssetLinksLookup;
@@ -256,6 +320,11 @@ type LoadedBundlerConfig = {
 };
 
 export type {
+  BundlerAggregateEntryMetadata,
+  BundlerAggregateKind,
+  BundlerAggregateModuleMap,
+  BundlerAggregateModuleMapExports,
+  BundlerAggregateRuleMetadata,
   BundlerAssetManifest,
   BundlerAssetManifestEntry,
   BundlerAssetManifestOutput,
@@ -271,6 +340,10 @@ export type {
   BundlerDerivedManifestEntry,
   BundlerDerivedManifestOutput,
   BundlerDerivedManifestOutputKind,
+  BundlerDiscoverAggregateRule,
+  BundlerDiscoverBundleRule,
+  BundlerDiscoverEntryRule,
+  BundlerDiscoverIgnoreRule,
   BundlerDiscoverOptions,
   BundlerDiscoverRule,
   BundlerDiscoverRuleStrategy,

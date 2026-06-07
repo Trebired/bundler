@@ -4,6 +4,13 @@ import path from "node:path";
 
 import { walkImportGraph } from "./import-graph.js";
 import type {
+  BundlerAggregateEntryMetadata,
+  BundlerAggregateModuleMap,
+  BundlerAggregateRuleMetadata,
+  BundlerDiscoverAggregateRule,
+  BundlerDiscoverBundleRule,
+  BundlerDiscoverEntryRule,
+  BundlerDiscoverIgnoreRule,
   BundlerDiscoverOptions,
   BundlerDiscoverRule,
   BundlerDiscoverRuleStrategy,
@@ -17,15 +24,77 @@ import type {
 
 const DEFAULT_DISCOVERY_BUNDLE_MAX_SIZE = 50 * 1024 * 1024;
 const DEFAULT_IGNORE_DIRS = [".git", "coverage", "dist", "node_modules"];
+const DEFAULT_AGGREGATE_MATCHED_EXPORT_NAME = "default";
+const DEFAULT_AGGREGATE_ROOT_EXPORT_NAME = "default";
+const DEFAULT_AGGREGATE_MAP_EXPORT = "modules";
+const DEFAULT_AGGREGATE_RESOLVER_EXPORT = "getModule";
+const DEFAULT_AGGREGATE_ROOT_BINDING_EXPORT = "rootModule";
+const DEFAULT_AGGREGATE_KEY_FROM_PATH = "relative-path";
+const DEFAULT_AGGREGATE_EXPORT_DEFAULT = true;
 const VIRTUAL_ENTRY_PREFIX = "trebired-virtual:";
+const MODULE_RESOLVE_EXTENSIONS = [
+  "",
+  ".ts",
+  ".tsx",
+  ".js",
+  ".jsx",
+  ".mts",
+  ".cts",
+  ".mjs",
+  ".cjs",
+];
 
-type NormalizedDiscoverRule = {
+type NormalizedAggregateModuleMap = {
+  allowEmpty: boolean;
+  collapseIndex: boolean;
+  exports: {
+    default: boolean;
+    map: string;
+    resolver: string;
+    root?: string;
+  };
+  kind: "module-map";
+  keyFromPath: "relative-path";
+  matchedModuleExportName: string;
+  rootModule?: string;
+  rootModuleExportName: string;
+};
+
+type NormalizedEntryRule = {
   exclude: string[];
   include: string[];
   key: string;
-  maxBundleSize?: number;
-  strategy: BundlerDiscoverRuleStrategy;
+  strategy: "entry";
 };
+
+type NormalizedBundleRule = {
+  exclude: string[];
+  include: string[];
+  key: string;
+  maxBundleSize: number;
+  strategy: "bundle";
+};
+
+type NormalizedIgnoreRule = {
+  exclude: string[];
+  include: string[];
+  key: string;
+  strategy: "ignore";
+};
+
+type NormalizedAggregateRule = {
+  aggregate: NormalizedAggregateModuleMap;
+  exclude: string[];
+  include: string[];
+  key: string;
+  strategy: "aggregate";
+};
+
+type NormalizedDiscoverRule =
+  | NormalizedEntryRule
+  | NormalizedBundleRule
+  | NormalizedIgnoreRule
+  | NormalizedAggregateRule;
 
 type NormalizedDiscoverOptions = {
   dir: string;
@@ -47,6 +116,11 @@ type ResolvedDiscovery = BundlerResolvedDiscovery & {
 type NormalizedManifestOptions = {
   enabled: boolean;
   file?: string;
+};
+
+type ResolvedAggregateRootModule = {
+  absPath: string;
+  rootRel: string;
 };
 
 function toPosixPath(value: string): string {
@@ -113,7 +187,7 @@ function matchesAnyPattern(value: string, patterns: string[]): boolean {
   });
 }
 
-function parseBundleMaxSize(value: BundlerDiscoverRule["maxBundleSize"]): number {
+function parseBundleMaxSize(value: BundlerDiscoverBundleRule["maxBundleSize"]): number {
   if (typeof value === "number") {
     if (!Number.isFinite(value) || value <= 0) {
       throw new Error("bundler-discover-bundle-invalid-max-size");
@@ -152,6 +226,70 @@ function normalizeStringList(values: string[] | undefined): string[] {
   return (values || []).map(normalizePathValue).filter(Boolean);
 }
 
+function isValidIdentifier(value: string): boolean {
+  return /^[A-Za-z_$][A-Za-z0-9_$]*$/u.test(value);
+}
+
+function normalizeAggregateModuleMap(
+  aggregate: BundlerAggregateModuleMap | undefined,
+  ruleKey: string,
+): NormalizedAggregateModuleMap {
+  if (!aggregate) {
+    throw new Error(`bundler-discover-aggregate-missing-config :: ${ruleKey}`);
+  }
+
+  if (aggregate.kind !== "module-map") {
+    throw new Error(`bundler-discover-aggregate-unsupported-kind :: ${ruleKey}`);
+  }
+
+  const keyFromPath = aggregate.keyFromPath || DEFAULT_AGGREGATE_KEY_FROM_PATH;
+  if (keyFromPath !== "relative-path") {
+    throw new Error(`bundler-discover-aggregate-invalid-key-from-path :: ${ruleKey}`);
+  }
+
+  const rootModule = aggregate.rootModule ? normalizePathValue(aggregate.rootModule) : undefined;
+  const rootModuleExportName = String(aggregate.rootModuleExportName || DEFAULT_AGGREGATE_ROOT_EXPORT_NAME).trim();
+  const matchedModuleExportName = String(
+    aggregate.matchedModuleExportName || DEFAULT_AGGREGATE_MATCHED_EXPORT_NAME,
+  ).trim();
+  const mapExport = String(aggregate.exports?.map || DEFAULT_AGGREGATE_MAP_EXPORT).trim();
+  const resolverExport = String(aggregate.exports?.resolver || DEFAULT_AGGREGATE_RESOLVER_EXPORT).trim();
+  const rootExport = aggregate.exports?.root
+    ? String(aggregate.exports.root).trim()
+    : DEFAULT_AGGREGATE_ROOT_BINDING_EXPORT;
+
+  for (const [label, value] of [
+    ["map", mapExport],
+    ["resolver", resolverExport],
+    ["root", rootExport],
+  ] as const) {
+    if (!isValidIdentifier(value)) {
+      throw new Error(`bundler-discover-aggregate-invalid-export-name :: ${ruleKey} :: ${label}`);
+    }
+  }
+
+  const namedExports = [mapExport, resolverExport, rootExport];
+  if (new Set(namedExports).size !== namedExports.length) {
+    throw new Error(`bundler-discover-aggregate-duplicate-export-name :: ${ruleKey}`);
+  }
+
+  return {
+    allowEmpty: Boolean(aggregate.allowEmpty),
+    collapseIndex: Boolean(aggregate.collapseIndex),
+    exports: {
+      default: aggregate.exports?.default ?? DEFAULT_AGGREGATE_EXPORT_DEFAULT,
+      map: mapExport,
+      resolver: resolverExport,
+      root: rootModule ? rootExport : undefined,
+    },
+    keyFromPath,
+    kind: "module-map",
+    matchedModuleExportName,
+    rootModule,
+    rootModuleExportName,
+  };
+}
+
 function normalizeDiscoverRule(rule: BundlerDiscoverRule): NormalizedDiscoverRule {
   const key = normalizePathValue(rule.key);
   const include = normalizeStringList(rule.include);
@@ -165,16 +303,59 @@ function normalizeDiscoverRule(rule: BundlerDiscoverRule): NormalizedDiscoverRul
     throw new Error(`bundler-discover-rule-missing-include :: ${key}`);
   }
 
-  if (rule.strategy !== "bundle" && rule.maxBundleSize != null) {
+  if (rule.strategy === "entry") {
+    if ("maxBundleSize" in rule && (rule as { maxBundleSize?: unknown }).maxBundleSize != null) {
+      throw new Error(`bundler-discover-rule-invalid-max-size-strategy :: ${key}`);
+    }
+    if ("aggregate" in rule && (rule as { aggregate?: unknown }).aggregate != null) {
+      throw new Error(`bundler-discover-rule-invalid-aggregate-strategy :: ${key}`);
+    }
+    return {
+      exclude,
+      include,
+      key,
+      strategy: "entry",
+    };
+  }
+
+  if (rule.strategy === "bundle") {
+    if ("aggregate" in rule && (rule as { aggregate?: unknown }).aggregate != null) {
+      throw new Error(`bundler-discover-rule-invalid-aggregate-strategy :: ${key}`);
+    }
+    return {
+      exclude,
+      include,
+      key,
+      maxBundleSize: parseBundleMaxSize(rule.maxBundleSize),
+      strategy: "bundle",
+    };
+  }
+
+  if (rule.strategy === "ignore") {
+    if ("maxBundleSize" in rule && (rule as { maxBundleSize?: unknown }).maxBundleSize != null) {
+      throw new Error(`bundler-discover-rule-invalid-max-size-strategy :: ${key}`);
+    }
+    if ("aggregate" in rule && (rule as { aggregate?: unknown }).aggregate != null) {
+      throw new Error(`bundler-discover-rule-invalid-aggregate-strategy :: ${key}`);
+    }
+    return {
+      exclude,
+      include,
+      key,
+      strategy: "ignore",
+    };
+  }
+
+  if ("maxBundleSize" in rule && (rule as { maxBundleSize?: unknown }).maxBundleSize != null) {
     throw new Error(`bundler-discover-rule-invalid-max-size-strategy :: ${key}`);
   }
 
   return {
+    aggregate: normalizeAggregateModuleMap(rule.aggregate, key),
     exclude,
     include,
     key,
-    maxBundleSize: rule.strategy === "bundle" ? parseBundleMaxSize(rule.maxBundleSize) : undefined,
-    strategy: rule.strategy,
+    strategy: "aggregate",
   };
 }
 
@@ -226,7 +407,7 @@ function normalizeDiscoverOptions(
   return normalized;
 }
 
-function createStableBundleId(value: string): string {
+function createStableId(value: string): string {
   let hash = 2166136261;
 
   for (let index = 0; index < value.length; index += 1) {
@@ -271,9 +452,18 @@ function buildBundleEntryKey(ruleKey: string, part: number): string {
   return `bundle:${ruleKey}:${part}`;
 }
 
+function buildAggregateEntryKey(ruleKey: string): string {
+  return `aggregate:${ruleKey}`;
+}
+
 function resolveBundleLoader(filePath: string): BundlerVirtualEntryLoader | undefined {
   if (/\.(?:css|scss)$/i.test(filePath)) return "css";
-  if (/\.(?:[mc]?[jt]sx?)$/i.test(filePath)) return "ts";
+  if (/\.(?:[mc]?[jt]sx?)$/i.test(filePath) && !/\.d\.[mc]?[jt]s$/i.test(filePath)) return "ts";
+  return undefined;
+}
+
+function resolveAggregateModuleLoader(filePath: string): BundlerVirtualEntryLoader | undefined {
+  if (/\.(?:[mc]?[jt]sx?)$/i.test(filePath) && !/\.d\.[mc]?[jt]s$/i.test(filePath)) return "ts";
   return undefined;
 }
 
@@ -349,6 +539,252 @@ function splitByMaxSize(args: {
   return chunks;
 }
 
+function toPosixDirname(value: string): string {
+  const normalized = normalizePathValue(value);
+  if (!normalized) return "";
+  const dirname = path.posix.dirname(normalized);
+  return dirname === "." ? "" : dirname;
+}
+
+function commonPathPrefix(values: string[]): string {
+  const normalizedValues = values.map(normalizePathValue).filter(Boolean);
+  if (normalizedValues.length === 0) return "";
+
+  const segments = normalizedValues.map((value) => value.split("/").filter(Boolean));
+  const shared: string[] = [];
+  const smallest = Math.min(...segments.map((parts) => parts.length));
+
+  for (let index = 0; index < smallest; index += 1) {
+    const segment = segments[0][index];
+    if (segments.every((parts) => parts[index] === segment)) {
+      shared.push(segment);
+      continue;
+    }
+    break;
+  }
+
+  return shared.join("/");
+}
+
+function staticPatternBase(pattern: string): string {
+  const normalized = normalizePathValue(pattern);
+  if (!normalized) return "";
+
+  const parts = normalized.split("/");
+  const stable: string[] = [];
+
+  for (const part of parts) {
+    if (/[*?]/.test(part)) break;
+    stable.push(part);
+  }
+
+  if (stable.length === 0) return "";
+  if (stable.length === parts.length) {
+    return toPosixDirname(stable.join("/"));
+  }
+
+  return stable.join("/");
+}
+
+function computeAggregateKeyRoot(includePatterns: string[], matchedFiles: DiscoveredFile[]): string {
+  const includeBase = commonPathPrefix(includePatterns.map(staticPatternBase).filter(Boolean));
+  if (includeBase) return includeBase;
+
+  return commonPathPrefix(matchedFiles.map((file) => toPosixDirname(file.discoverRel)).filter(Boolean));
+}
+
+function normalizeAggregatePathKey(args: {
+  collapseIndex: boolean;
+  file: DiscoveredFile;
+  keyRoot: string;
+}): string {
+  const fromRoot = args.keyRoot
+    ? normalizePathValue(path.posix.relative(args.keyRoot, args.file.discoverRel))
+    : normalizePathValue(args.file.discoverRel);
+  const ext = path.extname(fromRoot);
+  let withoutExt = ext ? fromRoot.slice(0, -ext.length) : fromRoot;
+
+  if (args.collapseIndex && withoutExt.endsWith("/index")) {
+    withoutExt = withoutExt.slice(0, -"/index".length);
+  }
+
+  return normalizePathValue(withoutExt);
+}
+
+function validateAggregatePathKeys(args: {
+  collapseIndex: boolean;
+  matchedFiles: DiscoveredFile[];
+  rule: NormalizedAggregateRule;
+}): void {
+  const keyRoot = computeAggregateKeyRoot(args.rule.include, args.matchedFiles);
+  const seen = new Map<string, string>();
+
+  for (const file of args.matchedFiles) {
+    const pathKey = normalizeAggregatePathKey({
+      collapseIndex: args.collapseIndex,
+      file,
+      keyRoot,
+    });
+    const existing = seen.get(pathKey);
+
+    if (existing && existing !== file.rootRel) {
+      throw new Error(`bundler-discover-aggregate-path-key-conflict :: ${args.rule.key} :: ${pathKey}`);
+    }
+
+    seen.set(pathKey, file.rootRel);
+  }
+}
+
+function createAggregateEntryMetadata(args: {
+  matchedFiles: DiscoveredFile[];
+  rootModule?: ResolvedAggregateRootModule;
+}): BundlerAggregateEntryMetadata {
+  return {
+    kind: "module-map",
+    matchedSources: args.matchedFiles.map((file) => file.rootRel),
+    rootModule: args.rootModule?.rootRel,
+  };
+}
+
+function createAggregateRuleMetadata(rootModule?: ResolvedAggregateRootModule): BundlerAggregateRuleMetadata {
+  return {
+    kind: "module-map",
+    rootModule: rootModule?.rootRel,
+  };
+}
+
+function buildAggregateModuleMapContents(args: {
+  aggregate: NormalizedAggregateModuleMap;
+  includePatterns: string[];
+  matchedFiles: DiscoveredFile[];
+  rootDir: string;
+  rootModule?: ResolvedAggregateRootModule;
+}): string {
+  const mapBinding = "__bundler_module_map";
+  const resolverBinding = "__bundler_get_module";
+  const rootBinding = "__bundler_root_module";
+  const lines: string[] = [];
+  const actualKeyRoot = computeAggregateKeyRoot(args.includePatterns, args.matchedFiles);
+
+  if (args.rootModule) {
+    lines.push(`import * as __bundler_root_namespace from ${JSON.stringify(toRootImportSpecifier(args.rootDir, args.rootModule.absPath))};`);
+  }
+
+  args.matchedFiles.forEach((file, index) => {
+    lines.push(`import * as __bundler_module_${index} from ${JSON.stringify(toRootImportSpecifier(args.rootDir, file.absPath))};`);
+  });
+
+  lines.push("");
+
+  if (args.rootModule) {
+    lines.push(`const ${rootBinding} = __bundler_root_namespace[${JSON.stringify(args.aggregate.rootModuleExportName)}];`);
+    lines.push("");
+  }
+
+  lines.push(`const ${mapBinding} = {`);
+  args.matchedFiles.forEach((file, index) => {
+    lines.push(
+      `  ${JSON.stringify(normalizeAggregatePathKey({
+        collapseIndex: args.aggregate.collapseIndex,
+        file,
+        keyRoot: actualKeyRoot,
+      }))}: __bundler_module_${index}[${JSON.stringify(args.aggregate.matchedModuleExportName)}],`,
+    );
+  });
+  lines.push("};");
+  lines.push("");
+  lines.push(`function ${resolverBinding}(key) {`);
+  lines.push(`  return ${mapBinding}[key];`);
+  lines.push("}");
+  lines.push("");
+
+  const exportSpecifiers = [
+    `${mapBinding} as ${args.aggregate.exports.map}`,
+    `${resolverBinding} as ${args.aggregate.exports.resolver}`,
+  ];
+
+  if (args.rootModule && args.aggregate.exports.root) {
+    exportSpecifiers.push(`${rootBinding} as ${args.aggregate.exports.root}`);
+  }
+
+  lines.push(`export { ${exportSpecifiers.join(", ")} };`);
+
+  if (args.aggregate.exports.default) {
+    const defaultMembers = [
+      `${args.aggregate.exports.map}: ${mapBinding}`,
+      `${args.aggregate.exports.resolver}: ${resolverBinding}`,
+    ];
+
+    if (args.rootModule && args.aggregate.exports.root) {
+      defaultMembers.push(`${args.aggregate.exports.root}: ${rootBinding}`);
+    }
+
+    lines.push("");
+    lines.push(`export default { ${defaultMembers.join(", ")} };`);
+  }
+
+  return lines.join("\n");
+}
+
+function resolveModuleCandidate(basePath: string): string | undefined {
+  for (const extension of MODULE_RESOLVE_EXTENSIONS) {
+    const directCandidate = `${basePath}${extension}`;
+    if (directCandidate && fs.existsSync(directCandidate) && fs.statSync(directCandidate).isFile()) {
+      return directCandidate;
+    }
+  }
+
+  if (fs.existsSync(basePath) && fs.statSync(basePath).isDirectory()) {
+    for (const extension of MODULE_RESOLVE_EXTENSIONS.filter(Boolean)) {
+      const indexCandidate = path.join(basePath, `index${extension}`);
+      if (fs.existsSync(indexCandidate) && fs.statSync(indexCandidate).isFile()) {
+        return indexCandidate;
+      }
+    }
+  }
+
+  return undefined;
+}
+
+function resolveAggregateRootModule(args: {
+  config: NormalizedDiscoverOptions;
+  rootDir: string;
+  rule: NormalizedAggregateRule;
+}): ResolvedAggregateRootModule | undefined {
+  if (!args.rule.aggregate.rootModule) return undefined;
+
+  const raw = args.rule.aggregate.rootModule;
+  const basePath = path.isAbsolute(raw) ? raw : path.resolve(args.config.dirAbs, raw);
+  const resolved = resolveModuleCandidate(basePath);
+
+  if (!resolved) {
+    throw new Error(`bundler-discover-aggregate-root-module-not-found :: ${args.rule.key} :: ${raw}`);
+  }
+
+  const rootRel = normalizePathValue(path.relative(args.rootDir, resolved));
+  if (!resolveAggregateModuleLoader(rootRel)) {
+    throw new Error(`bundler-discover-aggregate-unsupported-root-module :: ${args.rule.key} :: ${rootRel}`);
+  }
+
+  return {
+    absPath: resolved,
+    rootRel,
+  };
+}
+
+function assignSourceOwner(args: {
+  entryKey: string;
+  sourceOwners: Map<string, string>;
+  sourcePath: string;
+}): void {
+  const existing = args.sourceOwners.get(args.sourcePath);
+  if (existing && existing !== args.entryKey) {
+    throw new Error(`bundler-discover-source-owner-conflict :: ${args.sourcePath}`);
+  }
+
+  args.sourceOwners.set(args.sourcePath, args.entryKey);
+}
+
 async function validateGroupedBootImports(args: {
   entries: BundlerEntryRecord[];
   rootDir: string;
@@ -368,7 +804,7 @@ async function validateGroupedBootImports(args: {
 
   for (const bootEntry of bootEntries) {
     const graph = await walkImportGraph({
-      entries: bootEntry.entrySource!,
+      entries: bootEntry.entrySource,
       rootDir: args.rootDir,
     });
 
@@ -397,16 +833,40 @@ async function resolveBundlerEntries(
   for (const config of configs) {
     const files = await scanDiscoveredFiles(config, rootDir);
     const matchedByRule = new Map<string, DiscoveredFile[]>();
+    const aggregateRootModules = new Map<string, ResolvedAggregateRootModule>();
 
     for (const rule of config.rules) {
-      rules.set(rule.key, {
+      const ruleRecord: BundlerResolvedRule = {
         entryKeys: [],
         ignoredSources: [],
         ruleKey: rule.key,
         strategy: rule.strategy,
-      });
+      };
+
+      if (rule.strategy === "aggregate") {
+        const rootModule = resolveAggregateRootModule({
+          config,
+          rootDir,
+          rule,
+        });
+
+        if (rootModule) {
+          aggregateRootModules.set(rule.key, rootModule);
+          ruleRecord.aggregate = createAggregateRuleMetadata(rootModule);
+        } else {
+          ruleRecord.aggregate = createAggregateRuleMetadata();
+        }
+      }
+
+      rules.set(rule.key, ruleRecord);
       matchedByRule.set(rule.key, []);
     }
+
+    const reservedAggregateRoots = new Set(
+      Array.from(aggregateRootModules.values())
+        .filter((item) => item.rootRel.startsWith(`${config.dir}/`) || item.rootRel === config.dir)
+        .map((item) => item.rootRel),
+    );
 
     for (const file of files) {
       const matchedRule = classifyFile({
@@ -415,6 +875,9 @@ async function resolveBundlerEntries(
       });
 
       if (!matchedRule) {
+        if (reservedAggregateRoots.has(file.rootRel)) {
+          continue;
+        }
         throw new Error(`bundler-discover-unmatched-file :: ${file.rootRel}`);
       }
 
@@ -436,6 +899,7 @@ async function resolveBundlerEntries(
           const withoutExt = ext ? file.rootRel.slice(0, -ext.length) : file.rootRel;
           const record: BundlerEntryRecord = {
             entrySource: file.rootRel,
+            generated: false,
             key: buildEntryKey({
               rootRel: file.rootRel,
               ruleKey: rule.key,
@@ -460,84 +924,172 @@ async function resolveBundlerEntries(
           emittedNames.add(record.name);
           resolvedEntries.push(record);
           ruleRecord.entryKeys.push(record.key);
-          sourceOwners.set(file.rootRel, record.key);
+          assignSourceOwner({
+            entryKey: record.key,
+            sourceOwners,
+            sourcePath: file.rootRel,
+          });
         }
 
         continue;
       }
 
-      const filesWithStats = await Promise.all(matchedFiles.map(async (file) => {
-        const stats = await fsp.stat(file.absPath);
-        const bytes = Math.max(stats.size, 1);
+      if (rule.strategy === "bundle") {
+        const filesWithStats = await Promise.all(matchedFiles.map(async (file) => {
+          const stats = await fsp.stat(file.absPath);
+          const bytes = Math.max(stats.size, 1);
 
-        if (bytes > rule.maxBundleSize!) {
-          throw new Error(`bundler-discover-bundle-file-too-large :: ${file.rootRel}`);
+          if (bytes > rule.maxBundleSize) {
+            throw new Error(`bundler-discover-bundle-file-too-large :: ${file.rootRel}`);
+          }
+
+          return {
+            ...file,
+            bytes,
+          };
+        }));
+
+        if (filesWithStats.length === 0) {
+          continue;
         }
 
-        return {
-          ...file,
-          bytes,
-        };
-      }));
-
-      if (filesWithStats.length === 0) {
-        continue;
-      }
-
-      const loaders = new Set(filesWithStats.map((file) => resolveBundleLoader(file.rootRel)).filter(Boolean));
-      if (loaders.size !== 1) {
-        throw new Error(`bundler-discover-rule-mixed-loaders :: ${rule.key}`);
-      }
-
-      const loader = Array.from(loaders)[0] as BundlerVirtualEntryLoader;
-      const stableId = createStableBundleId(JSON.stringify({
-        dir: config.dir,
-        ruleKey: rule.key,
-        sources: filesWithStats.map((file) => file.rootRel),
-      }));
-      const chunks = splitByMaxSize({
-        files: filesWithStats.sort((a, b) => a.rootRel.localeCompare(b.rootRel)),
-        maxBundleSize: rule.maxBundleSize!,
-      });
-
-      chunks.forEach((chunk, index) => {
-        const part = index + 1;
-        const name = chunks.length === 1 ? `bundle-${stableId}` : `bundle-${stableId}-${part}`;
-        const key = buildBundleEntryKey(rule.key, part);
-        const ownedSources = chunk.map((file) => file.rootRel);
-
-        if (emittedKeys.has(key)) {
-          throw new Error(`bundler-discover-entry-key-conflict :: ${key}`);
-        }
-        if (emittedNames.has(name)) {
-          throw new Error(`bundler-discover-output-name-conflict :: ${name}`);
+        const loaders = new Set(filesWithStats.map((file) => resolveBundleLoader(file.rootRel)).filter(Boolean));
+        if (loaders.size !== 1) {
+          throw new Error(`bundler-discover-rule-mixed-loaders :: ${rule.key}`);
         }
 
-        emittedKeys.add(key);
-        emittedNames.add(name);
-
-        resolvedEntries.push({
-          contents: buildBundleContents({
-            files: chunk,
-            loader,
-            rootDir,
-          }),
-          key,
-          kind: "bundle",
-          name,
-          ownedSources,
-          path: `${VIRTUAL_ENTRY_PREFIX}${name}`,
+        const loader = Array.from(loaders)[0] as BundlerVirtualEntryLoader;
+        const stableId = createStableId(JSON.stringify({
+          dir: config.dir,
           ruleKey: rule.key,
-          source: "internal",
-          strategy: "bundle",
-          virtualLoader: loader,
+          sources: filesWithStats.map((file) => file.rootRel),
+        }));
+        const chunks = splitByMaxSize({
+          files: filesWithStats.sort((a, b) => a.rootRel.localeCompare(b.rootRel)),
+          maxBundleSize: rule.maxBundleSize,
         });
 
-        ruleRecord.entryKeys.push(key);
-        for (const sourcePath of ownedSources) {
-          sourceOwners.set(sourcePath, key);
-        }
+        chunks.forEach((chunk, index) => {
+          const part = index + 1;
+          const name = chunks.length === 1 ? `bundle-${stableId}` : `bundle-${stableId}-${part}`;
+          const key = buildBundleEntryKey(rule.key, part);
+          const ownedSources = chunk.map((file) => file.rootRel);
+
+          if (emittedKeys.has(key)) {
+            throw new Error(`bundler-discover-entry-key-conflict :: ${key}`);
+          }
+          if (emittedNames.has(name)) {
+            throw new Error(`bundler-discover-output-name-conflict :: ${name}`);
+          }
+
+          emittedKeys.add(key);
+          emittedNames.add(name);
+
+          resolvedEntries.push({
+            contents: buildBundleContents({
+              files: chunk,
+              loader,
+              rootDir,
+            }),
+            generated: true,
+            key,
+            kind: "bundle",
+            name,
+            ownedSources,
+            path: `${VIRTUAL_ENTRY_PREFIX}${name}`,
+            ruleKey: rule.key,
+            source: "internal",
+            strategy: "bundle",
+            virtualLoader: loader,
+          });
+
+          ruleRecord.entryKeys.push(key);
+          for (const sourcePath of ownedSources) {
+            assignSourceOwner({
+              entryKey: key,
+              sourceOwners,
+              sourcePath,
+            });
+          }
+        });
+
+        continue;
+      }
+
+      const rootModule = aggregateRootModules.get(rule.key);
+      const unsupportedFile = matchedFiles.find((file) => !resolveAggregateModuleLoader(file.rootRel));
+      if (unsupportedFile) {
+        throw new Error(`bundler-discover-aggregate-unsupported-file :: ${rule.key} :: ${unsupportedFile.rootRel}`);
+      }
+
+      validateAggregatePathKeys({
+        collapseIndex: rule.aggregate.collapseIndex,
+        matchedFiles,
+        rule,
       });
+
+      if (matchedFiles.length === 0 && !rule.aggregate.allowEmpty) {
+        throw new Error(`bundler-discover-aggregate-empty :: ${rule.key}`);
+      }
+
+      const key = buildAggregateEntryKey(rule.key);
+      const aggregateMetadata = createAggregateEntryMetadata({
+        matchedFiles,
+        rootModule,
+      });
+      const stableId = createStableId(JSON.stringify({
+        aggregate: rule.aggregate,
+        dir: config.dir,
+        rootModule: rootModule?.rootRel,
+        ruleKey: rule.key,
+        sources: aggregateMetadata.matchedSources,
+      }));
+      const name = `aggregate-${stableId}`;
+      const ownedSources = [
+        ...aggregateMetadata.matchedSources,
+        ...(rootModule ? [rootModule.rootRel] : []),
+      ].sort();
+
+      if (emittedKeys.has(key)) {
+        throw new Error(`bundler-discover-entry-key-conflict :: ${key}`);
+      }
+      if (emittedNames.has(name)) {
+        throw new Error(`bundler-discover-output-name-conflict :: ${name}`);
+      }
+
+      emittedKeys.add(key);
+      emittedNames.add(name);
+
+      resolvedEntries.push({
+        aggregate: aggregateMetadata,
+        contents: buildAggregateModuleMapContents({
+        aggregate: rule.aggregate,
+          includePatterns: rule.include,
+          matchedFiles,
+          rootDir,
+          rootModule,
+        }),
+        generated: true,
+        key,
+        kind: "entry",
+        name,
+        ownedSources,
+        path: `${VIRTUAL_ENTRY_PREFIX}${name}`,
+        ruleKey: rule.key,
+        source: "internal",
+        strategy: "aggregate",
+        virtualLoader: "ts",
+      });
+
+      ruleRecord.entryKeys.push(key);
+
+      for (const sourcePath of ownedSources) {
+        assignSourceOwner({
+          entryKey: key,
+          sourceOwners,
+          sourcePath,
+        });
+      }
     }
   }
 
@@ -560,7 +1112,9 @@ async function resolveBundlerEntries(
     ...discovery,
     signature: JSON.stringify({
       entries: discovery.entries.map((entry) => ({
+        aggregate: entry.aggregate,
         entrySource: entry.entrySource,
+        generated: entry.generated,
         key: entry.key,
         kind: entry.kind,
         name: entry.name,
@@ -629,6 +1183,7 @@ export {
   VIRTUAL_ENTRY_PREFIX,
 };
 export type {
+  NormalizedAggregateModuleMap,
   NormalizedDiscoverOptions,
   NormalizedDiscoverRule,
   NormalizedManifestOptions,

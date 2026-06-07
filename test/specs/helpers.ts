@@ -74,6 +74,56 @@ $brand: blue;
 `);
 }
 
+function createAggregateFixtureProject(root: string): void {
+  writeFile(root, "src/frontend/layouts/root_document.tsx", `
+export default function RootDocument() {
+  return "root-document";
+}
+`);
+
+  writeFile(root, "src/frontend/pages/home.tsx", `
+export default function HomePage() {
+  return "home-page";
+}
+`);
+
+  writeFile(root, "src/frontend/pages/blog/post.tsx", `
+export default function BlogPostPage() {
+  return "blog-post-page";
+}
+`);
+
+  writeFile(root, "src/frontend/pages/settings/index.tsx", `
+export default function SettingsIndexPage() {
+  return "settings-index-page";
+}
+`);
+
+  writeFile(root, "src/frontend/pages/home.client.tsx", `
+export default function HomeClientPage() {
+  return "home-client-page";
+}
+`);
+
+  writeFile(root, "src/frontend/pages/home.defer.tsx", `
+export default function HomeDeferPage() {
+  return "home-defer-page";
+}
+`);
+
+  writeFile(root, "src/frontend/pages/home.spec.tsx", `
+export default function HomeSpecPage() {
+  return "home-spec-page";
+}
+`);
+
+  writeFile(root, "src/frontend/pages/home.test.tsx", `
+export default function HomeTestPage() {
+  return "home-test-page";
+}
+`);
+}
+
 async function waitFor(predicate: () => boolean, timeoutMs = 2000): Promise<void> {
   const startedAt = Date.now();
 
@@ -85,4 +135,4 @@ async function waitFor(predicate: () => boolean, timeoutMs = 2000): Promise<void
   throw new Error("wait-timeout");
 }
 
-export { createFixtureProject, exists, readFile, tempDir, waitFor, writeFile };
+export { createAggregateFixtureProject, createFixtureProject, exists, readFile, tempDir, waitFor, writeFile };

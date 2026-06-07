@@ -4,6 +4,13 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 3.1.0
+
+- Added discover-rule `aggregate` support for internal generated entry modules without bringing back public `entries` or `virtualEntries`.
+- Added the first built-in aggregate kind, `module-map`, for synthesizing one stable entry from discovered modules and an optional root module.
+- Added aggregate metadata to runtime asset manifests and rule metadata so generated entries can be resolved without any temp source path.
+- Added `collectAssetLinks(..., { from: "ruleKey" })` for resolving emitted assets directly from discover rule keys.
+
 ## 3.0.0
 
 - Rebuilt `@trebired/bundler` around discover-only configuration and removed public manual `entries`.
