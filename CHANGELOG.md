@@ -4,7 +4,7 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
-## 2.1.0
+## 3.0.0
 
 - Rebuilt `@trebired/bundler` around discover-only configuration and removed public manual `entries`.
 - Removed public `virtualEntries`; grouped bundle entry modules are now internal implementation detail only.

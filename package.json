@@ -1,6 +1,6 @@
 {
   "name": "@trebired/bundler",
-  "version": "2.1.0",
+  "version": "3.0.0",
   "description": "Discover-only esbuild bundler wrapper with SCSS support, watch mode, and runtime asset manifests.",
   "license": "AGPL-3.0-only",
   "keywords": [
