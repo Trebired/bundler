@@ -3,7 +3,7 @@ import { compileAsync } from "sass-embedded";
 import type { Plugin } from "esbuild";
 
 import { injectSourceAnnotation } from "./source-annotations.js";
-import type { NormalizedBundlerLogger } from "../types.js";
+import type { NormalizedBundlerLogger } from "#jb343639kom2";
 
 type ScssPluginOptions = {
   annotateSources: boolean;

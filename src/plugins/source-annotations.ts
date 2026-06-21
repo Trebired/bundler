@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { Loader, Plugin } from "esbuild";
 
-import type { NormalizedBundlerLogger } from "../types.js";
+import type { NormalizedBundlerLogger } from "#jb343639kom2";
 
 type SourceAnnotationsPluginOptions = {
   logger: NormalizedBundlerLogger;
