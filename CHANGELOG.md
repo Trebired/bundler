@@ -4,6 +4,11 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 3.1.1
+
+- Enforced the package `tb.code-discipline.ts` policy across source, tests, and examples, including synced import aliases and normalized `tsconfig` path metadata.
+- Kept the public bundler API and runtime behavior unchanged while bringing the codebase into the current Trebired discipline layout.
+
 ## 3.1.0
 
 - Added discover-rule `aggregate` support for internal generated entry modules without bringing back public `entries` or `virtualEntries`.
