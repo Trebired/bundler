@@ -1,10 +1,2 @@
-import type { Metafile } from "esbuild";
-import type { BundlerDerivedManifest } from "../types.js";
-type DeriveManifestOptions = {
-    outDir: string;
-    rootDir: string;
-};
-declare function deriveManifest(metafile: Metafile, options: DeriveManifestOptions): BundlerDerivedManifest;
-export { deriveManifest };
-export type { DeriveManifestOptions };
+export * from "../internal/core/derive-manifest.d.ts";
 //# sourceMappingURL=derive-manifest.d.ts.map

@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { bundle } from "../src/index.js";
+import { bundle } from "#sof0gxa0cxhk";
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "@trebired-bundler-example-"));
 const srcDir = path.join(root, "src");

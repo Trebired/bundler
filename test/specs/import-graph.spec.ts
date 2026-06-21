@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { walkImportGraph } from "../../src/index";
+import { walkImportGraph } from "#sof0gxa0cxhk";
 import { tempDir, writeFile } from "./helpers";
 
 describe("import graph helpers", () => {

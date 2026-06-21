@@ -1,4 +1,2 @@
-import type { BundlerImportGraph, BundlerImportGraphOptions } from "../types.js";
-declare function walkImportGraph(options: BundlerImportGraphOptions): Promise<BundlerImportGraph>;
-export { walkImportGraph };
+export * from "../internal/core/import-graph.d.ts";
 //# sourceMappingURL=import-graph.d.ts.map

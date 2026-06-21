@@ -76,55 +76,69 @@ async function waitForStop(session: Awaited<ReturnType<typeof watch>>, durationM
 }
 
 async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliRunResult> {
-  const cwd = options.cwd ?? process.cwd();
-  const stdout = options.stdout ?? ((text: string) => process.stdout.write(text));
-  const stderr = options.stderr ?? ((text: string) => process.stderr.write(text));
+  const io = resolveCliIo(options);
   const [command, ...rest] = argv;
 
   if (!command || command === "help" || command === "--help" || command === "-h") {
-    stdout(`${renderHelp()}\n`);
+    io.stdout(`${renderHelp()}\n`);
     return { exitCode: 0 };
   }
 
   try {
-    const parsed = parseArgs(rest);
-
-    if (parsed.extra.length > 0) {
-      throw new Error(`Unexpected arguments: ${parsed.extra.join(" ")}`);
-    }
-
-    if (!parsed.configPath) {
-      throw new Error("Missing required --config <path> option");
-    }
-
-    const { config } = await loadBundlerConfigModule(cwd, parsed.configPath);
-
-    if (command === "build") {
-      const result = await bundle({
-        ...config,
-        rootDir: config.rootDir ?? cwd,
-      });
-      stdout(`${JSON.stringify(result)}\n`);
-      return { exitCode: 0 };
-    }
-
-    if (command === "watch") {
-      const session = await watch({
-        ...config,
-        rootDir: config.rootDir ?? cwd,
-      });
-      stdout("Watching for changes.\n");
-      await waitForStop(session, options.watchDurationMs);
-      return { exitCode: 0 };
-    }
-
-    stderr(`Unknown command: ${command}\n`);
-    stderr(`${renderHelp()}\n`);
-    return { exitCode: 1 };
+    return await runCliCommand(command, rest, options, io);
   } catch (error) {
-    stderr(`${error instanceof Error ? error.message : String(error)}\n`);
+    io.stderr(`${error instanceof Error ? error.message : String(error)}\n`);
     return { exitCode: 1 };
   }
+}
+
+function resolveCliIo(options: CliRunOptions) {
+  return {
+    cwd: options.cwd ?? process.cwd(),
+    stdout: options.stdout ?? ((text: string) => process.stdout.write(text)),
+    stderr: options.stderr ?? ((text: string) => process.stderr.write(text)),
+  };
+}
+
+async function runCliCommand(
+  command: string,
+  rest: string[],
+  options: CliRunOptions,
+  io: ReturnType<typeof resolveCliIo>,
+): Promise<CliRunResult> {
+  const parsed = parseArgs(rest);
+  if (parsed.extra.length > 0) throw new Error(`Unexpected arguments: ${parsed.extra.join(" ")}`);
+  if (!parsed.configPath) throw new Error("Missing required --config <path> option");
+
+  const { config } = await loadBundlerConfigModule(io.cwd, parsed.configPath);
+  if (command === "build") return runBuildCommand(config, io.cwd, io.stdout);
+  if (command === "watch") return runWatchCommand(config, io.cwd, io.stdout, options.watchDurationMs);
+
+  io.stderr(`Unknown command: ${command}\n`);
+  io.stderr(`${renderHelp()}\n`);
+  return { exitCode: 1 };
+}
+
+async function runBuildCommand(
+  config: Awaited<ReturnType<typeof loadBundlerConfigModule>>["config"],
+  cwd: string,
+  stdout: (text: string) => void,
+): Promise<CliRunResult> {
+  const result = await bundle({ ...config, rootDir: config.rootDir ?? cwd });
+  stdout(`${JSON.stringify(result)}\n`);
+  return { exitCode: 0 };
+}
+
+async function runWatchCommand(
+  config: Awaited<ReturnType<typeof loadBundlerConfigModule>>["config"],
+  cwd: string,
+  stdout: (text: string) => void,
+  watchDurationMs?: number,
+): Promise<CliRunResult> {
+  const session = await watch({ ...config, rootDir: config.rootDir ?? cwd });
+  stdout("Watching for changes.\n");
+  await waitForStop(session, watchDurationMs);
+  return { exitCode: 0 };
 }
 
 const entryPath = process.argv[1] ? pathToFileURL(process.argv[1]).href : null;

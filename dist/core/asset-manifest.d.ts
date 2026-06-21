@@ -1,5 +1,2 @@
-import type { BundlerAssetManifest, BundlerBuildAssetManifestOptions, BundlerCollectedAssetLinks, BundlerCollectAssetLinksOptions } from "../types.js";
-declare function buildAssetManifest(options: BundlerBuildAssetManifestOptions): BundlerAssetManifest;
-declare function collectAssetLinks(manifest: BundlerAssetManifest, entryIds: string[], options?: BundlerCollectAssetLinksOptions): BundlerCollectedAssetLinks;
-export { buildAssetManifest, collectAssetLinks };
+export * from "../internal/core/asset-manifest.d.ts";
 //# sourceMappingURL=asset-manifest.d.ts.map

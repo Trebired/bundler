@@ -1,5 +1,5 @@
 import type { Plugin } from "esbuild";
-import type { BundlerEntryRecord, NormalizedBundlerLogger } from "../types.js";
+import type { BundlerEntryRecord, NormalizedBundlerLogger } from "../src/types.d.ts";
 declare const VIRTUAL_ENTRY_NAMESPACE = "trebired-virtual-entry";
 type VirtualEntriesPluginOptions = {
     entries: BundlerEntryRecord[];

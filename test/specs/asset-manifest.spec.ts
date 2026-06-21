@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { buildAssetManifest, bundle, collectAssetLinks } from "../../src/index";
+import { buildAssetManifest, bundle, collectAssetLinks } from "#sof0gxa0cxhk";
 import { createFixtureProject, readFile, tempDir } from "./helpers";
 
 function createDiscoverConfig(root: string) {

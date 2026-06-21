@@ -1,9 +1,2 @@
-type DiscoveryWatcher = {
-    close(): void;
-};
-declare function createDiscoveryWatcher(args: {
-    dirs: string[];
-    onChange: () => void;
-}): DiscoveryWatcher;
-export { createDiscoveryWatcher };
+export * from "../internal/core/discovery-watch.d.ts";
 //# sourceMappingURL=discovery-watch.d.ts.map

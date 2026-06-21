@@ -1,5 +1,5 @@
 import type { Plugin } from "esbuild";
-import type { NormalizedBundlerLogger } from "../types.js";
+import type { NormalizedBundlerLogger } from "../src/types.d.ts";
 type ScssPluginOptions = {
     annotateSources: boolean;
     logger: NormalizedBundlerLogger;

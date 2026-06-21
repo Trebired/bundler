@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { createDiscoveryWatcher } from "../../src/core/discovery-watch.js";
+import { createDiscoveryWatcher } from "#sv3iqugy67ty";
 import { tempDir } from "./helpers";
 
 describe("discovery watcher", () => {

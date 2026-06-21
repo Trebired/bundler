@@ -2,8 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, test } from "bun:test";
 
-import { bundle, deriveManifest, watch } from "../../src/index";
-import type { BundlerOptions } from "../../src/index";
+import { bundle, deriveManifest, watch } from "#sof0gxa0cxhk";
+import type { BundlerOptions } from "#sof0gxa0cxhk";
 import { createFixtureProject, exists, readFile, tempDir, waitFor, writeFile } from "./helpers";
 
 function createDiscoverConfig(root: string, overrides: Partial<BundlerOptions> = {}): BundlerOptions {

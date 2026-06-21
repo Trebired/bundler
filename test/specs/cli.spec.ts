@@ -2,7 +2,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, test } from "bun:test";
 
-import { runCli } from "../../src/cli/run-cli";
+import { runCli } from "#2fp58v7071qe";
 import { createFixtureProject, exists, tempDir, writeFile } from "./helpers";
 
 function writeConfig(root: string): void {

@@ -1,4 +1,2 @@
-import type { BundlerOptions, BundlerWatchSession } from "../types.js";
-declare function watch(options: BundlerOptions): Promise<BundlerWatchSession>;
-export { watch };
+export * from "../internal/core/watch.d.ts";
 //# sourceMappingURL=watch.d.ts.map

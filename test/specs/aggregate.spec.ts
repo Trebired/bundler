@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import { bundle, collectAssetLinks, watch } from "../../src/index";
-import type { BundlerOptions } from "../../src/index";
+import { bundle, collectAssetLinks, watch } from "#sof0gxa0cxhk";
+import type { BundlerOptions } from "#sof0gxa0cxhk";
 import { createAggregateFixtureProject, exists, readFile, tempDir, waitFor, writeFile } from "./helpers";
 
 function createAggregateConfig(root: string, overrides: Partial<BundlerOptions> = {}): BundlerOptions {

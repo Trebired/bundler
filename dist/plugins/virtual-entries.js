@@ -1,4 +1,4 @@
-import { VIRTUAL_ENTRY_PREFIX } from "../core/discovery.js";
+import { VIRTUAL_ENTRY_PREFIX } from "../src/core/discovery.js";
 const VIRTUAL_ENTRY_NAMESPACE = "trebired-virtual-entry";
 function createVirtualEntriesPlugin(options) {
     const byName = new Map(options.entries

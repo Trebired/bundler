@@ -1,4 +1,2 @@
-import type { BundlerBuildResult, BundlerOptions } from "../types.js";
-declare function bundle(options: BundlerOptions): Promise<BundlerBuildResult>;
-export { bundle };
+export * from "../internal/core/build.d.ts";
 //# sourceMappingURL=build.d.ts.map

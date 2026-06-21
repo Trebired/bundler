@@ -11,7 +11,7 @@ import { buildAssetManifest } from "./asset-manifest.js";
 import { writeBundlerManifest } from "./manifest.js";
 import type { NormalizedManifestOptions } from "./discovery.js";
 
-function formatEsbuildMessage(message: Partial<Message>): string {
+export function formatEsbuildMessage(message: Partial<Message>): string {
   const location = message.location
     ? `${message.location.file}:${message.location.line}:${message.location.column}`
     : "";
@@ -70,11 +70,11 @@ async function toBuildResult(args: {
   };
 }
 
-async function cleanOutDir(outDir: string): Promise<void> {
+export async function cleanOutDir(outDir: string): Promise<void> {
   await fs.rm(outDir, { force: true, recursive: true });
 }
 
-function formatFailure(error: unknown): string {
+export function formatFailure(error: unknown): string {
   if (error && typeof error === "object" && Array.isArray((error as { errors?: unknown[] }).errors)) {
     const errors = (error as { errors: Partial<Message>[] }).errors;
     return errors.map(formatEsbuildMessage).join(" | ");
@@ -83,4 +83,4 @@ function formatFailure(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-export { cleanOutDir, formatFailure, logWarnings, toBuildResult };
+export { logWarnings, toBuildResult };

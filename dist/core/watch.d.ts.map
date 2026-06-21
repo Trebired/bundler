@@ -1,1 +1,1 @@
-{"version":3,"file":"watch.d.ts","sourceRoot":"","sources":["../../src/core/watch.ts"],"names":[],"mappings":"AAMA,OAAO,KAAK,EAAsB,cAAc,EAAE,mBAAmB,EAAE,MAAM,aAAa,CAAC;AAM3F,iBAAe,KAAK,CAAC,OAAO,EAAE,cAAc,GAAG,OAAO,CAAC,mBAAmB,CAAC,CAmL1E;AAED,OAAO,EAAE,KAAK,EAAE,CAAC"}
+{"version":3,"file":"watch.d.ts","sourceRoot":"","sources":["../../../src/core/watch.ts"],"names":[],"mappings":"AAAA,cAAc,eAAe,CAAC"}
