@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { BuildResult, Message } from "esbuild";
+import { result } from "@trebired/result";
 
 import type {
   BundlerBuildResult,
@@ -67,6 +68,13 @@ async function toBuildResult(args: {
     manifestPath: manifestWrite.manifestPath,
     durationMs: Date.now() - args.startedAt,
     resolvedDiscovery: args.resolvedDiscovery,
+    result: result.ok("Bundler build completed.", {
+      data: {
+        durationMs: Date.now() - args.startedAt,
+        outputs,
+        warnings: args.result.warnings.length,
+      },
+    }),
   };
 }
 

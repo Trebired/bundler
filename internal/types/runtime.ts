@@ -1,4 +1,5 @@
 import type { Format, Metafile } from "esbuild";
+import type { ResultLike } from "@trebired/result";
 
 import type { BundlerResolvedDiscovery } from "./discovery.js";
 import type { BundlerLogger, BundlerLoggerAdapter } from "./logging.js";
@@ -38,6 +39,11 @@ type BundlerBuildResult = {
   manifestPath?: string;
   durationMs: number;
   resolvedDiscovery: BundlerResolvedDiscovery;
+  result?: ResultLike<{
+    durationMs: number;
+    outputs: string[];
+    warnings: number;
+  }>;
 };
 
 type BundlerWatchSession = {
