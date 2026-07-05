@@ -1,1 +1,4 @@
-export * from "#17f3fba84f54";
+export {
+  buildAssetManifest,
+  collectAssetLinks,
+} from "./asset_manifest/runtime.js";

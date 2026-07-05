@@ -31,15 +31,15 @@ export default {
     dry: {
       helpers: [
         {
-          from: "./internal/core/shared.ts",
+          from: "./src/core/shared.ts",
           exportName: "formatEsbuildMessage",
         },
         {
-          from: "./internal/core/shared.ts",
+          from: "./src/core/shared.ts",
           exportName: "formatFailure",
         },
         {
-          from: "./internal/core/shared.ts",
+          from: "./src/core/shared.ts",
           exportName: "cleanOutDir",
         },
       ],
