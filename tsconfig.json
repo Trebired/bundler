@@ -11,6 +11,9 @@
     "moduleResolution": "Bundler",
     "noEmit": true,
     "paths": {
+      "#0c1loaldfmda": [
+        "./test/specs/helpers.ts"
+      ],
       "#0e84q8f4ubat": [
         "./src/constants.ts"
       ],
@@ -62,8 +65,14 @@
       "#7h0tnral48hu": [
         "./src/core/shared.ts"
       ],
+      "#96uow2p60uw3": [
+        "./test/specs/aggregate.spec.ts"
+      ],
       "#9b50ca986572": [
         "./internal/core/build.ts"
+      ],
+      "#9vdbrjjdq8x7": [
+        "./test/specs/discovery-watch.spec.ts"
       ],
       "#a222003f1819": [
         "./internal/core/manifest.ts"
@@ -74,11 +83,17 @@
       "#aojehsmd54nq": [
         "./src/core/manifest.ts"
       ],
+      "#arl4fcea8kjn": [
+        "./test/specs/watch.spec.ts"
+      ],
       "#axis79i54k87": [
         "./internal/core/discovery/normalize.ts"
       ],
       "#b78ku6qgmf3o": [
         "./src/backend/utils/normalize.ts"
+      ],
+      "#bekyanw1fl4u": [
+        "./test/specs/discover.spec.ts"
       ],
       "#c16c81be3058": [
         "./internal/core/discovery.ts"
@@ -97,6 +112,9 @@
       ],
       "#dg8wh29x5weu": [
         "./internal/types/import_graph.ts"
+      ],
+      "#eb7rqmr004o0": [
+        "./test/specs/import-graph.spec.ts"
       ],
       "#f9bmvntxjm9y": [
         "./src/core/esbuild-options.ts"
@@ -146,6 +164,9 @@
       "#t2refevky8d1": [
         "./internal/core/asset_manifest/runtime.ts"
       ],
+      "#t611lc2isw2l": [
+        "./test/specs/asset-manifest.spec.ts"
+      ],
       "#trglgs9kwl1b": [
         "./src/core/import-graph.ts"
       ],
@@ -160,6 +181,12 @@
       ],
       "#uutmr3kbt43m": [
         "./internal/types/discovery.ts"
+      ],
+      "#vdgeebq510yo": [
+        "./test/specs/cli.spec.ts"
+      ],
+      "#vhzzq1blfah0": [
+        "./examples/dummy.ts"
       ],
       "#wh8pyoy2mjjn": [
         "./src/core/asset-manifest.ts"
