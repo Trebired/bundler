@@ -4,6 +4,11 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 3.1.1
+
+- Added `@trebired/result` as the internal bundler outcome surface for build-time backend coordination instead of maintaining package-local result shims.
+- Enforced the current `@trebired/code-discipline` policy across the touched result integration and supporting spec structure while keeping the public bundler API unchanged.
+
 ## 3.1.0
 
 - Added discover-rule `aggregate` support for internal generated entry modules without bringing back public `entries` or `virtualEntries`.
