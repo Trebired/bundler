@@ -173,8 +173,8 @@ test("supports event-sink and custom adapter logger forms", async () => {
     },
   });
 
-  expect(sinkRows.some((row) => row.group === "bundler.initialize" && row.level === "success")).toBe(true);
-  expect(sinkRows.some((row) => row.group === "bundler.build" && row.message === "start")).toBe(true);
+  expect(sinkRows.some((row) => row.group === "trebired.bundler.initialize" && row.level === "success")).toBe(true);
+  expect(sinkRows.some((row) => row.group === "trebired.bundler.build" && row.message === "start")).toBe(true);
 
   const adapterRows: Array<{ severity: string; line: string }> = [];
 
@@ -189,7 +189,7 @@ test("supports event-sink and custom adapter logger forms", async () => {
     },
   } as any);
 
-  expect(adapterRows.some((row) => row.severity === "success" && row.line.includes("bundler.initialize"))).toBe(true);
+  expect(adapterRows.some((row) => row.severity === "success" && row.line.includes("trebired.bundler.initialize"))).toBe(true);
   expect(adapterRows.some((row) => row.severity === "info" && row.line.includes("bundler.build :: complete"))).toBe(true);
 });
 

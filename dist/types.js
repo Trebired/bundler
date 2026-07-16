@@ -1,2 +1,2 @@
-export * from "./internal/types.js";
+export {};
 //# sourceMappingURL=types.js.map

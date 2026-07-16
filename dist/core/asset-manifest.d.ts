@@ -1,2 +1,2 @@
-export * from "../internal/core/asset-manifest.d.ts";
+export { buildAssetManifest, collectAssetLinks, } from "./asset_manifest/runtime.js";
 //# sourceMappingURL=asset-manifest.d.ts.map

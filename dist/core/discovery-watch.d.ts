@@ -1,2 +1,2 @@
-export * from "../internal/core/discovery-watch.d.ts";
+export { createDiscoveryWatcher } from "./discovery_watch/runtime.js";
 //# sourceMappingURL=discovery-watch.d.ts.map
