@@ -4,6 +4,11 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 3.4.0
+
+- Added package `imports` map resolution for SCSS `@use` and `@forward` hash aliases while preserving normal Sass relative imports, load paths, packages, and CSS asset URLs.
+- Kept the SCSS resolver wired through the shared esbuild plugin path so browser and node-targeted builds compile aliases the same way.
+
 ## 3.1.2
 
 - Moved package-owned bundler logging under the `trebired.bundler` group root, including build, watch, and initialization groups.
