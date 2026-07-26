@@ -76,9 +76,6 @@
       "#dg8wh29x5weu": [
         "../../src/types/import_graph.ts"
       ],
-      "#epmj04zzcoxc": [
-        "../../src/plugins/scss/imports.test.ts"
-      ],
       "#g0ufxebf3477": [
         "../../scripts/prepare-dist.mjs"
       ],
@@ -102,6 +99,9 @@
       ],
       "#m35wkcxfbmmu": [
         "../../src/core/derive_manifest/runtime.ts"
+      ],
+      "#m7884285ke1w": [
+        "../../src/package-metadata.ts"
       ],
       "#mo8bgzn48voy": [
         "../../examples/dummy.ts"

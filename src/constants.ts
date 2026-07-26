@@ -1,4 +1,6 @@
-const BUNDLER_LOG_GROUP = "package.bundler";
-const BUNDLER_PACKAGE_NAME = "@package/bundler";
+import { buildPackageLogGroup, PACKAGE_NAME } from "./package-metadata.js";
+
+const BUNDLER_LOG_GROUP = buildPackageLogGroup();
+const BUNDLER_PACKAGE_NAME = PACKAGE_NAME;
 
 export { BUNDLER_LOG_GROUP, BUNDLER_PACKAGE_NAME };

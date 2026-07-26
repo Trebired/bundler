@@ -4,6 +4,12 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 3.5.1
+
+- Added package-owned organization metadata and derived bundler log groups from `package.json`.
+- Removed the stale spec test script now that committed spec files are banned by Code Discipline.
+- Updated internal package dependency ranges to the current sibling package releases.
+
 ## 3.5.0
 
 - Added SCSS hash-alias coverage for Code Discipline alias-map shards and generated tsconfig fallback paths.

@@ -68,7 +68,7 @@ async function toBuildResult(args: {
     manifestPath: manifestWrite.manifestPath,
     durationMs: Date.now() - args.startedAt,
     resolvedDiscovery: args.resolvedDiscovery,
-    result: result.ok("Bundler build completed.", {
+    result: result.ok("bundler-build-completed", {
       data: {
         durationMs: Date.now() - args.startedAt,
         outputs,
