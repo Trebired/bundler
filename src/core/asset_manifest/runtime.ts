@@ -8,9 +8,9 @@ import type {
   BundlerCollectAssetLinksLookup,
   BundlerCollectAssetLinksOptions,
   BundlerEntryRecord,
-} from "#jb343639kom2";
+} from "#3c8d8166992a";
 import { deriveManifest } from "#c460d1e7c1c3";
-import { toPosixPath } from "#c16c81be3058";
+import { toPosixPath } from "#5kd9snhn6zft";
 
 function normalizeKey(value: unknown): string {
   return toPosixPath(String(value || "").trim()).replace(/^\.\/+/, "").replace(/^\/+|\/+$/g, "");

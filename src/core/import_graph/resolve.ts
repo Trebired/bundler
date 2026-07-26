@@ -5,7 +5,7 @@ import type {
   BundlerImportGraph,
   BundlerImportGraphFile,
   BundlerImportGraphOptions,
-} from "#jb343639kom2";
+} from "#3c8d8166992a";
 import { collectImports } from "./parse.js";
 import { applyTsconfigMatcher, loadTsconfig } from "./tsconfig.js";
 import {

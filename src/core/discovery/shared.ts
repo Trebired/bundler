@@ -11,7 +11,7 @@ import type {
   BundlerResolvedDiscovery,
   BundlerResolvedRule,
   BundlerVirtualEntryLoader,
-} from "#jb343639kom2";
+} from "#3c8d8166992a";
 
 const DEFAULT_DISCOVERY_BUNDLE_MAX_SIZE = 50 * 1024 * 1024;
 const DEFAULT_IGNORE_DIRS = [".git", "coverage", "dist", "node_modules"];

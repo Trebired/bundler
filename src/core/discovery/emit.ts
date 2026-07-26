@@ -3,7 +3,7 @@ import type {
   BundlerResolvedDiscovery,
   BundlerResolvedRule,
   BundlerVirtualEntryLoader,
-} from "#jb343639kom2";
+} from "#3c8d8166992a";
 import { assignSourceOwner } from "./scan.js";
 import { toRootImportSpecifier } from "./shared.js";
 import type { DiscoveredFile } from "./shared.js";

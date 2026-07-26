@@ -5,7 +5,7 @@ import { createRequire } from "node:module";
 import type {
   BundlerImportGraphTsconfigOptions,
   BundlerTsconfigPaths,
-} from "#jb343639kom2";
+} from "#3c8d8166992a";
 import { parseJsonLike } from "./parse.js";
 import type { LoadedTsconfig, TsconfigPathMatcher } from "./shared.js";
 

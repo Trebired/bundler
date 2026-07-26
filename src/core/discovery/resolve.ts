@@ -4,7 +4,7 @@ import type {
   BundlerEntryRecord,
   BundlerOptions,
   BundlerResolvedRule,
-} from "#jb343639kom2";
+} from "#3c8d8166992a";
 import {
   buildAggregateModuleMapContents,
   createAggregateEntryMetadata,

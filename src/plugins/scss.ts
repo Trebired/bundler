@@ -6,7 +6,7 @@ import type { Plugin } from "esbuild";
 
 import { injectSourceAnnotation } from "./source-annotations.js";
 import { createScssAliasImporter, rewriteScssAliasDirectives } from "./scss-imports.js";
-import type { NormalizedBundlerLogger } from "#jb343639kom2";
+import type { NormalizedBundlerLogger } from "#3c8d8166992a";
 
 type ScssPluginOptions = {
   annotateSources: boolean;

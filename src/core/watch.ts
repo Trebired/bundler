@@ -4,7 +4,7 @@ import { logPackageInitialized } from "@trebired/logger-adapter";
 
 import { BUNDLER_LOG_GROUP, BUNDLER_PACKAGE_NAME } from "#0e84q8f4ubat";
 import { resolveLogger } from "#dcx0jw9bw3ka";
-import type { BundlerBuildResult, BundlerOptions, BundlerWatchSession } from "#jb343639kom2";
+import type { BundlerBuildResult, BundlerOptions, BundlerWatchSession } from "#3c8d8166992a";
 import { createEsbuildOptions, normalizeBundlerOptions } from "./esbuild-options.js";
 import { resolveBundlerEntries, normalizeDiscoverRoots } from "./discovery.js";
 import { createDiscoveryWatcher } from "./discovery-watch.js";

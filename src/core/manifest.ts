@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { Metafile } from "esbuild";
 
-import type { BundlerResolvedDiscovery } from "#jb343639kom2";
+import type { BundlerResolvedDiscovery } from "#3c8d8166992a";
 import { buildAssetManifest } from "./asset-manifest.js";
 import type { NormalizedManifestOptions } from "./discovery.js";
 import { deriveManifest } from "./derive-manifest.js";

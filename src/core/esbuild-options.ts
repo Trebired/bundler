@@ -8,7 +8,7 @@ import type {
   BundlerEntryRecord,
   BundlerOptions,
   NormalizedBundlerLogger,
-} from "#jb343639kom2";
+} from "#3c8d8166992a";
 import { normalizeManifestOptions, toEntryPointMap } from "./discovery.js";
 
 type NormalizedBundlerOptions = {

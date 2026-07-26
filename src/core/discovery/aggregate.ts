@@ -3,7 +3,7 @@ import path from "node:path";
 import type {
   BundlerAggregateEntryMetadata,
   BundlerAggregateRuleMetadata,
-} from "#jb343639kom2";
+} from "#3c8d8166992a";
 import {
   commonPathPrefix,
   normalizePathValue,

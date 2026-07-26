@@ -4,6 +4,11 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 3.4.1
+
+- Migrated the repository to Code Discipline 4.7 using `.code-discipline/config.ts`, alias-map output, and Git-backed generated-file ignores.
+- Switched build output alias rewriting to read `.code-discipline/imports/*.json` instead of `package.json#imports`.
+
 ## 3.4.0
 
 - Added package `imports` map resolution for SCSS `@use` and `@forward` hash aliases while preserving normal Sass relative imports, load paths, packages, and CSS asset URLs.

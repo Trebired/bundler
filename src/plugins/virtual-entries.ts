@@ -1,7 +1,7 @@
 import type { Plugin } from "esbuild";
 
 import { VIRTUAL_ENTRY_PREFIX } from "#5kd9snhn6zft";
-import type { BundlerEntryRecord, BundlerVirtualEntryLoader, NormalizedBundlerLogger } from "#jb343639kom2";
+import type { BundlerEntryRecord, BundlerVirtualEntryLoader, NormalizedBundlerLogger } from "#3c8d8166992a";
 
 const VIRTUAL_ENTRY_NAMESPACE = "trebired-virtual-entry";
 

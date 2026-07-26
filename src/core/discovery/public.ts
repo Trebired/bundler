@@ -4,7 +4,7 @@ import path from "node:path";
 import type {
   BundlerEntryRecord,
   BundlerOptions,
-} from "#jb343639kom2";
+} from "#3c8d8166992a";
 import { normalizeDiscoverOptions } from "./normalize.js";
 import { normalizePathValue } from "./shared.js";
 

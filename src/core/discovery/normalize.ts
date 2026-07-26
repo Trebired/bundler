@@ -4,7 +4,7 @@ import type {
   BundlerAggregateModuleMap,
   BundlerDiscoverRule,
   BundlerOptions,
-} from "#jb343639kom2";
+} from "#3c8d8166992a";
 import {
   DEFAULT_AGGREGATE_EXPORT_DEFAULT,
   DEFAULT_AGGREGATE_KEY_FROM_PATH,
@@ -124,7 +124,7 @@ function normalizeDiscoverConfig(rootDir: string, item: NonNullable<Exclude<Bund
   };
 }
 
-function normalizeManifestOptions(manifest: import("#jb343639kom2").BundlerManifestOptions | undefined): import("./shared.js").NormalizedManifestOptions {
+function normalizeManifestOptions(manifest: import("#3c8d8166992a").BundlerManifestOptions | undefined): import("./shared.js").NormalizedManifestOptions {
   if (!manifest) return { enabled: false };
   if (manifest === true) return { enabled: true, file: "bundler-manifest.json" };
   return { enabled: true, file: normalizePathValue(manifest.file || "bundler-manifest.json") };

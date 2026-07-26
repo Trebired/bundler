@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-import type { BundlerOptions, LoadedBundlerConfig } from "#jb343639kom2";
+import type { BundlerOptions, LoadedBundlerConfig } from "#3c8d8166992a";
 
 function defineBundlerConfig(config: BundlerOptions): BundlerOptions {
   return config;

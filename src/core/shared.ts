@@ -7,7 +7,7 @@ import type {
   BundlerBuildResult,
   BundlerResolvedDiscovery,
   NormalizedBundlerLogger,
-} from "#jb343639kom2";
+} from "#3c8d8166992a";
 import { buildAssetManifest } from "./asset-manifest.js";
 import { writeBundlerManifest } from "./manifest.js";
 import type { NormalizedManifestOptions } from "./discovery.js";

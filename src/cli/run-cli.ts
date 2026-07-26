@@ -3,8 +3,8 @@
 import { pathToFileURL } from "node:url";
 
 import { loadBundlerConfigModule } from "#z1hxysbp7ydt";
-import { bundle } from "#kvj92sieo97a";
-import { watch } from "#wxjjkq160kiw";
+import { bundle } from "#9b50ca986572";
+import { watch } from "#644f3e1f42a8";
 
 type CliRunOptions = {
   cwd?: string;

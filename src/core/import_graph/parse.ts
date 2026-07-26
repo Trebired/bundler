@@ -1,6 +1,6 @@
 import type {
   BundlerImportGraphImport,
-} from "#jb343639kom2";
+} from "#3c8d8166992a";
 import {
   DYNAMIC_IMPORT_RE,
   EXPORT_FROM_RE,

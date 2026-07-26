@@ -7,9 +7,9 @@ import type {
   BundlerDerivedManifestEntry,
   BundlerDerivedManifestOutput,
   BundlerDerivedManifestOutputKind,
-} from "#jb343639kom2";
+} from "#3c8d8166992a";
 import { VIRTUAL_ENTRY_NAMESPACE } from "#18o0cf9c108j";
-import { VIRTUAL_ENTRY_PREFIX, toPosixPath } from "#c16c81be3058";
+import { VIRTUAL_ENTRY_PREFIX, toPosixPath } from "#5kd9snhn6zft";
 
 type DeriveManifestOptions = {
   outDir: string;

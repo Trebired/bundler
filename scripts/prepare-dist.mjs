@@ -4,13 +4,10 @@ import { fileURLToPath } from "node:url";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const distDir = path.join(rootDir, "dist");
-const packageJsonPath = path.join(rootDir, "package.json");
+const aliasMapDir = path.join(rootDir, ".code-discipline", "imports");
 
 async function main() {
-  const packageJson = JSON.parse(await fs.readFile(packageJsonPath, "utf8"));
-  const aliasTargets = Object.fromEntries(
-    Object.entries(packageJson.imports || {}).map(([alias, target]) => [alias, String(target)]),
-  );
+  const aliasTargets = await readAliasMap();
   await promotePublicDistFiles();
 
   const files = await collectDistFiles(distDir);
@@ -20,6 +17,30 @@ async function main() {
     const rewritten = rewriteAliasImports(original, filePath, aliasTargets, kind);
     if (rewritten !== original) await fs.writeFile(filePath, rewritten);
   }));
+}
+
+async function readAliasMap() {
+  const aliases = {};
+
+  try {
+    const entries = await fs.readdir(aliasMapDir, { withFileTypes: true });
+
+    for (const entry of entries) {
+      if (!entry.isFile() || !entry.name.endsWith(".json")) {
+        continue;
+      }
+
+      const raw = await fs.readFile(path.join(aliasMapDir, entry.name), "utf8");
+      Object.assign(aliases, JSON.parse(raw));
+    }
+  }
+  catch (error) {
+    if (error?.code !== "ENOENT") {
+      throw error;
+    }
+  }
+
+  return aliases;
 }
 
 async function collectDistFiles(startDir) {
