@@ -1,5 +1,5 @@
 import type { Format, Metafile } from "esbuild";
-import type { ResultLike } from "@trebired/result";
+import type { ResultLike } from "@package/result";
 
 import type { BundlerResolvedDiscovery } from "./discovery.js";
 import type { BundlerLogger, BundlerLoggerAdapter } from "./logging.js";

@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { BuildResult, Message } from "esbuild";
-import { result } from "@trebired/result";
+import { result } from "@package/result";
 
 import type {
   BundlerBuildResult,

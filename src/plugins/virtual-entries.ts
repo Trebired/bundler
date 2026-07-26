@@ -3,7 +3,7 @@ import type { Plugin } from "esbuild";
 import { VIRTUAL_ENTRY_PREFIX } from "#5kd9snhn6zft";
 import type { BundlerEntryRecord, BundlerVirtualEntryLoader, NormalizedBundlerLogger } from "#3c8d8166992a";
 
-const VIRTUAL_ENTRY_NAMESPACE = "trebired-virtual-entry";
+const VIRTUAL_ENTRY_NAMESPACE = "package-virtual-entry";
 
 type VirtualEntriesPluginOptions = {
   entries: BundlerEntryRecord[];
@@ -22,9 +22,9 @@ function createVirtualEntriesPlugin(options: VirtualEntriesPluginOptions): Plugi
   );
 
   return {
-    name: "trebired-virtual-entries",
+    name: "package-virtual-entries",
     setup(build) {
-      build.onResolve({ filter: /^trebired-virtual:/ }, (args) => {
+      build.onResolve({ filter: /^package-virtual:/ }, (args) => {
         const name = args.path.slice(VIRTUAL_ENTRY_PREFIX.length);
 
         if (!byName.has(name)) {

@@ -65,7 +65,7 @@ function resolveLoader(filePath: string): Loader {
 
 function createSourceAnnotationsPlugin(options: SourceAnnotationsPluginOptions): Plugin {
   return {
-    name: "trebired-source-annotations",
+    name: "package-source-annotations",
     setup(build) {
       build.onLoad({ filter: /\.(?:[mc]?js|[mc]?ts|jsx|tsx|css)$/ }, async (args) => {
         try {

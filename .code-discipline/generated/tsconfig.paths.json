@@ -1,12 +1,6 @@
 {
   "compilerOptions": {
     "paths": {
-      "#06pzcq19xy5h": [
-        "../../test/specs/discovery-watch.spec.ts"
-      ],
-      "#0c1loaldfmda": [
-        "../../test/specs/helpers.ts"
-      ],
       "#0e84q8f4ubat": [
         "../../src/constants.ts"
       ],
@@ -22,17 +16,8 @@
       "#2hmco05zhfpg": [
         "../../src/core/import_graph/parse.ts"
       ],
-      "#2uykeoj5sj91": [
-        "../../test/specs/asset-manifest.spec.ts"
-      ],
-      "#31czpq9mqd06": [
-        "../../scripts/prepare-dist.mjs"
-      ],
       "#3c8d8166992a": [
         "../../src/types.ts"
-      ],
-      "#3vcuvpnm2226": [
-        "../../test/specs/aggregate.spec.ts"
       ],
       "#47cd321d28f1": [
         "../../src/core/shared.ts"
@@ -70,20 +55,11 @@
       "#a222003f1819": [
         "../../src/core/manifest.ts"
       ],
-      "#arl4fcea8kjn": [
-        "../../test/specs/watch.spec.ts"
-      ],
       "#axis79i54k87": [
         "../../src/core/discovery/normalize.ts"
       ],
       "#b78ku6qgmf3o": [
         "../../src/backend/utils/normalize.ts"
-      ],
-      "#bekyanw1fl4u": [
-        "../../test/specs/discover.spec.ts"
-      ],
-      "#bsf2dvgwb1qx": [
-        "../../examples/dummy.ts"
       ],
       "#c460d1e7c1c3": [
         "../../src/core/derive-manifest.ts"
@@ -100,8 +76,8 @@
       "#dg8wh29x5weu": [
         "../../src/types/import_graph.ts"
       ],
-      "#eb7rqmr004o0": [
-        "../../test/specs/import-graph.spec.ts"
+      "#g0ufxebf3477": [
+        "../../scripts/prepare-dist.mjs"
       ],
       "#g4ahcnf1grw5": [
         "../../src/core/import_graph/shared.ts"
@@ -121,6 +97,9 @@
       "#m35wkcxfbmmu": [
         "../../src/core/derive_manifest/runtime.ts"
       ],
+      "#mo8bgzn48voy": [
+        "../../examples/dummy.ts"
+      ],
       "#n02ctrtxmyrd": [
         "../../src/core/import_graph/tsconfig.ts"
       ],
@@ -132,9 +111,6 @@
       ],
       "#rxmw759jxclv": [
         "../../src/plugins/scss-imports.ts"
-      ],
-      "#sc6jk1vpnpzo": [
-        "../../test/specs/cli.spec.ts"
       ],
       "#sof0gxa0cxhk": [
         "../../src/index.ts"
@@ -153,9 +129,6 @@
       ],
       "#uutmr3kbt43m": [
         "../../src/types/discovery.ts"
-      ],
-      "#xalnwglpcfow": [
-        "../../test/specs/scss.spec.ts"
       ],
       "#ymbmz1vdz4oa": [
         "../../src/core/discovery/public.ts"

@@ -17,7 +17,7 @@ type ScssPluginOptions = {
 
 function createScssPlugin(options: ScssPluginOptions): Plugin {
   return {
-    name: "trebired-scss",
+    name: "package-scss",
     setup(build) {
       build.onLoad({ filter: /\.scss$/ }, async (args) => {
         try {

@@ -22,7 +22,7 @@ const DEFAULT_AGGREGATE_RESOLVER_EXPORT = "getModule";
 const DEFAULT_AGGREGATE_ROOT_BINDING_EXPORT = "rootModule";
 const DEFAULT_AGGREGATE_KEY_FROM_PATH = "relative-path";
 const DEFAULT_AGGREGATE_EXPORT_DEFAULT = true;
-const VIRTUAL_ENTRY_PREFIX = "trebired-virtual:";
+const VIRTUAL_ENTRY_PREFIX = "package-virtual:";
 const MODULE_RESOLVE_EXTENSIONS = ["", ".ts", ".tsx", ".js", ".jsx", ".mts", ".cts", ".mjs", ".cjs"];
 
 type NormalizedAggregateModuleMap = {

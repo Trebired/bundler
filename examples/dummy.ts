@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { bundle } from "#sof0gxa0cxhk";
 
-const root = fs.mkdtempSync(path.join(os.tmpdir(), "@trebired-bundler-example-"));
+const root = fs.mkdtempSync(path.join(os.tmpdir(), "@package-bundler-example-"));
 const srcDir = path.join(root, "src");
 const outDir = path.join(root, "dist");
 

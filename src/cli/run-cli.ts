@@ -19,7 +19,7 @@ type CliRunResult = {
 
 function renderHelp(): string {
   return [
-    "Usage: trebired-bundler <command> --config <path>",
+    "Usage: package-bundler <command> --config <path>",
     "",
     "Commands:",
     "  build         run a one-shot bundle using the config module",

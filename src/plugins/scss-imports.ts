@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import type { Importer, Syntax } from "sass-embedded";
 
-const SCSS_ALIAS_SCHEME = "trebired-scss-alias:";
+const SCSS_ALIAS_SCHEME = "package-scss-alias:";
 
 type ScssSpecifierOccurrence = {
   end: number;
@@ -28,14 +28,79 @@ type ScssImportContext = {
   rootDir: string;
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
 function readPackageImports(rootDir: string): Record<string, unknown> {
   const packageJsonPath = path.join(rootDir, "package.json");
   if (!fs.existsSync(packageJsonPath)) return {};
 
   const parsed = JSON.parse(fs.readFileSync(packageJsonPath, "utf8")) as PackageJson;
-  return parsed.imports && typeof parsed.imports === "object" && !Array.isArray(parsed.imports)
-    ? parsed.imports
-    : {};
+  return isRecord(parsed.imports) ? parsed.imports : {};
+}
+
+function normalizeDotPrefixedTarget(target: string): string {
+  return target.startsWith("./") ? target : `./${target}`;
+}
+
+function toPosixPath(value: string): string {
+  return value.split(path.sep).join("/");
+}
+
+function readJsonObject(filePath: string): Record<string, unknown> {
+  const parsed = JSON.parse(fs.readFileSync(filePath, "utf8")) as unknown;
+  return isRecord(parsed) ? parsed : {};
+}
+
+function readGeneratedTsconfigImports(rootDir: string): Record<string, unknown> {
+  const generatedTsconfigPath = path.join(rootDir, ".code-discipline", "generated", "tsconfig.paths.json");
+  if (!fs.existsSync(generatedTsconfigPath)) return {};
+
+  const parsed = readJsonObject(generatedTsconfigPath);
+  const compilerOptions = isRecord(parsed.compilerOptions) ? parsed.compilerOptions : {};
+  const paths = isRecord(compilerOptions.paths) ? compilerOptions.paths : {};
+  const importsMap: Record<string, string> = {};
+
+  for (const [aliasId, targets] of Object.entries(paths)) {
+    const firstTarget = Array.isArray(targets) ? targets[0] : "";
+    if (typeof firstTarget !== "string") continue;
+
+    const resolved = path.resolve(path.dirname(generatedTsconfigPath), firstTarget);
+    importsMap[aliasId] = normalizeDotPrefixedTarget(toPosixPath(path.relative(rootDir, resolved)));
+  }
+
+  return importsMap;
+}
+
+function readCodeDisciplineFolderImports(rootDir: string): Record<string, unknown> {
+  const importsDir = path.join(rootDir, ".code-discipline", "imports");
+  if (!fs.existsSync(importsDir)) return {};
+
+  const importsMap: Record<string, string> = {};
+  const entries = fs.readdirSync(importsDir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith(".json"))
+    .map((entry) => entry.name)
+    .sort((left, right) => left.localeCompare(right, undefined, { numeric: true }));
+
+  for (const filename of entries) {
+    const parsed = readJsonObject(path.join(importsDir, filename));
+    for (const [aliasId, target] of Object.entries(parsed)) {
+      if (typeof target === "string" && !(aliasId in importsMap)) {
+        importsMap[aliasId] = normalizeDotPrefixedTarget(target);
+      }
+    }
+  }
+
+  return importsMap;
+}
+
+function readAliasImports(rootDir: string): Record<string, unknown> {
+  return {
+    ...readPackageImports(rootDir),
+    ...readGeneratedTsconfigImports(rootDir),
+    ...readCodeDisciplineFolderImports(rootDir),
+  };
 }
 
 function resolveImportTarget(value: unknown): string {
@@ -318,7 +383,7 @@ function resolveCanonicalFilePath(url: string, context: ScssImportContext): stri
 }
 
 function createScssAliasImporter(rootDir: string): Importer<"async"> {
-  const importsMap = readPackageImports(rootDir);
+  const importsMap = readAliasImports(rootDir);
   const context = { importsMap, rootDir };
 
   return {

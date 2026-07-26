@@ -5,13 +5,13 @@
     "": {
       "name": "@trebired/bundler",
       "dependencies": {
-        "@trebired/logger-adapter": "^0.2.2",
-        "@trebired/result": "^0.2.0",
+        "@package/logger-adapter": "npm:@trebired/logger-adapter@^0.2.3",
+        "@package/result": "npm:@trebired/result@^1.0.1",
         "esbuild": "^0.28.0",
         "sass-embedded": "^1.100.0",
       },
       "devDependencies": {
-        "@trebired/code-discipline": "^4.7.0",
+        "@trebired/code-discipline": "^4.7.1",
         "@types/bun": "^1.3.4",
         "@types/node": "^24.10.1",
         "typescript": "^6.0.2",
@@ -73,6 +73,10 @@
 
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.28.0", "", { "os": "win32", "cpu": "x64" }, "sha512-pEl1bO9mfAmIC+tW5btTmrKaujg3zGtUmWNdCw/xs70FBjwAL3o9OEKNHvNmnyylD6ubxUERiEhdsL0xBQ9efw=="],
 
+    "@package/logger-adapter": ["@trebired/logger-adapter@0.2.3", "", {}, "sha512-OSEvegTz5LNy+7NdwgwEcrLF2Ku38vavIvs3bPru+6zzeUMme/9ax+Y+hzpy1jxtvgrowpXRkd/HGdLoRylM5Q=="],
+
+    "@package/result": ["@trebired/result@1.0.1", "", { "dependencies": { "@trebired/logger-adapter": "^0.2.3" } }, "sha512-f/52LEjwgPUzKHMPyuBce7xJYwVx3XW347vhIqtPnC+BqJi2k9ZYEST/r6D4/0WykrQOFBMomIWqunFR//oeng=="],
+
     "@parcel/watcher": ["@parcel/watcher@2.5.6", "", { "dependencies": { "detect-libc": "^2.0.3", "is-glob": "^4.0.3", "node-addon-api": "^7.0.0", "picomatch": "^4.0.3" }, "optionalDependencies": { "@parcel/watcher-android-arm64": "2.5.6", "@parcel/watcher-darwin-arm64": "2.5.6", "@parcel/watcher-darwin-x64": "2.5.6", "@parcel/watcher-freebsd-x64": "2.5.6", "@parcel/watcher-linux-arm-glibc": "2.5.6", "@parcel/watcher-linux-arm-musl": "2.5.6", "@parcel/watcher-linux-arm64-glibc": "2.5.6", "@parcel/watcher-linux-arm64-musl": "2.5.6", "@parcel/watcher-linux-x64-glibc": "2.5.6", "@parcel/watcher-linux-x64-musl": "2.5.6", "@parcel/watcher-win32-arm64": "2.5.6", "@parcel/watcher-win32-ia32": "2.5.6", "@parcel/watcher-win32-x64": "2.5.6" } }, "sha512-tmmZ3lQxAe/k/+rNnXQRawJ4NjxO2hqiOLTHvWchtGZULp4RyFeh6aU4XdOYBFe2KE1oShQTv4AblOs2iOrNnQ=="],
 
     "@parcel/watcher-android-arm64": ["@parcel/watcher-android-arm64@2.5.6", "", { "os": "android", "cpu": "arm64" }, "sha512-YQxSS34tPF/6ZG7r/Ih9xy+kP/WwediEUsqmtf0cuCV5TPPKw/PQHRhueUo6JdeFJaqV3pyjm0GdYjZotbRt/A=="],
@@ -101,13 +105,13 @@
 
     "@parcel/watcher-win32-x64": ["@parcel/watcher-win32-x64@2.5.6", "", { "os": "win32", "cpu": "x64" }, "sha512-hbQlYcCq5dlAX9Qx+kFb0FHue6vbjlf0FrNzSKdYK2APUf7tGfGxQCk2ihEREmbR6ZMc0MVAD5RIX/41gpUzTw=="],
 
-    "@trebired/code-discipline": ["@trebired/code-discipline@4.7.0", "", { "dependencies": { "@trebired/logger": "^2.5.6", "@trebired/result": "^0.2.1", "prettier": "3.9.6", "typescript": "^6.0.3" }, "bin": { "code-discipline": "dist/cli.js" } }, "sha512-E05O2ux3yQ7PCm0ARmj2OPBdDWQCniRgSDFvTEf1VmB4UNRaeEd/wBoYBLQlZ7+TI9yPj0485ScnEzOQrg2Cmg=="],
+    "@trebired/code-discipline": ["@trebired/code-discipline@4.7.1", "", { "dependencies": { "@trebired/logger": "^2.5.6", "@trebired/result": "^0.2.1", "prettier": "3.9.6", "typescript": "^6.0.3" }, "bin": { "code-discipline": "dist/cli.js" } }, "sha512-DTirMViR9bR8a6b54hOzdjZryEKB97pf0ANce8K/4WqMBPaosIxAllVblMEt3xdG5R63SOBJp/lIgq3ODNTJLw=="],
 
     "@trebired/logger": ["@trebired/logger@2.5.6", "", { "dependencies": { "@trebired/result": "^0.2.0", "fflate": "^0.8.3", "tar-stream": "^3.2.0" }, "peerDependencies": { "react": ">=18" }, "optionalPeers": ["react"] }, "sha512-XZvSJ7C/ci3h09V4QS+V8bEqf5bVfqEkVWm0m2mKAqwT3uW0kfuwwLw0WtyMOFXNMFnVzbAnC2IyVxT5YDHpZA=="],
 
-    "@trebired/logger-adapter": ["@trebired/logger-adapter@0.2.2", "", {}, "sha512-8FurbitdICfB8Y5LmY1ucZesw5H0V1SVS1Um3ZqQHyyU2+5SHNlS6jhPSE34y53mAvYExCgriCj1r/5lG3UoWQ=="],
+    "@trebired/logger-adapter": ["@trebired/logger-adapter@0.2.3", "", {}, "sha512-OSEvegTz5LNy+7NdwgwEcrLF2Ku38vavIvs3bPru+6zzeUMme/9ax+Y+hzpy1jxtvgrowpXRkd/HGdLoRylM5Q=="],
 
-    "@trebired/result": ["@trebired/result@0.2.0", "", { "dependencies": { "@trebired/logger-adapter": "^0.2.2" } }, "sha512-SRs5GZAqtmLsJqdNWaHIgWUH5fdonnQvb4bR4af/elDtPwESU7G3crQdQF3RJeFvWMhRZHjJmZTifWDm8JFMvQ=="],
+    "@trebired/result": ["@trebired/result@0.2.1", "", { "dependencies": { "@trebired/logger-adapter": "^0.2.2" } }, "sha512-2WEtea6JmdLYGo5nCAn9lgS54o0FcVavmITsCTC/r3CcyhUx0l6jGo2gNfX1cPWN+2/KvAGSyoGD5XcBW++/gQ=="],
 
     "@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
 
@@ -223,8 +227,6 @@
 
     "varint": ["varint@6.0.0", "", {}, "sha512-cXEIW6cfr15lFv563k4GuVuW/fiwjknytD37jIOLSdSWuOI6WnO/oKwmP2FQTU2l01LP8/M5TSAJpzUaGe3uWg=="],
 
-    "@trebired/code-discipline/@trebired/result": ["@trebired/result@0.2.1", "", { "dependencies": { "@trebired/logger-adapter": "^0.2.2" } }, "sha512-2WEtea6JmdLYGo5nCAn9lgS54o0FcVavmITsCTC/r3CcyhUx0l6jGo2gNfX1cPWN+2/KvAGSyoGD5XcBW++/gQ=="],
-
-    "@trebired/logger/@trebired/result": ["@trebired/result@0.2.1", "", { "dependencies": { "@trebired/logger-adapter": "^0.2.2" } }, "sha512-2WEtea6JmdLYGo5nCAn9lgS54o0FcVavmITsCTC/r3CcyhUx0l6jGo2gNfX1cPWN+2/KvAGSyoGD5XcBW++/gQ=="],
+    "@trebired/result/@trebired/logger-adapter": ["@trebired/logger-adapter@0.2.2", "", {}, "sha512-8FurbitdICfB8Y5LmY1ucZesw5H0V1SVS1Um3ZqQHyyU2+5SHNlS6jhPSE34y53mAvYExCgriCj1r/5lG3UoWQ=="],
   }
 }

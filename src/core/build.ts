@@ -1,5 +1,5 @@
 import { build as runEsbuild } from "esbuild";
-import { logPackageInitialized } from "@trebired/logger-adapter";
+import { logPackageInitialized } from "@package/logger-adapter";
 
 import { BUNDLER_LOG_GROUP, BUNDLER_PACKAGE_NAME } from "#0e84q8f4ubat";
 import { resolveLogger } from "#dcx0jw9bw3ka";

@@ -4,6 +4,13 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 3.4.2
+
+- Removed package test suites and banned committed `*.spec.ts`/`*.spec.tsx` files through Code Discipline.
+- Added Code Discipline enforcement for hardcoded `trebired` strings outside package metadata.
+- Migrated Code Discipline to `.code-discipline/config.ts` with alias-map sync output.
+- Updated package-generated artifact ignores and internal package dependency ranges.
+
 ## 3.4.1
 
 - Migrated the repository to Code Discipline 4.7 using `.code-discipline/config.ts`, alias-map output, and Git-backed generated-file ignores.

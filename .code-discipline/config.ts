@@ -1,11 +1,20 @@
-import { defineCodeDisciplineConfig } from "@trebired/code-discipline";
-
-export default defineCodeDisciplineConfig({
+export default {
   ignore: {
     entries: [],
     use_gitignore: true,
   },
   rules: {
+    bannedFiles: {
+      patterns: [
+        { glob: "**/*.spec.ts" },
+        { glob: "**/*.spec.tsx" },
+      ],
+    },
+    bannedPatterns: {
+      patterns: [
+        { value: "trebired", allowedFiles: ["package.json"] },
+      ],
+    },
     maxFileLines: {
       max: 350,
     },
@@ -27,4 +36,4 @@ export default defineCodeDisciplineConfig({
       },
     },
   },
-});
+};
