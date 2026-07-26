@@ -4,6 +4,10 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 3.4.3
+
+- Removed dead test scripts and stale test commands from publish workflows and maintainer docs.
+
 ## 3.4.2
 
 - Removed package test suites and banned committed `*.spec.ts`/`*.spec.tsx` files through Code Discipline.
@@ -117,3 +121,5 @@ This project follows semantic versioning once published.
 - Added CLI commands for `build` and `watch` config-driven runs.
 - Added inline `@trebired/source` annotation comments for bundled JS and CSS output.
 - Added `@trebired/logger-adapter` logging support, publish-ready package metadata, tests, and docs.
+
+- Standardized package metadata ordering and contributing guidance around the Trebired writing style.
