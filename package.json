@@ -1,6 +1,6 @@
 {
   "name": "@trebired/bundler",
-  "version": "3.4.3",
+  "version": "3.5.0",
   "description": "Discover-only esbuild bundler wrapper with SCSS support, watch mode, and runtime asset manifests.",
   "type": "module",
   "private": false,
@@ -30,7 +30,8 @@
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.build.json && node ./scripts/prepare-dist.mjs",
     "demo": "bun run examples/dummy.ts",
-    "prepublishOnly": "bun run typecheck && bun run build",
+    "prepublishOnly": "bun run typecheck && bun test && bun run build",
+    "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

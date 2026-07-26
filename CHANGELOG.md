@@ -4,6 +4,11 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 3.5.0
+
+- Added SCSS hash-alias coverage for Code Discipline alias-map shards and generated tsconfig fallback paths.
+- Kept package-import SCSS alias behavior covered while adding nested `@forward "#alias"` verification.
+
 ## 3.4.3
 
 - Removed dead test scripts and stale test commands from publish workflows and maintainer docs.

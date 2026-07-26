@@ -76,6 +76,9 @@
       "#dg8wh29x5weu": [
         "../../src/types/import_graph.ts"
       ],
+      "#epmj04zzcoxc": [
+        "../../src/plugins/scss/imports.test.ts"
+      ],
       "#g0ufxebf3477": [
         "../../scripts/prepare-dist.mjs"
       ],
@@ -84,6 +87,9 @@
       ],
       "#gpv7u9smtpqh": [
         "../../src/types/logging.ts"
+      ],
+      "#kt3a1qycxbzz": [
+        "../../src/plugins/scss/imports.ts"
       ],
       "#l7l0wczeqcwq": [
         "../../src/core/discovery/resolve.ts"
@@ -108,9 +114,6 @@
       ],
       "#qtumhoozbdq4": [
         "../../src/core/discovery/aggregate.ts"
-      ],
-      "#rxmw759jxclv": [
-        "../../src/plugins/scss-imports.ts"
       ],
       "#sof0gxa0cxhk": [
         "../../src/index.ts"
