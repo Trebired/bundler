@@ -4,6 +4,18 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 4.0.0
+
+- Added a generic frontend app preset with default source, public, client-entry, deferred-entry, global-style, ignore, browser, node SSR, output-layout, i18n, and production precompression options.
+- Added aggregate module-map export filtering with `requireMatchedModuleExport`, including skipped-source metadata for generated entries and rules.
+- Added SSR module-map rule helpers for root modules, matched module maps, index collapsing, map exports, resolver exports, root exports, and optional default exports.
+- Added manifest runtime helpers for reading written manifests, extracting asset manifests, resolving aggregate entries, collecting aggregate matched sources, resolving emitted entry files, and normalizing source paths to route/page IDs.
+- Added related client entry map, frontend asset link collection, and link/script tag rendering helpers.
+- Added a generic frontend build runner for client builds, optional SSR builds, public directory copying, precompression stats, SSR entry output resolution, and optional SSR `node_modules` symlink/copy handling.
+- Added a frontend runtime helper for dev/prod manifest state, watch-backed rebuilds, cache-busted SSR ESM imports, SSR root/page export resolution, and page asset links.
+- Added framework-neutral and Express-compatible static asset serving helpers with private manifest/map blocking, Brotli/gzip selection, cache headers, and development public directory serving.
+- Added `quarantineUnwritableOutputDir()` and frontend app verification coverage for the 4.0 runtime/build/preset behavior.
+
 ## 3.7.0
 
 - Added generic frontend entry helpers for `*.client.*` and `*.client.defer.*` discovery patterns without changing discover-rule behavior.

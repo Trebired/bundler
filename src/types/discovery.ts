@@ -19,6 +19,7 @@ type BundlerAggregateModuleMap = {
   keyFromPath?: "relative-path";
   collapseIndex?: boolean;
   allowEmpty?: boolean;
+  requireMatchedModuleExport?: boolean;
   exports?: BundlerAggregateModuleMapExports;
 };
 
@@ -68,11 +69,13 @@ type BundlerAggregateEntryMetadata = {
   kind: "module-map";
   rootModule?: string;
   matchedSources: string[];
+  skippedSources?: string[];
 };
 
 type BundlerAggregateRuleMetadata = {
   kind: "module-map";
   rootModule?: string;
+  skippedSources?: string[];
 };
 
 type BundlerEntryRecord = {

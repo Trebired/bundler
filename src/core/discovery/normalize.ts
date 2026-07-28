@@ -58,6 +58,7 @@ function normalizeAggregateModuleMap(
     keyFromPath,
     kind: "module-map",
     matchedModuleExportName,
+    requireMatchedModuleExport: Boolean(aggregate.requireMatchedModuleExport),
     rootModule,
     rootModuleExportName,
   };

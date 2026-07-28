@@ -70,6 +70,7 @@ jobs:
           bun run verify:pack
           bun run verify:i18n
           bun run verify:bundler
+          bun run verify:frontend-app
 
       - name: Publish to npm
         env:

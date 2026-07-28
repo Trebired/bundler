@@ -17,6 +17,7 @@ import {
   createResolvedDiscovery,
   emitEntryRecord,
 } from "./emit.js";
+import { filterAggregateMatchedFiles } from "./exports.js";
 import { normalizeDiscoverOptions, normalizeManifestOptions } from "./normalize.js";
 import { normalizeDiscoverRoots, toEntryPointMap } from "./public.js";
 import {
@@ -151,7 +152,7 @@ function initializeRules(
     if (rule.strategy === "aggregate") {
       const rootModule = resolveAggregateRootModule({ config, rootDir, rule });
       if (rootModule) aggregateRootModules.set(rule.key, rootModule);
-      ruleRecord.aggregate = createAggregateRuleMetadata(rootModule);
+      ruleRecord.aggregate = createAggregateRuleMetadata({ rootModule });
     }
     rules.set(rule.key, ruleRecord);
     matchedByRule.set(rule.key, []);
@@ -203,7 +204,7 @@ async function resolveRuleEntries(args: {
     return;
   }
 
-  resolveAggregateEntryRecord(
+  await resolveAggregateEntryRecord(
     { ...args, rule: args.rule as NormalizedAggregateRule },
     args.aggregateRootModules.get(args.rule.key),
   );
@@ -280,18 +281,26 @@ async function resolveBundleEntryRecords(
   });
 }
 
-function resolveAggregateEntryRecord(
+async function resolveAggregateEntryRecord(
   args: Parameters<typeof resolveRuleEntries>[0] & { rule: NormalizedAggregateRule },
   rootModule?: ResolvedAggregateRootModule,
-): void {
-  const unsupportedFile = args.matchedFiles.find((file) => !resolveAggregateModuleLoader(file.rootRel));
+): Promise<void> {
+  const filtered = await filterAggregateMatchedFiles({ matchedFiles: args.matchedFiles, rule: args.rule });
+  const matchedFiles = filtered.matchedFiles;
+  args.ruleRecord.aggregate = createAggregateRuleMetadata({ rootModule, skippedSources: filtered.skippedSources });
+
+  const unsupportedFile = matchedFiles.find((file) => !resolveAggregateModuleLoader(file.rootRel));
   if (unsupportedFile) throw new Error(`bundler-discover-aggregate-unsupported-file :: ${args.rule.key} :: ${unsupportedFile.rootRel}`);
-  validateAggregatePathKeys({ collapseIndex: args.rule.aggregate.collapseIndex, matchedFiles: args.matchedFiles, rule: args.rule });
-  if (args.matchedFiles.length === 0 && !args.rule.aggregate.allowEmpty) {
+  validateAggregatePathKeys({ collapseIndex: args.rule.aggregate.collapseIndex, matchedFiles, rule: args.rule });
+  if (matchedFiles.length === 0 && !args.rule.aggregate.allowEmpty) {
     throw new Error(`bundler-discover-aggregate-empty :: ${args.rule.key}`);
   }
 
-  const aggregateMetadata = createAggregateEntryMetadata({ matchedFiles: args.matchedFiles, rootModule });
+  const aggregateMetadata = createAggregateEntryMetadata({
+    matchedFiles,
+    rootModule,
+    skippedSources: filtered.skippedSources,
+  });
   const stableId = createStableId(JSON.stringify({
     aggregate: args.rule.aggregate,
     dir: args.config.dir,
@@ -310,7 +319,7 @@ function resolveAggregateEntryRecord(
       contents: buildAggregateModuleMapContents({
         aggregate: args.rule.aggregate,
         includePatterns: args.rule.include,
-        matchedFiles: args.matchedFiles,
+        matchedFiles,
         rootDir: args.rootDir,
         rootModule,
       }),

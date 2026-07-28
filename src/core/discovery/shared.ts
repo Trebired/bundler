@@ -37,6 +37,7 @@ type NormalizedAggregateModuleMap = {
   kind: "module-map";
   keyFromPath: "relative-path";
   matchedModuleExportName: string;
+  requireMatchedModuleExport: boolean;
   rootModule?: string;
   rootModuleExportName: string;
 };

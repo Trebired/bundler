@@ -9,7 +9,7 @@ Discover-only bundler wrapper around `esbuild` with SCSS support, watch mode, so
 Runtime support: Bun 1+ and Node.js 18+.
 
 ```sh
-npm install @trebired/bundler
+bun i @trebired/bundler
 ```
 
 ## Quick Start
@@ -250,6 +250,27 @@ Path keys default to the matched module path relative to the aggregate rule root
 - `pages/blog/post.tsx` -> `blog/post`
 - `pages/settings/index.tsx` -> `settings` when `collapseIndex: true`
 
+Set `requireMatchedModuleExport: true` when an aggregate rule intentionally uses a broad pattern but should only include modules that provide the configured `matchedModuleExportName`. Files without that export are skipped, not imported into the generated module. Skipped paths are reported in aggregate entry metadata and rule metadata.
+
+The export check parses TypeScript and JavaScript source. It supports `export default ...`, `export { value as default }`, `export { default } from "./module"`, and normal named exports.
+
+Use the SSR module-map helper to create the same rule without repeating the aggregate shape:
+
+```ts
+import { createSsrModuleMapRule } from "@trebired/bundler";
+
+const ssrPages = createSsrModuleMapRule({
+  key: "ssr-pages",
+  include: ["pages/**/*.tsx"],
+  rootModule: "layouts/root/document.tsx",
+  rootExport: "rootDocument",
+  mapExport: "pages",
+  resolverExport: "getPageComponent",
+  matchedModuleExportName: "default",
+  requireMatchedModuleExport: true,
+});
+```
+
 ## Frontend Conventions
 
 This API is meant for conventions like:
@@ -304,6 +325,60 @@ await bundle({
 
 The helper returns ordinary discover rules. Override `clientInclude`, `deferredInclude`, rule keys, or excludes when a project uses different conventions.
 
+## Frontend App Preset
+
+Use the frontend app preset when a project follows the common frontend/SSR shape and should not repeat discover-rule boilerplate.
+
+Before the preset, a project typically had to assemble client rules, SSR aggregate rules, public copying, manifest reading, related-client lookups, and static tag rendering separately.
+
+After the preset, the app-specific part is mostly paths, environment defines, and language policy:
+
+```ts
+import {
+  buildFrontendApp,
+  createFrontendBundlerRuntime,
+  defineFrontendBundlerConfig,
+} from "@trebired/bundler";
+
+const bundlerConfig = defineFrontendBundlerConfig({
+  clientOutDir: "dist/client",
+  ssrOutDir: "dist/ssr",
+  supportedI18nLanguages: ["en", "cs"],
+  ssr: {
+    key: "ssr-pages",
+    include: ["pages/**/*.tsx"],
+    rootModule: "layouts/root/document.tsx",
+    rootExport: "rootDocument",
+    mapExport: "pages",
+    resolverExport: "getPageComponent",
+    matchedModuleExportName: "default",
+    requireMatchedModuleExport: true,
+  },
+});
+
+await buildFrontendApp(bundlerConfig);
+
+const runtime = createFrontendBundlerRuntime(bundlerConfig);
+await runtime.ensure();
+const page = await runtime.resolvePageComponent("account");
+const rootDocument = await runtime.resolveRootDocument();
+const assets = await runtime.buildAssetLinks(["account"]);
+```
+
+Defaults:
+
+- `frontendDir`: `src/frontend`
+- `publicDir`: `src/frontend/public`
+- client entries: `*.client.ts`, `*.client.tsx`, `*.client.js`, `*.client.jsx`, `*.client.css`, `*.client.scss`
+- deferred client entries: `*.client.defer.ts`, `*.client.defer.tsx`, `*.client.defer.js`, `*.client.defer.jsx`
+- global style bundle patterns: `css/**/*.css`, `css/**/*.scss`, component `styles.*`, and `js/**/styles.*`
+- ignored sources: tests, declarations, SCSS partials, public files, and runtime-oriented source patterns
+- browser builds: ESM, splitting on, output layout on
+- node SSR builds: ESM, splitting off, output layout on
+- production client builds: minify, strip comments, and precompress JS/CSS
+
+The preset returns ordinary `BundlerOptions` through `createFrontendAppBundlerOptions()`, so callers can still inspect or pass the client and SSR builds to `bundle()` or `watch()` directly.
+
 ## Related Entries
 
 Use `collectRelatedEntries()` when server-side or build orchestration code starts from one or more source modules and needs related client or style entry source paths for `collectAssetLinks()`.
@@ -324,6 +399,23 @@ const links = collectAssetLinks(assetManifest, related.entries, {
 ```
 
 The generic helper walks the import graph with the same relative import and tsconfig path support as `walkImportGraph()`, then checks configurable candidate patterns. The frontend wrapper uses the default `.client.*` and `.client.defer.*` patterns; pass `candidatePatterns` to replace them.
+
+Use `buildRelatedClientEntryMap()` when a runtime starts from aggregate SSR matched sources and needs a page ID -> related client entry map:
+
+```ts
+import { buildRelatedClientEntryMap } from "@trebired/bundler";
+
+const relatedClientEntries = await buildRelatedClientEntryMap({
+  manifest: ssrManifest,
+  ruleKey: "ssr-pages",
+  rootDir: process.cwd(),
+  pageId: {
+    sourcePrefix: "src/frontend/pages",
+    collapseIndex: true,
+  },
+  tsconfig: true,
+});
+```
 
 ## Output Layout
 
@@ -372,6 +464,33 @@ await bundle({
 ```
 
 When enabled, JS and CSS outputs are compressed by default. Use `include`, `exclude`, `formats`, and `minSize` to tune the selection. `precompressAssets()` is also exported for standalone output folders and returns the same byte and ratio stats.
+
+## Static Assets
+
+Use `serveStaticAsset()` for a framework-neutral static response object, or `createStaticAssetMiddleware()` for an Express-compatible middleware.
+
+```ts
+import { createStaticAssetMiddleware } from "@trebired/bundler";
+
+app.use("/assets", createStaticAssetMiddleware({
+  clientOutDir: "dist/client",
+  mode: "production",
+  extraStaticDirs: [
+    { dir: "dist/vendor", mountPath: "vendor" },
+  ],
+}));
+```
+
+The handler:
+
+- blocks `manifest.json`, `bundler-manifest.json`, and source map requests
+- prefers `.br` over `.gz` for JS/CSS when `Accept-Encoding` allows it
+- sets `Content-Encoding`, `Vary: Accept-Encoding`, and `X-Content-Type-Options: nosniff`
+- sends immutable cache headers for hashed production assets
+- sends `no-store` cache headers in development
+- can serve `publicDir` in development and `clientOutDir` in all modes
+
+Use `quarantineUnwritableOutputDir(dir, { logger })` before a build when a project wants to move aside an existing output directory that cannot be written.
 
 ## Manifest
 
@@ -450,6 +569,44 @@ Supported lookup modes:
 - `from: "entryOutput"`
 - `from: "ruleKey"`
 - `from: "auto"` (default)
+
+### Manifest Runtime Helpers
+
+Runtime code can use package helpers instead of digging through the written manifest shape:
+
+```ts
+import {
+  collectAggregateMatchedSourcesByRuleKey,
+  createAggregateSourceIdMap,
+  extractAssetManifest,
+  normalizeAggregateSourceId,
+  readBundlerManifest,
+  resolveAggregateEntryByRuleKey,
+  resolveAssetManifestEntryOutputPath,
+} from "@trebired/bundler";
+
+const writtenManifest = await readBundlerManifest("dist/ssr/bundler-manifest.json");
+const assetManifest = extractAssetManifest(writtenManifest);
+const aggregateEntry = resolveAggregateEntryByRuleKey(assetManifest, "ssr-pages");
+const matchedSources = collectAggregateMatchedSourcesByRuleKey(assetManifest, "ssr-pages");
+const sourceIds = createAggregateSourceIdMap(matchedSources, {
+  sourcePrefix: "src/frontend/pages",
+  collapseIndex: true,
+});
+const entryFile = resolveAssetManifestEntryOutputPath({
+  manifest: assetManifest,
+  entryId: "ssr-pages",
+  from: "ruleKey",
+  outDir: "dist/ssr",
+});
+const pageId = normalizeAggregateSourceId("src/frontend/pages/docs/index.tsx", {
+  sourcePrefix: "src/frontend/pages",
+});
+```
+
+`createEmptyAssetManifest()` is also exported for callers that need a stable empty shape before a build has produced outputs.
+
+Use `collectFrontendAssetLinks()` when runtime code wants global styles, global client entries, and page-related client entries in one call. Pass `renderTags: true`, or call `renderAssetLinkTags()` directly, to get plain `<link>` and `<script type="module">` strings.
 
 ## Watch Mode
 
@@ -548,6 +705,7 @@ type BundlerDiscoverRule =
         keyFromPath?: "relative-path";
         collapseIndex?: boolean;
         allowEmpty?: boolean;
+        requireMatchedModuleExport?: boolean;
         exports?: {
           root?: string;
           map: string;

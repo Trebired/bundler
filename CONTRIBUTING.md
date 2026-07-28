@@ -19,6 +19,8 @@ bun run typecheck
 bun run build
 bun run verify:pack
 bun run verify:i18n
+bun run verify:bundler
+bun run verify:frontend-app
 ```
 
 Committed `*.spec.ts` and `*.spec.tsx` files are banned by Code Discipline. Verification scripts create their own temporary fixtures.

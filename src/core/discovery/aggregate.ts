@@ -65,18 +65,24 @@ function validateAggregatePathKeys(args: {
 function createAggregateEntryMetadata(args: {
   matchedFiles: DiscoveredFile[];
   rootModule?: ResolvedAggregateRootModule;
+  skippedSources?: string[];
 }): BundlerAggregateEntryMetadata {
   return {
     kind: "module-map",
     matchedSources: args.matchedFiles.map((file) => file.rootRel),
     rootModule: args.rootModule?.rootRel,
+    skippedSources: args.skippedSources?.length ? args.skippedSources : undefined,
   };
 }
 
-function createAggregateRuleMetadata(rootModule?: ResolvedAggregateRootModule): BundlerAggregateRuleMetadata {
+function createAggregateRuleMetadata(args: {
+  rootModule?: ResolvedAggregateRootModule;
+  skippedSources?: string[];
+} = {}): BundlerAggregateRuleMetadata {
   return {
     kind: "module-map",
-    rootModule: rootModule?.rootRel,
+    rootModule: args.rootModule?.rootRel,
+    skippedSources: args.skippedSources?.length ? args.skippedSources : undefined,
   };
 }
 
