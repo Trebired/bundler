@@ -1,6 +1,6 @@
 {
   "name": "@trebired/bundler",
-  "version": "3.6.0",
+  "version": "3.6.1",
   "description": "Discover-only esbuild bundler wrapper with SCSS support, watch mode, and runtime asset manifests.",
   "type": "module",
   "private": false,

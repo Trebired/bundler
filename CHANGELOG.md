@@ -4,6 +4,11 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 3.6.1
+
+- Added pack verification for published entrypoints and executable CLI output.
+- Ensured the built `trebired-bundler` CLI file is executable after dist preparation.
+
 ## 3.6.0
 
 - Added opt-in generic support for `@trebired/i18n` colocated local translators.
