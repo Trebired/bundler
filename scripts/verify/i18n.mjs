@@ -184,10 +184,27 @@ async function writeLanguageFile(folder, language, messages, invalid = false) {
     : [
       `import { defineMessages } from ${JSON.stringify(packageName)};`,
       "",
-      `export default defineMessages(${JSON.stringify(messages, null, 2)});`,
+      `export default defineMessages(${formatMessages(messages)});`,
       "",
     ].join("\n");
   await fs.writeFile(filePath, contents);
+}
+
+function formatMessages(messages) {
+  const serialized = JSON.stringify(messages, null, 2);
+  if (typeof messages.title !== "string") return serialized;
+
+  const splitAt = messages.title.indexOf("{");
+  if (splitAt <= 0) return serialized;
+
+  return serialized.replace(
+    `"title": ${JSON.stringify(messages.title)}`,
+    [
+      "\"title\":",
+      `    ${JSON.stringify(messages.title.slice(0, splitAt))} +`,
+      `    ${JSON.stringify(messages.title.slice(splitAt))}`,
+    ].join("\n"),
+  );
 }
 
 async function importOutput(outputs) {

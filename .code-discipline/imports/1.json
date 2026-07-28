@@ -55,7 +55,6 @@
   "#l18iotoaw5lm": "./scripts/verify/i18n.mjs",
   "#l7l0wczeqcwq": "./src/core/discovery/resolve.ts",
   "#lc29x958kzin": "./src/core/discovery/emit.ts",
-  "#lor12cww79qp": "./src/plugins/i18n/parse.ts",
   "#lxr3ttzj8fq9": "./src/cli.ts",
   "#m35wkcxfbmmu": "./src/core/derive_manifest/runtime.ts",
   "#m42z8fvtvpjc": "./src/plugins/i18n.ts",

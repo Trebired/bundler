@@ -149,11 +149,14 @@ some-feature/
 import { defineMessages } from "@trebired/i18n";
 
 export default defineMessages({
-  title: "Title",
+  description:
+    "First part " +
+    "second part",
+  title: `Title`,
 });
 ```
 
-During browser, node, and neutral builds, the bundler rewrites the local translator call to a normal `createTranslator()` call with static sibling imports for the configured language files. The source tree does not need local `i18n/index.ts` files, JSON dictionaries, app-wide registries, or checked-in generated source.
+During browser, node, and neutral builds, the bundler rewrites the local translator call to a normal `createTranslator()` call with static sibling imports for the configured language files. Message-file parsing and key validation come from `@trebired/i18n/checker`, so the same static TypeScript grammar is used by the CLI and the bundler. The source tree does not need local `i18n/index.ts` files, JSON dictionaries, app-wide registries, or checked-in generated source.
 
 Builds fail when a used colocated folder is invalid:
 
@@ -161,6 +164,7 @@ Builds fail when a used colocated folder is invalid:
 - a language file is not in `supportedLanguages`
 - language keys do not match the English fallback file
 - a language file does not default-export `defineMessages({ ... })`
+- message values are not static strings or nested message objects
 
 Options:
 

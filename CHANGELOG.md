@@ -4,6 +4,12 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 4.2.0
+
+- Switched colocated i18n validation to the shared `@trebired/i18n/checker` parser and checker APIs so message-file grammar has one package-owned source of truth.
+- Removed bundler-local message parsing while keeping bundler focused on local-translator detection, sibling folder resolution, static language imports, transform output, and watch metadata.
+- Accepted static TypeScript message expressions supported by `@trebired/i18n`, including string concatenation across whitespace and comments.
+
 ## 4.1.0
 
 - Added frontend app build targets for `all`, `client`, and `ssr` so callers can build either side without local branching wrappers.
