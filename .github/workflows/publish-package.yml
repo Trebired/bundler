@@ -67,6 +67,7 @@ jobs:
         run: |
           bun run typecheck
           bun run build
+          bun run verify:pack
           bun run verify:i18n
 
       - name: Publish to npm

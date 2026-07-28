@@ -17,6 +17,7 @@ async function main() {
     const rewritten = rewriteAliasImports(original, filePath, aliasTargets, kind);
     if (rewritten !== original) await fs.writeFile(filePath, rewritten);
   }));
+  await chmodExecutableCli();
 }
 
 async function readAliasMap() {
@@ -100,6 +101,15 @@ function normalizePath(value) {
 async function promotePublicDistFiles() {
   const publicDistDir = path.join(distDir, "src");
   await fs.cp(publicDistDir, distDir, { force: true, recursive: true });
+}
+
+async function chmodExecutableCli() {
+  try {
+    await fs.chmod(path.join(distDir, "cli.js"), 0o755);
+  }
+  catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+  }
 }
 
 await main();

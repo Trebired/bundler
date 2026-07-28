@@ -35,9 +35,10 @@
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.build.json && node ./scripts/prepare-dist.mjs",
     "demo": "bun run examples/dummy.ts",
-    "prepublishOnly": "bun run typecheck && bun run build && bun run verify:i18n",
+    "prepublishOnly": "bun run typecheck && bun run build && bun run verify:pack && bun run verify:i18n",
     "typecheck": "tsc --noEmit",
-    "verify:i18n": "node ./scripts/verify/i18n.mjs"
+    "verify:i18n": "node ./scripts/verify/i18n.mjs",
+    "verify:pack": "node ./scripts/verify/pack.mjs"
   },
   "dependencies": {
     "@package/logger-adapter": "npm:@trebired/logger-adapter@^0.2.5",

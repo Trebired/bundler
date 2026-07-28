@@ -47,6 +47,7 @@
   "#qtumhoozbdq4": "./src/core/discovery/aggregate.ts",
   "#sof0gxa0cxhk": "./src/index.ts",
   "#t2refevky8d1": "./src/core/asset_manifest/runtime.ts",
+  "#tlbykl2scmcn": "./scripts/verify/pack.mjs",
   "#tsnh4vdfql8p": "./src/core/discovery/shared.ts",
   "#uf2o9l93gfe3": "./src/types/i18n.ts",
   "#ulrbecj1la7z": "./src/plugins/source-annotations.ts",

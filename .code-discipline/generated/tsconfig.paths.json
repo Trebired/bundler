@@ -145,6 +145,9 @@
       "#t2refevky8d1": [
         "../../src/core/asset_manifest/runtime.ts"
       ],
+      "#tlbykl2scmcn": [
+        "../../scripts/verify/pack.mjs"
+      ],
       "#tsnh4vdfql8p": [
         "../../src/core/discovery/shared.ts"
       ],

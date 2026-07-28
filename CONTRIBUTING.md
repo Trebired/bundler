@@ -17,6 +17,7 @@ bun install --frozen-lockfile
 bunx @trebired/code-discipline check
 bun run typecheck
 bun run build
+bun run verify:pack
 bun run verify:i18n
 ```
 
