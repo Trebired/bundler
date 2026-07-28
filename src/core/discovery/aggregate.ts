@@ -24,7 +24,8 @@ import type {
 function computeAggregateKeyRoot(includePatterns: string[], matchedFiles: DiscoveredFile[]): string {
   const includeBase = commonPathPrefix(includePatterns.map(staticPatternBase).filter(Boolean));
   if (includeBase) return includeBase;
-  return commonPathPrefix(matchedFiles.map((file) => toPosixDirname(file.discoverRel)).filter(Boolean));
+  const matchedDirs = matchedFiles.map((file) => toPosixDirname(file.discoverRel));
+  return matchedDirs.includes("") ? "" : commonPathPrefix(matchedDirs);
 }
 
 function normalizeAggregatePathKey(args: {

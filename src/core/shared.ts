@@ -5,6 +5,8 @@ import { result } from "@package/result";
 
 import type {
   BundlerBuildResult,
+  BundlerOutputLayoutStats,
+  BundlerPrecompressStats,
   BundlerResolvedDiscovery,
   NormalizedBundlerLogger,
 } from "#3c8d8166992a";
@@ -37,6 +39,8 @@ function resolveOutputs(result: BuildResult<any>, rootDir: string): string[] {
 async function toBuildResult(args: {
   manifest: NormalizedManifestOptions;
   outDir: string;
+  outputLayout?: BundlerOutputLayoutStats;
+  precompressed?: BundlerPrecompressStats;
   resolvedDiscovery: BundlerResolvedDiscovery;
   result: BuildResult<any>;
   rootDir: string;
@@ -55,6 +59,8 @@ async function toBuildResult(args: {
     metafile: args.result.metafile,
     manifest: args.manifest,
     outDir: args.outDir,
+    outputLayout: args.outputLayout,
+    precompressed: args.precompressed,
     resolvedDiscovery: args.resolvedDiscovery,
     rootDir: args.rootDir,
   });
@@ -65,6 +71,8 @@ async function toBuildResult(args: {
     warnings: args.result.warnings.length,
     metafile: args.result.metafile,
     assetManifest,
+    outputLayout: args.outputLayout,
+    precompressed: args.precompressed,
     manifestPath: manifestWrite.manifestPath,
     durationMs: Date.now() - args.startedAt,
     resolvedDiscovery: args.resolvedDiscovery,

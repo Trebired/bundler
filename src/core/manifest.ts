@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { Metafile } from "esbuild";
 
-import type { BundlerResolvedDiscovery } from "#3c8d8166992a";
+import type { BundlerOutputLayoutStats, BundlerPrecompressStats, BundlerResolvedDiscovery } from "#3c8d8166992a";
 import { buildAssetManifest } from "./asset-manifest.js";
 import type { NormalizedManifestOptions } from "./discovery.js";
 import { deriveManifest } from "./derive-manifest.js";
@@ -15,6 +15,8 @@ async function writeBundlerManifest(args: {
   metafile?: Metafile;
   manifest: NormalizedManifestOptions;
   outDir: string;
+  outputLayout?: BundlerOutputLayoutStats;
+  precompressed?: BundlerPrecompressStats;
   resolvedDiscovery: BundlerResolvedDiscovery;
   rootDir: string;
 }): Promise<ManifestWriteResult> {
@@ -34,6 +36,8 @@ async function writeBundlerManifest(args: {
       resolvedDiscovery: args.resolvedDiscovery,
       rootDir: args.rootDir,
     }),
+    ...(args.outputLayout ? { outputLayout: args.outputLayout } : {}),
+    ...(args.precompressed ? { precompressed: args.precompressed } : {}),
     ...deriveManifest(args.metafile, {
       outDir: args.outDir,
       rootDir: args.rootDir,

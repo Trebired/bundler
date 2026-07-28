@@ -4,6 +4,15 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 3.7.0
+
+- Added generic frontend entry helpers for `*.client.*` and `*.client.defer.*` discovery patterns without changing discover-rule behavior.
+- Added `collectRelatedEntries()` and frontend-related entry collection on top of the existing import graph resolver and tsconfig path support.
+- Added generic `outputLayout` support for relocating JS, CSS, assets, and source maps while keeping metafiles, manifests, asset manifests, references, and public paths aligned.
+- Added default esbuild file loaders for common static asset extensions, with `loader` overrides still available to callers.
+- Added generic Brotli and gzip precompression for selected output assets, plus standalone `precompressAssets()` stats.
+- Added aggregate module-map, output layout, precompression, related entry, and frontend convention verification coverage.
+
 ## 3.6.1
 
 - Added pack verification for published entrypoints and executable CLI output.

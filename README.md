@@ -28,7 +28,7 @@ await bundle({
       },
       {
         key: "defer",
-        include: ["**/*.defer.ts"],
+        include: ["**/*.client.defer.ts", "**/*.client.defer.tsx"],
         strategy: "entry",
       },
       {
@@ -40,7 +40,7 @@ await bundle({
       {
         key: "shared-script",
         include: ["**/*.ts", "**/*.js"],
-        exclude: ["**/*.client.ts", "**/*.client.tsx", "**/*.defer.ts"],
+        exclude: ["**/*.client.ts", "**/*.client.tsx", "**/*.client.defer.ts", "**/*.client.defer.tsx"],
         strategy: "bundle",
         maxBundleSize: "50mb",
       },
@@ -224,7 +224,7 @@ await bundle({
       {
         key: "ssr-pages",
         include: ["pages/**/*.tsx"],
-        exclude: ["**/*.client.tsx", "**/*.defer.tsx", "**/*.spec.tsx", "**/*.test.tsx"],
+        exclude: ["**/*.client.tsx", "**/*.client.defer.tsx", "**/*.spec.tsx", "**/*.test.tsx"],
         strategy: "aggregate",
         aggregate: {
           kind: "module-map",
@@ -256,7 +256,14 @@ This API is meant for conventions like:
 
 - `*.client.ts`
 - `*.client.tsx`
-- `*.defer.ts`
+- `*.client.js`
+- `*.client.jsx`
+- `*.client.css`
+- `*.client.scss`
+- `*.client.defer.ts`
+- `*.client.defer.tsx`
+- `*.client.defer.js`
+- `*.client.defer.jsx`
 - global `css/**/*.css`
 - global `css/**/*.scss`
 
@@ -271,7 +278,100 @@ Typical setup:
 Important behavior:
 
 - grouped `bundle` rules must stay style-only or script-only; mixing CSS/SCSS with JS/TS in one rule fails
-- `*.client.*` and `*.defer.*` entries may not import JS/TS files owned by a grouped bundle rule; that fails the build because those files are treated as shared standalone bundles, not implicit app-entry dependencies
+- `*.client.*` and `*.client.defer.*` entries may not import JS/TS files owned by a grouped bundle rule; that fails the build because those files are treated as shared standalone bundles, not implicit app-entry dependencies
+
+Use the frontend helper when you want those common entry patterns without hiding rules inside bundler core:
+
+```ts
+import { bundle, createFrontendEntryRules } from "@trebired/bundler";
+
+await bundle({
+  discover: {
+    dir: "./src/frontend",
+    rules: [
+      ...createFrontendEntryRules(),
+      {
+        key: "shared-script",
+        include: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+        exclude: ["**/*.client.*", "**/*.client.defer.*"],
+        strategy: "bundle",
+      },
+    ],
+  },
+  outDir: "./dist",
+});
+```
+
+The helper returns ordinary discover rules. Override `clientInclude`, `deferredInclude`, rule keys, or excludes when a project uses different conventions.
+
+## Related Entries
+
+Use `collectRelatedEntries()` when server-side or build orchestration code starts from one or more source modules and needs related client or style entry source paths for `collectAssetLinks()`.
+
+```ts
+import { collectAssetLinks, collectRelatedFrontendEntries } from "@trebired/bundler";
+
+const related = await collectRelatedFrontendEntries({
+  sources: ["src/pages/account.tsx"],
+  rootDir: process.cwd(),
+  tsconfig: true,
+});
+
+const links = collectAssetLinks(assetManifest, related.entries, {
+  from: "source",
+  publicPath: "/assets/",
+});
+```
+
+The generic helper walks the import graph with the same relative import and tsconfig path support as `walkImportGraph()`, then checks configurable candidate patterns. The frontend wrapper uses the default `.client.*` and `.client.defer.*` patterns; pass `candidatePatterns` to replace them.
+
+## Output Layout
+
+Use `outputLayout` when emitted files should be organized by type without a separate relocation step:
+
+```ts
+await bundle({
+  discover: {
+    dir: "./src/frontend",
+    rules: createFrontendEntryRules(),
+  },
+  manifest: true,
+  outDir: "./dist",
+  outputLayout: {
+    js: "js/[path][ext]",
+    css: "css/[path][ext]",
+    asset: "assets/[path][ext]",
+    map: "maps/[path][ext]",
+  },
+  publicPath: "/assets/",
+  sourcemap: "external",
+});
+```
+
+Supported tokens are `[path]`, `[dir]`, `[name]`, and `[ext]`. `outputLayout: true` uses `js/[path][ext]`, `css/[path][ext]`, `assets/[path][ext]`, and source maps alongside their moved output. The build result exposes `outputLayout.moved`, and written manifests plus `assetManifest` use the final paths.
+
+Common static asset extensions such as images and fonts use esbuild's `file` loader by default so CSS and JS references can emit assets. Override `loader` when a project needs a different asset treatment.
+
+## Precompression
+
+Use `precompress` to write `.br` and `.gz` files for selected outputs:
+
+```ts
+await bundle({
+  discover: {
+    dir: "./src/frontend",
+    rules: createFrontendEntryRules(),
+  },
+  outDir: "./dist",
+  precompress: {
+    minSize: "1kb",
+    brotliQuality: 11,
+    gzipLevel: 9,
+  },
+});
+```
+
+When enabled, JS and CSS outputs are compressed by default. Use `include`, `exclude`, `formats`, and `minSize` to tune the selection. `precompressAssets()` is also exported for standalone output folders and returns the same byte and ratio stats.
 
 ## Manifest
 
@@ -483,6 +583,21 @@ type BundlerOptions = {
   sourcemap?: boolean | "inline" | "external";
   splitting?: boolean;
   publicPath?: string;
+  loader?: Record<string, Loader>;
+  outputLayout?: boolean | {
+    js?: string;
+    css?: string;
+    asset?: string;
+    map?: string | "alongside";
+  };
+  precompress?: boolean | {
+    formats?: Array<"br" | "gzip">;
+    include?: string[];
+    exclude?: string[];
+    minSize?: number | string;
+    brotliQuality?: number;
+    gzipLevel?: number;
+  };
   external?: string[];
   define?: Record<string, string>;
   clean?: boolean;

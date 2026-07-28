@@ -79,7 +79,7 @@ async function validateGroupedBootImports(args: {
 
   const bootEntries = args.entries.filter((entry) => {
     if (entry.strategy !== "entry" || !entry.entrySource) return false;
-    return /\.(?:client\.tsx?|defer\.ts)$/i.test(entry.entrySource);
+    return /\.client(?:\.defer)?\.[cm]?[jt]sx?$/i.test(entry.entrySource);
   });
 
   for (const bootEntry of bootEntries) {

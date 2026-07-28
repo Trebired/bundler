@@ -5,6 +5,7 @@ import { BUNDLER_LOG_GROUP, BUNDLER_PACKAGE_NAME } from "#0e84q8f4ubat";
 import { resolveLogger } from "#dcx0jw9bw3ka";
 import type { BundlerBuildResult, BundlerOptions } from "#3c8d8166992a";
 import { createEsbuildOptions, normalizeBundlerOptions } from "./esbuild-options.js";
+import { postProcessBuildOutput } from "./post-build.js";
 import { resolveBundlerEntries } from "./discovery.js";
 import { cleanOutDir, formatFailure, logWarnings, toBuildResult } from "./shared.js";
 
@@ -37,10 +38,13 @@ async function bundle(options: BundlerOptions): Promise<BundlerBuildResult> {
       ...normalized,
       entryRecords: resolvedDiscovery.entries,
     }, logger));
+    const postProcessed = await postProcessBuildOutput({ normalized, result });
     logWarnings(logger, result.warnings);
     const summary = await toBuildResult({
       manifest: normalized.manifest,
       outDir: normalized.outDir,
+      outputLayout: postProcessed.outputLayout,
+      precompressed: postProcessed.precompressed,
       resolvedDiscovery,
       result,
       rootDir: normalized.rootDir,

@@ -1,5 +1,5 @@
 import path from "node:path";
-import type { BuildOptions } from "esbuild";
+import type { BuildOptions, Loader } from "esbuild";
 
 import { createScssPlugin } from "#751yrciipoz0";
 import { createI18nPlugin } from "#m42z8fvtvpjc";
@@ -12,7 +12,11 @@ import type {
   NormalizedBundlerLogger,
 } from "#3c8d8166992a";
 import { normalizeBundlerI18nOptions } from "./i18n-options.js";
+import { normalizeBundlerOutputLayoutOptions } from "./output-layout.js";
+import { normalizeBundlerPrecompressOptions } from "./precompression.js";
 import { normalizeManifestOptions, toEntryPointMap } from "./discovery.js";
+import type { NormalizedBundlerOutputLayoutOptions } from "./output-layout.js";
+import type { NormalizedBundlerPrecompressOptions } from "./precompression.js";
 
 type NormalizedBundlerOptions = {
   annotateSources: boolean;
@@ -23,6 +27,7 @@ type NormalizedBundlerOptions = {
   external?: string[];
   format?: BundlerOptions["format"];
   i18n: NormalizedBundlerI18nOptions;
+  loader: Record<string, Loader>;
   logger?: BundlerOptions["logger"];
   loggerAdapter?: BundlerOptions["loggerAdapter"];
   manifest: ReturnType<typeof normalizeManifestOptions>;
@@ -30,6 +35,8 @@ type NormalizedBundlerOptions = {
   onEntrySetChanged?: BundlerOptions["onEntrySetChanged"];
   onRebuilt?: BundlerOptions["onRebuilt"];
   outDir: string;
+  outputLayout: NormalizedBundlerOutputLayoutOptions;
+  precompress: NormalizedBundlerPrecompressOptions;
   publicPath?: string;
   rootDir: string;
   sourcemap?: BundlerOptions["sourcemap"];
@@ -55,6 +62,7 @@ function normalizeBundlerOptions(options: BundlerOptions): NormalizedBundlerOpti
     external: options.external,
     format: options.format,
     i18n: normalizeBundlerI18nOptions(options.i18n),
+    loader: { ...DEFAULT_ASSET_LOADERS, ...(options.loader || {}) },
     logger: options.logger,
     loggerAdapter: options.loggerAdapter,
     manifest: normalizeManifestOptions(options.manifest),
@@ -62,6 +70,8 @@ function normalizeBundlerOptions(options: BundlerOptions): NormalizedBundlerOpti
     onEntrySetChanged: options.onEntrySetChanged,
     onRebuilt: options.onRebuilt,
     outDir: resolvedOutDir,
+    outputLayout: normalizeBundlerOutputLayoutOptions(options.outputLayout),
+    precompress: normalizeBundlerPrecompressOptions(options.precompress),
     publicPath: options.publicPath,
     rootDir,
     sourcemap: options.sourcemap,
@@ -86,6 +96,7 @@ function createEsbuildOptions(
     external: options.external,
     format: options.format,
     legalComments: options.annotateSources ? "inline" : options.stripComments ? "none" : undefined,
+    loader: options.loader,
     logLevel: "silent",
     metafile: true,
     minify: options.minify,
@@ -142,6 +153,21 @@ function createPlugins(
     ...(options.annotateSources ? [createSourceAnnotationsPlugin({ logger, rootDir: options.rootDir })] : []),
   ];
 }
+
+const DEFAULT_ASSET_LOADERS: Record<string, Loader> = {
+  ".avif": "file",
+  ".eot": "file",
+  ".gif": "file",
+  ".jpg": "file",
+  ".jpeg": "file",
+  ".otf": "file",
+  ".png": "file",
+  ".svg": "file",
+  ".ttf": "file",
+  ".webp": "file",
+  ".woff": "file",
+  ".woff2": "file",
+};
 
 export { createEsbuildOptions, normalizeBundlerOptions };
 export type { NormalizedBundlerOptions };

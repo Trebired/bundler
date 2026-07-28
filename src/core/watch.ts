@@ -6,6 +6,7 @@ import { BUNDLER_LOG_GROUP, BUNDLER_PACKAGE_NAME } from "#0e84q8f4ubat";
 import { resolveLogger } from "#dcx0jw9bw3ka";
 import type { BundlerBuildResult, BundlerOptions, BundlerWatchSession } from "#3c8d8166992a";
 import { createEsbuildOptions, normalizeBundlerOptions } from "./esbuild-options.js";
+import { postProcessBuildOutput } from "./post-build.js";
 import { resolveBundlerEntries, normalizeDiscoverRoots } from "./discovery.js";
 import { createDiscoveryWatcher } from "./discovery-watch.js";
 import { cleanOutDir, formatFailure, logWarnings, toBuildResult } from "./shared.js";
@@ -137,10 +138,13 @@ async function executeRebuild(state: Awaited<ReturnType<typeof createWatchState>
 
   const startedAt = Date.now();
   const result = await state.currentContext.rebuild();
+  const postProcessed = await postProcessBuildOutput({ normalized: state.normalized, result });
   logWarnings(state.logger, result.warnings);
   const summary = await toBuildResult({
     manifest: state.normalized.manifest,
     outDir: state.normalized.outDir,
+    outputLayout: postProcessed.outputLayout,
+    precompressed: postProcessed.precompressed,
     resolvedDiscovery: state.currentDiscovery,
     result,
     rootDir: state.normalized.rootDir,

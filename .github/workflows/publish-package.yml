@@ -69,6 +69,7 @@ jobs:
           bun run build
           bun run verify:pack
           bun run verify:i18n
+          bun run verify:bundler
 
       - name: Publish to npm
         env:

@@ -44,6 +44,30 @@ export type {
   BundlerManifestOptions,
 } from "./types/manifest.js";
 export type {
+  BundlerOutputLayoutKind,
+  BundlerOutputLayoutMove,
+  BundlerOutputLayoutOptions,
+  BundlerOutputLayoutPatterns,
+  BundlerOutputLayoutStats,
+} from "./types/output_layout.js";
+export type {
+  BundlerPrecompressAssetsOptions,
+  BundlerPrecompressFormat,
+  BundlerPrecompressedAsset,
+  BundlerPrecompressOptions,
+  BundlerPrecompressStats,
+} from "./types/precompression.js";
+export type {
+  BundlerRelatedEntriesOptions,
+  BundlerRelatedEntriesResult,
+  BundlerRelatedEntryMatch,
+} from "./types/related_entries.js";
+export type {
+  BundlerFrontendEntryRule,
+  BundlerFrontendEntryRulesOptions,
+  BundlerFrontendRelatedEntriesOptions,
+} from "./types/frontend.js";
+export type {
   BundlerImportGraph,
   BundlerImportGraphFile,
   BundlerImportGraphImport,

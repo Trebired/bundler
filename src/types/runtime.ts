@@ -1,10 +1,12 @@
-import type { Format, Metafile } from "esbuild";
+import type { Format, Loader, Metafile } from "esbuild";
 import type { ResultLike } from "@package/result";
 
 import type { BundlerResolvedDiscovery } from "./discovery.js";
 import type { BundlerI18nOptions } from "./i18n.js";
 import type { BundlerLogger, BundlerLoggerAdapter } from "./logging.js";
 import type { BundlerAssetManifest, BundlerManifestOptions } from "./manifest.js";
+import type { BundlerOutputLayoutOptions, BundlerOutputLayoutStats } from "./output_layout.js";
+import type { BundlerPrecompressOptions, BundlerPrecompressStats } from "./precompression.js";
 
 type BundlerEnvironment = "browser" | "node" | "neutral";
 
@@ -20,6 +22,9 @@ type BundlerOptions = {
   sourcemap?: boolean | "inline" | "external";
   splitting?: boolean;
   publicPath?: string;
+  loader?: Record<string, Loader>;
+  outputLayout?: BundlerOutputLayoutOptions;
+  precompress?: BundlerPrecompressOptions;
   external?: string[];
   define?: Record<string, string>;
   clean?: boolean;
@@ -38,6 +43,8 @@ type BundlerBuildResult = {
   warnings: number;
   metafile?: Metafile;
   assetManifest?: BundlerAssetManifest;
+  outputLayout?: BundlerOutputLayoutStats;
+  precompressed?: BundlerPrecompressStats;
   manifestPath?: string;
   durationMs: number;
   resolvedDiscovery: BundlerResolvedDiscovery;

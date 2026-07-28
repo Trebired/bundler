@@ -1,6 +1,15 @@
 export { BUNDLER_LOG_GROUP, BUNDLER_PACKAGE_NAME } from "./constants.js";
 export { bundle } from "./core/build.js";
 export { buildAssetManifest, collectAssetLinks } from "./core/asset-manifest.js";
+export {
+  collectRelatedFrontendEntries,
+  createFrontendEntryRules,
+  DEFAULT_FRONTEND_CLIENT_ENTRY_PATTERNS,
+  DEFAULT_FRONTEND_DEFERRED_CLIENT_ENTRY_PATTERNS,
+  DEFAULT_FRONTEND_RELATED_ENTRY_PATTERNS,
+} from "./core/frontend.js";
+export { precompressAssets } from "./core/precompression.js";
+export { collectRelatedEntries } from "./core/related-entries.js";
 export { deriveManifest } from "./core/derive-manifest.js";
 export { walkImportGraph } from "./core/import-graph.js";
 export { watch } from "./core/watch.js";
@@ -57,6 +66,22 @@ export type {
   BundlerLogMethod,
   BundlerManifestOptions,
   BundlerOptions,
+  BundlerOutputLayoutKind,
+  BundlerOutputLayoutMove,
+  BundlerOutputLayoutOptions,
+  BundlerOutputLayoutPatterns,
+  BundlerOutputLayoutStats,
+  BundlerPrecompressAssetsOptions,
+  BundlerPrecompressFormat,
+  BundlerPrecompressedAsset,
+  BundlerPrecompressOptions,
+  BundlerPrecompressStats,
+  BundlerRelatedEntriesOptions,
+  BundlerRelatedEntriesResult,
+  BundlerRelatedEntryMatch,
+  BundlerFrontendEntryRule,
+  BundlerFrontendEntryRulesOptions,
+  BundlerFrontendRelatedEntriesOptions,
   BundlerResolvedDiscovery,
   BundlerResolvedRule,
   BundlerTsconfigPaths,
