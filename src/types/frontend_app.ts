@@ -14,14 +14,16 @@ import type { BundlerPrecompressOptions, BundlerPrecompressStats } from "./preco
 import type { BundlerBuildResult, BundlerOptions, BundlerWatchSession } from "./runtime.js";
 
 type BundlerFrontendMode = "development" | "production";
+type BundlerFrontendBuildTarget = "all" | "client" | "ssr";
+type BundlerFrontendGlobalClientEntries = "auto" | readonly string[];
 
 type BundlerSsrModuleMapRuleOptions = {
   allowEmpty?: boolean;
   collapseIndex?: boolean;
   defaultExport?: boolean;
   exclude?: string[];
-  include: string[];
-  key: string;
+  include?: string[];
+  key?: string;
   mapExport?: string;
   matchedModuleExportName?: string;
   requireMatchedModuleExport?: boolean;
@@ -29,6 +31,32 @@ type BundlerSsrModuleMapRuleOptions = {
   rootExport?: string;
   rootModule?: string;
   rootModuleExportName?: string;
+};
+
+type BundlerResolvedSsrModuleMapRuleOptions = BundlerSsrModuleMapRuleOptions & {
+  allowEmpty: boolean;
+  collapseIndex: boolean;
+  defaultExport: boolean;
+  include: string[];
+  key: string;
+  mapExport: string;
+  matchedModuleExportName: string;
+  requireMatchedModuleExport: boolean;
+  resolverExport: string;
+  rootExport: string;
+  rootModuleExportName: string;
+};
+
+type BundlerSsrNodeModulesOptions = {
+  force?: boolean;
+  sourceDir?: string;
+  strategy?: "copy" | "none" | "symlink";
+  targetDir?: string;
+};
+
+type BundlerSsrNodeModulesResult = {
+  path: string;
+  strategy: "copy" | "symlink";
 };
 
 type BundlerFrontendAppBundlerConfigOptions = {
@@ -39,7 +67,9 @@ type BundlerFrontendAppBundlerConfigOptions = {
   extraClientRules?: BundlerDiscoverRule[];
   extraSsrRules?: BundlerDiscoverRule[];
   frontendDir?: string;
-  globalClientEntries?: string[];
+  globalClientEntries?: BundlerFrontendGlobalClientEntries;
+  globalClientEntryExclude?: string[];
+  globalClientEntryInclude?: string[];
   globalStyleExclude?: string[];
   globalStyleInclude?: string[];
   globalStyleRuleKey?: string;
@@ -48,6 +78,7 @@ type BundlerFrontendAppBundlerConfigOptions = {
   minify?: boolean;
   mode?: BundlerFrontendMode;
   node?: Partial<BundlerOptions>;
+  nodeModules?: BundlerSsrNodeModulesOptions;
   outputLayout?: BundlerOutputLayoutOptions;
   precompress?: BundlerPrecompressOptions;
   publicDir?: string | false;
@@ -65,12 +96,15 @@ type BundlerFrontendAppBundlerConfig = {
   clientOutDir: string;
   deferredClientEntryKey: string;
   frontendDir: string;
-  globalClientEntries: string[];
+  globalClientEntries: BundlerFrontendGlobalClientEntries;
+  globalClientEntryExclude: string[];
+  globalClientEntryInclude: string[];
   globalStyleRuleKey: string;
   mode: BundlerFrontendMode;
+  nodeModules?: BundlerSsrNodeModulesOptions;
   publicDir?: string;
   rootDir: string;
-  ssr?: BundlerSsrModuleMapRuleOptions;
+  ssr?: BundlerResolvedSsrModuleMapRuleOptions;
   ssrOptions?: BundlerOptions;
   ssrOutDir?: string;
 };
@@ -116,20 +150,14 @@ type BundlerFrontendAssetLinks = BundlerCollectedAssetLinks & {
   tags?: BundlerRenderedAssetTags;
 };
 
-type BundlerSsrNodeModulesOptions = {
-  force?: boolean;
-  sourceDir?: string;
-  strategy?: "copy" | "none" | "symlink";
-  targetDir?: string;
-};
-
 type BundlerFrontendBuildOptions = BundlerFrontendAppBundlerConfigOptions & {
-  nodeModules?: BundlerSsrNodeModulesOptions;
+  target?: BundlerFrontendBuildTarget;
 };
 
 type BundlerFrontendBuildResult = {
-  client: BundlerBuildResult;
-  nodeModules?: { path: string; strategy: "copy" | "symlink" };
+  client?: BundlerBuildResult;
+  globalClientEntries: string[];
+  nodeModules?: BundlerSsrNodeModulesResult;
   publicDirCopied: boolean;
   relatedClientEntryMap: Record<string, string[]>;
   ssr?: BundlerBuildResult;
@@ -150,6 +178,8 @@ type BundlerFrontendRuntimeConfig = BundlerFrontendAppBundlerConfig & {
 type BundlerFrontendRuntimeState = {
   client?: BundlerBuildResult;
   clientManifest?: BundlerAssetManifest;
+  globalClientEntries: string[];
+  nodeModules?: BundlerSsrNodeModulesResult;
   relatedClientEntryMap: Record<string, string[]>;
   ssr?: BundlerBuildResult;
   ssrManifest?: BundlerAssetManifest;
@@ -158,11 +188,14 @@ type BundlerFrontendRuntimeState = {
 
 type BundlerFrontendRuntime = {
   buildAssetLinks(pageIds?: readonly string[]): Promise<BundlerFrontendAssetLinks>;
+  buildAssetLinksSync(pageIds?: readonly string[]): BundlerFrontendAssetLinks;
   dispose(): Promise<void>;
   ensure(): Promise<BundlerFrontendRuntimeState>;
   getRuntime(): BundlerFrontendRuntimeState | undefined;
   resolvePageComponent(pageId: string): Promise<unknown>;
+  resolvePageComponentSync(pageId: string): unknown;
   resolveRootDocument(): Promise<unknown>;
+  resolveRootDocumentSync(): unknown;
 };
 
 type BundlerStaticAssetRequest = {
@@ -192,6 +225,7 @@ type BundlerStaticAssetHandlerOptions = {
   immutableCacheControl?: string;
   mode?: BundlerFrontendMode;
   publicDir?: string;
+  rootDir?: string;
 };
 
 type BundlerExpressLikeRequest = BundlerStaticAssetRequest;
@@ -224,6 +258,8 @@ export type {
   BundlerFrontendAssetLinksOptions,
   BundlerFrontendBuildOptions,
   BundlerFrontendBuildResult,
+  BundlerFrontendBuildTarget,
+  BundlerFrontendGlobalClientEntries,
   BundlerFrontendMode,
   BundlerFrontendRuntime,
   BundlerFrontendRuntimeConfig,
@@ -231,9 +267,11 @@ export type {
   BundlerQuarantineResult,
   BundlerRelatedClientEntryMapOptions,
   BundlerRenderedAssetTags,
+  BundlerResolvedSsrModuleMapRuleOptions,
   BundlerSsrModuleMapRule,
   BundlerSsrModuleMapRuleOptions,
   BundlerSsrNodeModulesOptions,
+  BundlerSsrNodeModulesResult,
   BundlerStaticAssetDir,
   BundlerStaticAssetHandlerOptions,
   BundlerStaticAssetRequest,

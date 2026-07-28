@@ -82,6 +82,9 @@
       "#a3a0h9pz7l2r": [
         "../../src/core/frontend_app/related.ts"
       ],
+      "#acbrbahcvk89": [
+        "../../src/core/frontend_app/global.ts"
+      ],
       "#amy0448zzy9v": [
         "../../scripts/verify/frontend-app.mjs"
       ],
@@ -123,6 +126,9 @@
       ],
       "#dg8wh29x5weu": [
         "../../src/types/import_graph.ts"
+      ],
+      "#exf04w6hswui": [
+        "../../src/core/frontend_app/node_modules.ts"
       ],
       "#f4htfd7ivemk": [
         "../../src/types/precompression.ts"

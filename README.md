@@ -329,13 +329,14 @@ The helper returns ordinary discover rules. Override `clientInclude`, `deferredI
 
 Use the frontend app preset when a project follows the common frontend/SSR shape and should not repeat discover-rule boilerplate.
 
-Before the preset, a project typically had to assemble client rules, SSR aggregate rules, public copying, manifest reading, related-client lookups, and static tag rendering separately.
+Before the preset, a project typically had to assemble client rules, SSR aggregate rules, public copying, manifest reading, related-client lookups, static tag rendering, and static asset serving separately.
 
 After the preset, the app-specific part is mostly paths, environment defines, and language policy:
 
 ```ts
 import {
   buildFrontendApp,
+  createStaticAssetMiddleware,
   createFrontendBundlerRuntime,
   defineFrontendBundlerConfig,
 } from "@trebired/bundler";
@@ -345,14 +346,10 @@ const bundlerConfig = defineFrontendBundlerConfig({
   ssrOutDir: "dist/ssr",
   supportedI18nLanguages: ["en", "cs"],
   ssr: {
-    key: "ssr-pages",
-    include: ["pages/**/*.tsx"],
     rootModule: "layouts/root/document.tsx",
     rootExport: "rootDocument",
     mapExport: "pages",
     resolverExport: "getPageComponent",
-    matchedModuleExportName: "default",
-    requireMatchedModuleExport: true,
   },
 });
 
@@ -363,6 +360,8 @@ await runtime.ensure();
 const page = await runtime.resolvePageComponent("account");
 const rootDocument = await runtime.resolveRootDocument();
 const assets = await runtime.buildAssetLinks(["account"]);
+
+app.use("/assets", createStaticAssetMiddleware(bundlerConfig));
 ```
 
 Defaults:
@@ -371,11 +370,49 @@ Defaults:
 - `publicDir`: `src/frontend/public`
 - client entries: `*.client.ts`, `*.client.tsx`, `*.client.js`, `*.client.jsx`, `*.client.css`, `*.client.scss`
 - deferred client entries: `*.client.defer.ts`, `*.client.defer.tsx`, `*.client.defer.js`, `*.client.defer.jsx`
+- global client entries: `auto`, using `js/**/*.client.*` and `js/**/*.client.defer.*`
 - global style bundle patterns: `css/**/*.css`, `css/**/*.scss`, component `styles.*`, and `js/**/styles.*`
 - ignored sources: tests, declarations, SCSS partials, public files, and runtime-oriented source patterns
+- SSR module map: rule key `ssr-pages`, page patterns under `pages`, exports `rootModule`, `modules`, and `getModule`
+- SSR page filtering: only modules with a default export are included by default
 - browser builds: ESM, splitting on, output layout on
 - node SSR builds: ESM, splitting off, output layout on
 - production client builds: minify, strip comments, and precompress JS/CSS
+
+Use `target` when a command should build only one side:
+
+```ts
+await buildFrontendApp({ ...bundlerConfig, target: "client" });
+await buildFrontendApp({ ...bundlerConfig, target: "ssr" });
+await buildFrontendApp({ ...bundlerConfig, target: "all" });
+```
+
+Use `nodeModules` when SSR output needs a runtime `node_modules` directory next to the built entry:
+
+```ts
+const bundlerConfig = defineFrontendBundlerConfig({
+  clientOutDir: "dist/client",
+  ssrOutDir: "dist/ssr",
+  nodeModules: {
+    strategy: "symlink",
+    sourceDir: "node_modules",
+    targetDir: "dist/ssr/node_modules",
+    force: true,
+  },
+});
+```
+
+`buildFrontendApp()` prepares it after SSR builds. `createFrontendBundlerRuntime()` also prepares it before importing SSR output and refreshes it after dev SSR rebuilds.
+
+After `await runtime.ensure()`, synchronous render paths can use cached helpers without starting new builds or imports:
+
+```ts
+const page = runtime.resolvePageComponentSync("account");
+const rootDocument = runtime.resolveRootDocumentSync();
+const assets = runtime.buildAssetLinksSync(["account"]);
+```
+
+The sync helpers throw `bundler-frontend-runtime-not-ensured` until `ensure()` has completed.
 
 The preset returns ordinary `BundlerOptions` through `createFrontendAppBundlerOptions()`, so callers can still inspect or pass the client and SSR builds to `bundle()` or `watch()` directly.
 
@@ -475,6 +512,7 @@ import { createStaticAssetMiddleware } from "@trebired/bundler";
 app.use("/assets", createStaticAssetMiddleware({
   clientOutDir: "dist/client",
   mode: "production",
+  rootDir: process.cwd(),
   extraStaticDirs: [
     { dir: "dist/vendor", mountPath: "vendor" },
   ],
@@ -489,6 +527,7 @@ The handler:
 - sends immutable cache headers for hashed production assets
 - sends `no-store` cache headers in development
 - can serve `publicDir` in development and `clientOutDir` in all modes
+- accepts a frontend app runtime/config object directly when paths should resolve from `rootDir`
 
 Use `quarantineUnwritableOutputDir(dir, { logger })` before a build when a project wants to move aside an existing output directory that cannot be written.
 

@@ -14,7 +14,9 @@ import {
   createFrontendBundlerRuntimeConfig,
   DEFAULT_FRONTEND_CLIENT_ENTRY_PATTERNS,
   DEFAULT_FRONTEND_DEFERRED_CLIENT_ENTRY_PATTERNS,
+  DEFAULT_FRONTEND_GLOBAL_CLIENT_ENTRY_PATTERNS,
   DEFAULT_FRONTEND_GLOBAL_STYLE_PATTERNS,
+  DEFAULT_FRONTEND_SSR_PAGE_PATTERNS,
   normalizeAggregateSourceId,
   resolveAggregateEntryByRuleKey,
   serveStaticAsset,
@@ -27,6 +29,8 @@ async function main() {
   await resetTempRoot();
   await verifyFrontendPresetDefaults();
   await verifyFrontendBuildHelpers();
+  await verifyTargetSpecificBuilds();
+  await verifyRuntimeNodeModules();
   await verifyRelatedMapTsconfigResolution();
   console.log("Frontend app verification succeeded.");
 }
@@ -48,6 +52,13 @@ async function verifyFrontendPresetDefaults() {
   assert.deepEqual(clientRules[1].include, [...DEFAULT_FRONTEND_CLIENT_ENTRY_PATTERNS]);
   assert.deepEqual(clientRules[2].include, [...DEFAULT_FRONTEND_DEFERRED_CLIENT_ENTRY_PATTERNS]);
   assert.deepEqual(clientRules[3].include, [...DEFAULT_FRONTEND_GLOBAL_STYLE_PATTERNS]);
+  assert.equal(options.config.globalClientEntries, "auto");
+  assert.deepEqual(options.config.globalClientEntryInclude, [...DEFAULT_FRONTEND_GLOBAL_CLIENT_ENTRY_PATTERNS]);
+  assert.equal(ssrRules[1].key, "ssr-pages");
+  assert.deepEqual(ssrRules[1].include, [...DEFAULT_FRONTEND_SSR_PAGE_PATTERNS]);
+  assert.equal(ssrRules[1].aggregate.exports.map, "modules");
+  assert.equal(ssrRules[1].aggregate.exports.resolver, "getModule");
+  assert.equal(ssrRules[1].aggregate.exports.root, "rootModule");
   assert.equal(ssrRules[1].aggregate.requireMatchedModuleExport, true);
   assert.equal(DEFAULT_FRONTEND_DEFERRED_CLIENT_ENTRY_PATTERNS.includes("**/*.defer.ts"), false);
 }
@@ -60,6 +71,7 @@ async function verifyFrontendBuildHelpers() {
 
   assert.ok(result.stats.precompressed.assets.length > 0);
   assert.ok(toPosix(result.ssrEntryOutput).includes("dist/ssr/js/"));
+  assert.ok(result.globalClientEntries.includes("src/frontend/js/global.client.ts"));
   await assertAggregateMetadata(result);
   assertRelatedMap(result.relatedClientEntryMap);
   await assertRuntime(config);
@@ -76,10 +88,7 @@ function createBuildConfig(fixture) {
     publicPath: "/assets/",
     rootDir: fixture,
     ssr: {
-      include: ["pages/**/*.tsx"],
-      key: "ssr-pages",
       mapExport: "pages",
-      requireMatchedModuleExport: true,
       resolverExport: "getPageComponent",
       rootExport: "rootDocument",
       rootModule: "layouts/root/document.tsx",
@@ -117,17 +126,25 @@ function assertRelatedMap(map) {
 
 async function assertRuntime(config) {
   const runtime = createFrontendBundlerRuntime(createFrontendBundlerRuntimeConfig(config));
+  assert.throws(() => runtime.resolveRootDocumentSync(), /bundler-frontend-runtime-not-ensured/u);
+  assert.throws(() => runtime.resolvePageComponentSync("about"), /bundler-frontend-runtime-not-ensured/u);
+  assert.throws(() => runtime.buildAssetLinksSync(["home"]), /bundler-frontend-runtime-not-ensured/u);
   await runtime.ensure();
   assert.equal(await runtime.resolveRootDocument(), "root");
   assert.equal(await runtime.resolvePageComponent("about"), "about");
+  assert.equal(runtime.resolveRootDocumentSync(), "root");
+  assert.equal(runtime.resolvePageComponentSync("about"), "about");
+  assert.ok(runtime.getRuntime().globalClientEntries.includes("src/frontend/js/global.client.ts"));
   const links = await runtime.buildAssetLinks(["home"]);
   assert.ok(links.tags.html.includes("<link rel=\"stylesheet\""));
   assert.ok(links.tags.html.includes("<script type=\"module\""));
+  assert.ok(runtime.buildAssetLinksSync(["home"]).scripts.some((item) => item.startsWith("/assets/js/")));
 }
 
 async function assertAssetLinksAndStatic(result, fixture) {
   const links = collectFrontendAssetLinks({
     collect: { publicPath: "/assets/" },
+    globalEntryIds: result.globalClientEntries,
     globalStyleRuleKey: "global-style",
     manifest: result.client.assetManifest,
     pageIds: ["home"],
@@ -153,18 +170,79 @@ async function assertAssetLinksAndStatic(result, fixture) {
     mode: "production",
   });
   const publicResponse = await serveStaticAsset({ url: "/robots.txt" }, {
-    clientOutDir: path.join(fixture, "dist/client"),
+    clientOutDir: "dist/client",
     mode: "development",
-    publicDir: path.join(fixture, "src/frontend/public"),
+    publicDir: "src/frontend/public",
+    rootDir: fixture,
   });
 
   assert.ok(links.styles.some((item) => item.startsWith("/assets/css/")));
   assert.ok(links.scripts.some((item) => item.startsWith("/assets/js/")));
+  assert.ok(links.entryKeys.some((key) => key.includes("src/frontend/js/global.client")));
   assert.equal(response.headers["Content-Encoding"], "br");
   assert.equal(response.headers.Vary, "Accept-Encoding");
   assert.equal(privateResponse.status, 404);
   assert.equal(sourceMapResponse.status, 404);
   assert.equal(publicResponse.body.toString(), "User-agent: *\n");
+}
+
+async function verifyTargetSpecificBuilds() {
+  const clientFixture = path.join(tempRoot, "target-client");
+  await writeFrontendFixture(clientFixture);
+  const clientOnly = await buildFrontendApp({ ...createBuildConfig(clientFixture), target: "client" });
+
+  assert.ok(clientOnly.client);
+  assert.equal(clientOnly.ssr, undefined);
+  assert.equal(clientOnly.ssrEntryOutput, undefined);
+  assert.equal(clientOnly.publicDirCopied, true);
+  assert.ok(clientOnly.globalClientEntries.includes("src/frontend/js/global.client.ts"));
+
+  const ssrFixture = path.join(tempRoot, "target-ssr");
+  await writeFrontendFixture(ssrFixture);
+  const ssrOnly = await buildFrontendApp({ ...createBuildConfig(ssrFixture), target: "ssr" });
+
+  assert.equal(ssrOnly.client, undefined);
+  assert.ok(ssrOnly.ssr);
+  assert.ok(ssrOnly.ssrEntryOutput);
+  assert.equal(ssrOnly.publicDirCopied, false);
+  assert.deepEqual(ssrOnly.globalClientEntries, []);
+}
+
+async function verifyRuntimeNodeModules() {
+  const fixture = path.join(tempRoot, "runtime-node-modules");
+  await writeNodeModulesFixture(fixture);
+  const config = {
+    clientOutDir: "dist/client",
+    frontendDir: "src/frontend",
+    mode: "production",
+    node: { external: ["runtime-value"] },
+    nodeModules: { force: true, sourceDir: "runtime_node_modules", strategy: "copy" },
+    rootDir: fixture,
+    ssr: {
+      rootExport: "rootDocument",
+      rootModule: "layouts/root/document.tsx",
+    },
+    ssrOutDir: "dist/ssr",
+  };
+
+  await buildFrontendApp({ ...config, target: "ssr" });
+  await fs.rm(path.join(fixture, "dist/ssr/node_modules"), { force: true, recursive: true });
+  const productionRuntime = createFrontendBundlerRuntime(createFrontendBundlerRuntimeConfig(config));
+  await productionRuntime.ensure();
+  assert.equal(await productionRuntime.resolvePageComponent("home"), "runtime-value");
+  await fs.access(path.join(fixture, "dist/ssr/node_modules/runtime-value/index.js"));
+
+  const devConfig = { ...config, clientOutDir: "dev/client", mode: "development", ssrOutDir: "dev/ssr" };
+  const developmentRuntime = createFrontendBundlerRuntime(createFrontendBundlerRuntimeConfig(devConfig));
+  try {
+    await developmentRuntime.ensure();
+    await fs.rm(path.join(fixture, "dev/ssr/node_modules"), { force: true, recursive: true });
+    await developmentRuntime.ensure();
+    assert.equal(developmentRuntime.resolvePageComponentSync("home"), "runtime-value");
+    await fs.access(path.join(fixture, "dev/ssr/node_modules/runtime-value/index.js"));
+  } finally {
+    await developmentRuntime.dispose();
+  }
 }
 
 async function verifyRelatedMapTsconfigResolution() {
@@ -189,9 +267,21 @@ async function writeFrontendFixture(fixture) {
   await writeFile(fixture, "src/frontend/pages/home.client.defer.ts", "export const deferred = true;\n");
   await writeFile(fixture, "src/frontend/features/card.ts", "export const card = true;\n");
   await writeFile(fixture, "src/frontend/features/card.client.scss", ".card { color: red; }\n");
+  await writeFile(fixture, "src/frontend/js/global.client.ts", `export const global = ${JSON.stringify("x".repeat(2048))};\n`);
   await writeFile(fixture, "src/frontend/shared/reexported.tsx", "export default 'reexported';\n");
   await writeFile(fixture, "src/frontend/css/base.css", `.base { content: "${"x".repeat(2048)}"; }\n`);
   await writeFile(fixture, "src/frontend/public/robots.txt", "User-agent: *\n");
+}
+
+async function writeNodeModulesFixture(fixture) {
+  await writeFile(fixture, "src/frontend/layouts/root/document.tsx", "export const rootDocument = 'root';\n");
+  await writeFile(fixture, "src/frontend/pages/home.tsx", "import value from 'runtime-value';\nexport default value;\n");
+  await writeFile(fixture, "src/frontend/js/global.client.ts", "export const global = true;\n");
+  await writeFile(fixture, "runtime_node_modules/runtime-value/index.js", "export default 'runtime-value';\n");
+  await writeFile(fixture, "runtime_node_modules/runtime-value/package.json", JSON.stringify({
+    exports: "./index.js",
+    type: "module",
+  }));
 }
 
 async function writeTsconfigRelatedFixture(fixture) {

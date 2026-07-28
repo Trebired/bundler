@@ -4,6 +4,16 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 4.1.0
+
+- Added frontend app build targets for `all`, `client`, and `ssr` so callers can build either side without local branching wrappers.
+- Added runtime SSR `node_modules` preparation, matching the build helper's `none`, `symlink`, and `copy` strategies and refreshing after dev SSR rebuilds.
+- Relaxed frontend SSR module-map config inputs so common rule keys, page patterns, exports, and default-export filtering come from package defaults.
+- Added auto global client entry discovery for package-owned `js/**/*.client.*` and `js/**/*.client.defer.*` defaults, and included those entries in runtime asset links.
+- Added synchronous cached frontend runtime helpers for root/page export resolution and asset links after `ensure()`.
+- Made static asset handlers work cleanly with frontend runtime config paths resolved from `rootDir`.
+- Expanded frontend app verification coverage for target-specific builds, runtime `node_modules`, partial SSR config defaults, auto global client entries, sync helper behavior, and relative static paths.
+
 ## 4.0.0
 
 - Added a generic frontend app preset with default source, public, client-entry, deferred-entry, global-style, ignore, browser, node SSR, output-layout, i18n, and production precompression options.

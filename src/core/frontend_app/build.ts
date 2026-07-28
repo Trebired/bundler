@@ -4,35 +4,46 @@ import path from "node:path";
 import type {
   BundlerFrontendAppBundlerConfig,
   BundlerFrontendBuildOptions,
+  BundlerFrontendBuildTarget,
   BundlerFrontendBuildResult,
-  BundlerSsrNodeModulesOptions,
 } from "#3c8d8166992a";
 import { bundle } from "#9b50ca986572";
 import { createFrontendAppBundlerOptions } from "./config.js";
+import { resolveConfiguredFrontendGlobalClientEntries } from "./global.js";
 import { resolveAssetManifestEntryOutputPath } from "./manifest.js";
+import { prepareSsrNodeModules } from "./node_modules.js";
 import { buildRelatedClientEntryMap } from "./related.js";
 
 async function buildFrontendApp(
   options: BundlerFrontendBuildOptions | BundlerFrontendAppBundlerConfig,
 ): Promise<BundlerFrontendBuildResult> {
-  const nodeModulesOptions = "nodeModules" in options ? options.nodeModules : undefined;
+  const target = resolveBuildTarget(options);
   const { client, config, ssr } = createFrontendAppBundlerOptions(options);
-  const clientResult = await bundle(client);
-  const publicDirCopied = await copyPublicDir(config);
-  const ssrResult = ssr ? await bundle(ssr) : undefined;
+  const clientResult = target !== "ssr" ? await bundle(client) : undefined;
+  const publicDirCopied = clientResult ? await copyPublicDir(config) : false;
+  const ssrResult = target !== "client" && ssr ? await bundle(ssr) : undefined;
   const relatedClientEntryMap = await resolveBuildRelatedClientEntryMap(config, ssrResult);
   const ssrEntryOutput = resolveBuildSsrEntryOutput(config, ssrResult);
-  const nodeModules = ssrResult ? await prepareSsrNodeModules(config, nodeModulesOptions) : undefined;
+  const nodeModules = ssrResult ? await prepareSsrNodeModules(config, config.nodeModules) : undefined;
+  const globalClientEntries = resolveConfiguredFrontendGlobalClientEntries(config, clientResult?.assetManifest);
 
   return {
     client: clientResult,
+    globalClientEntries,
     nodeModules,
     publicDirCopied,
     relatedClientEntryMap,
     ssr: ssrResult,
     ssrEntryOutput,
-    stats: { precompressed: clientResult.precompressed },
+    stats: { precompressed: clientResult?.precompressed },
   };
+}
+
+function resolveBuildTarget(
+  options: BundlerFrontendBuildOptions | BundlerFrontendAppBundlerConfig,
+): BundlerFrontendBuildTarget {
+  if ("target" in options && options.target) return options.target;
+  return "all";
 }
 
 async function copyPublicDir(config: BundlerFrontendAppBundlerConfig): Promise<boolean> {
@@ -68,27 +79,6 @@ function resolveBuildSsrEntryOutput(
     from: "ruleKey",
     manifest: ssrResult.assetManifest,
     outDir: path.resolve(config.rootDir, config.ssrOutDir),
-  });
-}
-
-async function prepareSsrNodeModules(
-  config: BundlerFrontendAppBundlerConfig,
-  options: BundlerSsrNodeModulesOptions | undefined,
-): Promise<BundlerFrontendBuildResult["nodeModules"]> {
-  const strategy = options?.strategy || "none";
-  if (strategy === "none" || !config.ssrOutDir) return undefined;
-  const sourceDir = path.resolve(config.rootDir, options?.sourceDir || "node_modules");
-  const targetDir = path.resolve(config.rootDir, options?.targetDir || path.join(config.ssrOutDir, "node_modules"));
-  if (options?.force) await fs.rm(targetDir, { force: true, recursive: true });
-  if (strategy === "symlink") await createNodeModulesSymlink(sourceDir, targetDir);
-  else await fs.cp(sourceDir, targetDir, { recursive: true, force: true });
-  return { path: targetDir, strategy };
-}
-
-async function createNodeModulesSymlink(sourceDir: string, targetDir: string): Promise<void> {
-  await fs.mkdir(path.dirname(targetDir), { recursive: true });
-  await fs.symlink(sourceDir, targetDir, "junction").catch(async (error: NodeJS.ErrnoException) => {
-    if (error.code !== "EEXIST") throw error;
   });
 }
 

@@ -7,7 +7,7 @@ import type {
   BundlerFrontendAppBundlerOptions,
   BundlerFrontendRuntimeConfig,
   BundlerOptions,
-  BundlerSsrModuleMapRuleOptions,
+  BundlerResolvedSsrModuleMapRuleOptions,
 } from "#3c8d8166992a";
 import {
   createFrontendEntryRules,
@@ -18,16 +18,15 @@ import { normalizePathValue } from "#tsnh4vdfql8p";
 import {
   DEFAULT_FRONTEND_CLIENT_ENTRY_KEY,
   DEFAULT_FRONTEND_DEFERRED_CLIENT_ENTRY_KEY,
+  DEFAULT_FRONTEND_GLOBAL_CLIENT_ENTRY_PATTERNS,
   DEFAULT_FRONTEND_GLOBAL_STYLE_PATTERNS,
   DEFAULT_FRONTEND_GLOBAL_STYLE_RULE_KEY,
   DEFAULT_FRONTEND_IGNORED_SOURCE_PATTERNS,
   DEFAULT_FRONTEND_PUBLIC_DIR,
   DEFAULT_FRONTEND_RUNTIME_SOURCE_PATTERNS,
   DEFAULT_FRONTEND_SOURCE_DIR,
-  DEFAULT_FRONTEND_SSR_PAGE_PATTERNS,
-  DEFAULT_FRONTEND_SSR_RULE_KEY,
 } from "./defaults.js";
-import { createSsrModuleMapRule } from "./ssr.js";
+import { createSsrModuleMapRule, resolveSsrModuleMapRuleOptions } from "./ssr.js";
 
 function defineFrontendBundlerConfig(options: BundlerFrontendAppBundlerConfigOptions): BundlerFrontendAppBundlerConfig {
   const base = normalizeFrontendConfigBase(options);
@@ -84,7 +83,7 @@ function createClientOptions(
 function createSsrOptions(
   options: BundlerFrontendAppBundlerConfigOptions,
   base: ReturnType<typeof normalizeFrontendConfigBase>,
-  ssr: BundlerSsrModuleMapRuleOptions,
+  ssr: BundlerResolvedSsrModuleMapRuleOptions,
 ): BundlerOptions {
   const overrides = options.node || {};
   return {
@@ -107,9 +106,12 @@ function normalizeFrontendConfigBase(options: BundlerFrontendAppBundlerConfigOpt
     clientOutDir: normalizeRootRelative(rootDir, options.clientOutDir),
     deferredClientEntryKey: options.deferredClientEntryKey || DEFAULT_FRONTEND_DEFERRED_CLIENT_ENTRY_KEY,
     frontendDir,
-    globalClientEntries: options.globalClientEntries?.slice() || [],
+    globalClientEntries: options.globalClientEntries || "auto",
+    globalClientEntryExclude: options.globalClientEntryExclude?.slice() || [],
+    globalClientEntryInclude: options.globalClientEntryInclude?.slice() || [...DEFAULT_FRONTEND_GLOBAL_CLIENT_ENTRY_PATTERNS],
     globalStyleRuleKey: options.globalStyleRuleKey || DEFAULT_FRONTEND_GLOBAL_STYLE_RULE_KEY,
     mode: options.mode || "production",
+    nodeModules: options.nodeModules,
     publicDir,
     rootDir,
     ssrOutDir: options.ssrOutDir ? normalizeRootRelative(rootDir, options.ssrOutDir) : undefined,
@@ -160,7 +162,7 @@ function createClientDiscoverRules(
 
 function createSsrDiscoverRules(
   options: BundlerFrontendAppBundlerConfigOptions,
-  ssr: BundlerSsrModuleMapRuleOptions,
+  ssr: BundlerResolvedSsrModuleMapRuleOptions,
 ): BundlerDiscoverRule[] {
   return [
     createIgnoredSourceRule(options),
@@ -209,15 +211,9 @@ function createRuntimeSourceIgnoreRule(options: BundlerFrontendAppBundlerConfigO
 function normalizeSsrRuleOptions(
   options: BundlerFrontendAppBundlerConfigOptions,
   ssrOutDir?: string,
-): BundlerSsrModuleMapRuleOptions | undefined {
+): BundlerResolvedSsrModuleMapRuleOptions | undefined {
   if (options.ssr === false || !ssrOutDir) return undefined;
-  return {
-    allowEmpty: true,
-    include: [...DEFAULT_FRONTEND_SSR_PAGE_PATTERNS],
-    key: DEFAULT_FRONTEND_SSR_RULE_KEY,
-    requireMatchedModuleExport: true,
-    ...(options.ssr || {}),
-  };
+  return resolveSsrModuleMapRuleOptions(options.ssr || {});
 }
 
 function pickLooseOverrides(options: Partial<BundlerOptions>): Partial<BundlerOptions> {

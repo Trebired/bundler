@@ -34,6 +34,7 @@ async function serveStaticAsset(
     headers: createAssetHeaders({
       compressedEncoding: selected.encoding,
       mode: options.mode || "production",
+      options,
       requestPath: match.requestPath,
     }),
     status: 200,
@@ -93,10 +94,11 @@ async function selectPrecompressedFile(
 function createAssetHeaders(args: {
   compressedEncoding?: "br" | "gzip";
   mode: "development" | "production";
+  options: BundlerStaticAssetHandlerOptions;
   requestPath: string;
 }): Record<string, string> {
   const headers: Record<string, string> = {
-    "Cache-Control": resolveCacheControl(args.mode, args.requestPath),
+    "Cache-Control": resolveCacheControl(args.mode, args.requestPath, args.options),
     "Content-Type": resolveContentType(args.requestPath),
     "X-Content-Type-Options": "nosniff",
   };
@@ -107,15 +109,18 @@ function createAssetHeaders(args: {
 
 function resolveStaticDirs(options: BundlerStaticAssetHandlerOptions): Array<{ dir: string; mountPath: string }> {
   const dirs: Array<{ dir: string; mountPath: string }> = [];
-  if (options.mode === "development" && options.publicDir) dirs.push({ dir: path.resolve(options.publicDir), mountPath: "" });
-  dirs.push(...(options.extraStaticDirs || []).map(normalizeStaticDir));
-  dirs.push({ dir: path.resolve(options.clientOutDir), mountPath: "" });
+  const rootDir = path.resolve(options.rootDir || "");
+  if (options.mode === "development" && options.publicDir) {
+    dirs.push({ dir: resolveStaticPath(rootDir, options.publicDir), mountPath: "" });
+  }
+  dirs.push(...(options.extraStaticDirs || []).map((dir) => normalizeStaticDir(rootDir, dir)));
+  dirs.push({ dir: resolveStaticPath(rootDir, options.clientOutDir), mountPath: "" });
   return dirs;
 }
 
-function normalizeStaticDir(value: BundlerStaticAssetDir): { dir: string; mountPath: string } {
-  if (typeof value === "string") return { dir: path.resolve(value), mountPath: "" };
-  return { dir: path.resolve(value.dir), mountPath: normalizePathValue(value.mountPath || "") };
+function normalizeStaticDir(rootDir: string, value: BundlerStaticAssetDir): { dir: string; mountPath: string } {
+  if (typeof value === "string") return { dir: resolveStaticPath(rootDir, value), mountPath: "" };
+  return { dir: resolveStaticPath(rootDir, value.dir), mountPath: normalizePathValue(value.mountPath || "") };
 }
 
 function normalizeRequestPath(value: string): string {
@@ -141,7 +146,9 @@ function createBlockedResponse(options: BundlerStaticAssetHandlerOptions): Bundl
   return {
     body: Buffer.from(""),
     headers: {
-      "Cache-Control": options.mode === "development" ? "no-store" : "public, max-age=0, must-revalidate",
+      "Cache-Control": options.mode === "development"
+        ? options.devCacheControl || "no-store"
+        : "public, max-age=0, must-revalidate",
       "X-Content-Type-Options": "nosniff",
     },
     status: 404,
@@ -159,9 +166,13 @@ function getHeader(
   return Array.isArray(value) ? value.join(", ") : String(value || "");
 }
 
-function resolveCacheControl(mode: "development" | "production", requestPath: string): string {
-  if (mode === "development") return "no-store";
-  if (isHashedAsset(requestPath)) return "public, max-age=31536000, immutable";
+function resolveCacheControl(
+  mode: "development" | "production",
+  requestPath: string,
+  options: BundlerStaticAssetHandlerOptions,
+): string {
+  if (mode === "development") return options.devCacheControl || "no-store";
+  if (isHashedAsset(requestPath)) return options.immutableCacheControl || "public, max-age=31536000, immutable";
   return "public, max-age=0, must-revalidate";
 }
 
@@ -189,6 +200,10 @@ function isInsideDir(absPath: string, dir: string): boolean {
 
 async function isFile(filePath: string): Promise<boolean> {
   return fs.stat(filePath).then((stats) => stats.isFile(), () => false);
+}
+
+function resolveStaticPath(rootDir: string, value: string): string {
+  return path.isAbsolute(value) ? value : path.resolve(rootDir, value);
 }
 
 export {

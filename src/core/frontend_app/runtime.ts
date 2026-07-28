@@ -15,11 +15,13 @@ import type {
 import { watch } from "#644f3e1f42a8";
 import { collectFrontendAssetLinks } from "./assets.js";
 import { createFrontendBundlerRuntimeConfig } from "./config.js";
+import { resolveConfiguredFrontendGlobalClientEntries } from "./global.js";
 import {
   extractAssetManifest,
   readBundlerManifest,
   resolveAssetManifestEntryOutputPath,
 } from "./manifest.js";
+import { prepareSsrNodeModules } from "./node_modules.js";
 import { buildRelatedClientEntryMap } from "./related.js";
 
 type RuntimeSessionState = {
@@ -36,11 +38,14 @@ function createFrontendBundlerRuntime(
   const state: RuntimeSessionState = { config: normalizeRuntimeConfig(input) };
   return {
     buildAssetLinks: (pageIds) => buildRuntimeAssetLinks(state, pageIds),
+    buildAssetLinksSync: (pageIds) => buildRuntimeAssetLinksSync(state, pageIds),
     dispose: () => disposeRuntime(state),
     ensure: () => ensureRuntime(state),
     getRuntime: () => state.runtime,
     resolvePageComponent: (pageId) => resolveRuntimePageComponent(state, pageId),
+    resolvePageComponentSync: (pageId) => resolveRuntimePageComponentSync(state, pageId),
     resolveRootDocument: () => resolveRuntimeRootDocument(state),
+    resolveRootDocumentSync: () => resolveRuntimeRootDocumentSync(state),
   };
 }
 
@@ -66,9 +71,11 @@ async function ensureProductionRuntime(state: RuntimeSessionState): Promise<Bund
   if (state.runtime) return state.runtime;
   const clientManifest = await readRuntimeAssetManifest(state.config.clientManifestPath);
   const ssrManifest = await readRuntimeAssetManifest(state.config.ssrManifestPath);
+  const globalClientEntries = resolveConfiguredFrontendGlobalClientEntries(state.config, clientManifest);
   const relatedClientEntryMap = ssrManifest ? await buildRuntimeRelatedMap(state.config, ssrManifest) : {};
+  const nodeModules = ssrManifest ? await prepareSsrNodeModules(state.config, state.config.nodeModules) : undefined;
   const ssrModule = ssrManifest ? await importSsrModule(state, ssrManifest) : undefined;
-  state.runtime = { clientManifest, relatedClientEntryMap, ssrManifest, ssrModule };
+  state.runtime = { clientManifest, globalClientEntries, nodeModules, relatedClientEntryMap, ssrManifest, ssrModule };
   return state.runtime;
 }
 
@@ -78,11 +85,15 @@ async function updateRuntimeFromBuilds(
   ssr: BundlerBuildResult | undefined,
 ): Promise<void> {
   const ssrManifest = ssr?.assetManifest;
+  const globalClientEntries = resolveConfiguredFrontendGlobalClientEntries(state.config, client.assetManifest);
   const relatedClientEntryMap = ssrManifest ? await buildRuntimeRelatedMap(state.config, ssrManifest) : {};
+  const nodeModules = ssrManifest ? await prepareSsrNodeModules(state.config, state.config.nodeModules) : undefined;
   const ssrModule = ssrManifest ? await importSsrModule(state, ssrManifest) : undefined;
   state.runtime = {
     client,
     clientManifest: client.assetManifest,
+    globalClientEntries,
+    nodeModules,
     relatedClientEntryMap,
     ssr,
     ssrManifest,
@@ -133,11 +144,19 @@ async function buildRuntimeAssetLinks(
   state: RuntimeSessionState,
   pageIds: readonly string[] = [],
 ) {
-  const runtime = await ensureRuntime(state);
+  await ensureRuntime(state);
+  return buildRuntimeAssetLinksSync(state, pageIds);
+}
+
+function buildRuntimeAssetLinksSync(
+  state: RuntimeSessionState,
+  pageIds: readonly string[] = [],
+) {
+  const runtime = getEnsuredRuntime(state);
   if (!runtime.clientManifest) throw new Error("bundler-frontend-runtime-client-manifest-missing");
   return collectFrontendAssetLinks({
     collect: { publicPath: state.config.clientOptions.publicPath },
-    globalEntryIds: state.config.globalClientEntries,
+    globalEntryIds: runtime.globalClientEntries,
     globalStyleRuleKey: state.config.globalStyleRuleKey,
     manifest: runtime.clientManifest,
     pageIds,
@@ -147,7 +166,12 @@ async function buildRuntimeAssetLinks(
 }
 
 async function resolveRuntimePageComponent(state: RuntimeSessionState, pageId: string): Promise<unknown> {
-  const runtime = await ensureRuntime(state);
+  await ensureRuntime(state);
+  return resolveRuntimePageComponentSync(state, pageId);
+}
+
+function resolveRuntimePageComponentSync(state: RuntimeSessionState, pageId: string): unknown {
+  const runtime = getEnsuredRuntime(state);
   const resolver = runtime.ssrModule?.[state.config.ssr?.resolverExport || "getModule"];
   if (typeof resolver === "function") return resolver(pageId);
   const modules = runtime.ssrModule?.[state.config.ssr?.mapExport || "modules"];
@@ -155,7 +179,12 @@ async function resolveRuntimePageComponent(state: RuntimeSessionState, pageId: s
 }
 
 async function resolveRuntimeRootDocument(state: RuntimeSessionState): Promise<unknown> {
-  const runtime = await ensureRuntime(state);
+  await ensureRuntime(state);
+  return resolveRuntimeRootDocumentSync(state);
+}
+
+function resolveRuntimeRootDocumentSync(state: RuntimeSessionState): unknown {
+  const runtime = getEnsuredRuntime(state);
   return runtime.ssrModule?.[state.config.ssr?.rootExport || "rootModule"];
 }
 
@@ -174,7 +203,11 @@ function resolveRuntimeSsrEntryPath(
 
 async function readRuntimeAssetManifest(filePath: string | undefined): Promise<BundlerAssetManifest | undefined> {
   if (!filePath) return undefined;
-  const raw = await readBundlerManifest(filePath);
+  const raw = await readBundlerManifest(filePath).catch((error: NodeJS.ErrnoException) => {
+    if (error.code === "ENOENT") return undefined;
+    throw error;
+  });
+  if (!raw) return undefined;
   return extractAssetManifest(raw);
 }
 
@@ -188,6 +221,11 @@ function normalizeRuntimeConfig(
 ): BundlerFrontendRuntimeConfig {
   if ("clientManifestPath" in input) return input;
   return createFrontendBundlerRuntimeConfig(input);
+}
+
+function getEnsuredRuntime(state: RuntimeSessionState): BundlerFrontendRuntimeState {
+  if (!state.runtime) throw new Error("bundler-frontend-runtime-not-ensured");
+  return state.runtime;
 }
 
 export {
