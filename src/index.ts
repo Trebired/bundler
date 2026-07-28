@@ -8,6 +8,7 @@ export { defineBundlerConfig } from "./config/index.js";
 export { resolveLogger } from "./logging.js";
 export { buildSourceAnnotation, injectSourceAnnotation, resolveSourceLabel } from "./plugins/source-annotations.js";
 export { createScssPlugin } from "./plugins/scss.js";
+export { createI18nPlugin } from "./plugins/i18n.js";
 export { runCli } from "./cli/run-cli.js";
 
 export type {
@@ -49,6 +50,7 @@ export type {
   BundlerImportGraphImportKind,
   BundlerImportGraphOptions,
   BundlerImportGraphTsconfigOptions,
+  BundlerI18nOptions,
   BundlerLogEvent,
   BundlerLogger,
   BundlerLoggerAdapter,
@@ -61,6 +63,7 @@ export type {
   BundlerWatchSession,
   LoadedBundlerConfig,
   NormalizedBundlerLogger,
+  NormalizedBundlerI18nOptions,
 } from "./types.js";
 
 export { bundle as default } from "./core/build.js";

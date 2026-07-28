@@ -2,6 +2,7 @@ import type { Format, Metafile } from "esbuild";
 import type { ResultLike } from "@package/result";
 
 import type { BundlerResolvedDiscovery } from "./discovery.js";
+import type { BundlerI18nOptions } from "./i18n.js";
 import type { BundlerLogger, BundlerLoggerAdapter } from "./logging.js";
 import type { BundlerAssetManifest, BundlerManifestOptions } from "./manifest.js";
 
@@ -23,6 +24,7 @@ type BundlerOptions = {
   define?: Record<string, string>;
   clean?: boolean;
   annotateSources?: boolean;
+  i18n?: boolean | BundlerI18nOptions;
   manifest?: BundlerManifestOptions;
   onRebuilt?: (result: BundlerBuildResult) => void | Promise<void>;
   onEntrySetChanged?: (entries: Record<string, string>) => void | Promise<void>;

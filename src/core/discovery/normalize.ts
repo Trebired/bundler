@@ -97,6 +97,7 @@ function normalizeDiscoverRule(rule: BundlerDiscoverRule): NormalizedDiscoverRul
 function normalizeDiscoverOptions(
   rootDir: string,
   discover: BundlerOptions["discover"],
+  settings: { ignoreDirs?: string[] } = {},
 ): NormalizedDiscoverOptions[] {
   const list = Array.isArray(discover) ? discover : discover ? [discover] : [];
   if (list.length === 0) throw new Error("bundler-missing-discover");
@@ -104,13 +105,17 @@ function normalizeDiscoverOptions(
   const normalized = list
     .map((item) => item && typeof item === "object" ? item : null)
     .filter(Boolean)
-    .map((item) => normalizeDiscoverConfig(rootDir, item!));
+    .map((item) => normalizeDiscoverConfig(rootDir, item!, settings.ignoreDirs || []));
 
   validateRuleKeys(normalized);
   return normalized;
 }
 
-function normalizeDiscoverConfig(rootDir: string, item: NonNullable<Exclude<BundlerOptions["discover"], BundlerOptions["discover"][]>>): NormalizedDiscoverOptions {
+function normalizeDiscoverConfig(
+  rootDir: string,
+  item: NonNullable<Exclude<BundlerOptions["discover"], BundlerOptions["discover"][]>>,
+  extraIgnoreDirs: string[],
+): NormalizedDiscoverOptions {
   const dir = normalizePathValue(item.dir);
   if (!dir) throw new Error("bundler-discover-missing-dir");
   const rules = (item.rules || []).map(normalizeDiscoverRule);
@@ -119,7 +124,11 @@ function normalizeDiscoverConfig(rootDir: string, item: NonNullable<Exclude<Bund
   return {
     dir,
     dirAbs: path.resolve(rootDir, dir),
-    ignoreDirs: new Set([...DEFAULT_IGNORE_DIRS, ...normalizeStringList(item.ignoreDirs)].map((value) => path.basename(value))),
+    ignoreDirs: new Set([
+      ...DEFAULT_IGNORE_DIRS,
+      ...normalizeStringList(item.ignoreDirs),
+      ...normalizeStringList(extraIgnoreDirs),
+    ].map((value) => path.basename(value))),
     rules,
   };
 }

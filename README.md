@@ -98,6 +98,79 @@ trebired-bundler build --config ./bundler.config.mjs
 trebired-bundler watch --config ./bundler.config.mjs
 ```
 
+## Colocated I18n
+
+Enable `i18n` when feature code uses `@trebired/i18n` local translators:
+
+```ts
+await bundle({
+  discover: {
+    dir: "./src/frontend",
+    rules: [
+      {
+        key: "client",
+        include: ["**/*.client.ts", "**/*.client.tsx"],
+        strategy: "entry",
+      },
+      {
+        key: "shared-script",
+        include: ["**/*.ts", "**/*.tsx"],
+        exclude: ["**/*.client.ts", "**/*.client.tsx"],
+        strategy: "bundle",
+      },
+    ],
+  },
+  i18n: {
+    supportedLanguages: ["en", "cs"],
+  },
+  outDir: "./dist",
+});
+```
+
+Feature code imports only the central i18n API:
+
+```ts
+import { createLocalTranslator } from "@trebired/i18n";
+
+const t = createLocalTranslator(import.meta.url, lang);
+```
+
+Language files stay next to the feature:
+
+```txt
+some-feature/
+  component.tsx
+  i18n/
+    en.ts
+    cs.ts
+```
+
+```ts
+import { defineMessages } from "@trebired/i18n";
+
+export default defineMessages({
+  title: "Title",
+});
+```
+
+During browser, node, and neutral builds, the bundler rewrites the local translator call to a normal `createTranslator()` call with static sibling imports for the configured language files. The source tree does not need local `i18n/index.ts` files, JSON dictionaries, app-wide registries, or checked-in generated source.
+
+Builds fail when a used colocated folder is invalid:
+
+- a supported language file is missing
+- a language file is not in `supportedLanguages`
+- language keys do not match the English fallback file
+- a language file does not default-export `defineMessages({ ... })`
+
+Options:
+
+- `supportedLanguages`: exact language files expected in every used colocated folder
+- `defaultLanguage`: fallback language, default `en`
+- `dirName`: sibling folder name, default `i18n`
+- `extensions`: language file extensions, default `[".ts"]`
+
+When `i18n` is enabled, matching discover roots skip directories with the configured `dirName`; language modules are still statically included through the transformed callers.
+
 ## Discover Rules
 
 Rules are ordered. First match wins.
@@ -390,6 +463,14 @@ type BundlerDiscoverOptions = {
   ignoreDirs?: string[];
 };
 
+type BundlerI18nOptions = {
+  enabled?: boolean;
+  supportedLanguages?: readonly string[];
+  defaultLanguage?: string;
+  dirName?: string;
+  extensions?: string[];
+};
+
 type BundlerOptions = {
   discover: BundlerDiscoverOptions | BundlerDiscoverOptions[];
   outDir: string;
@@ -406,6 +487,7 @@ type BundlerOptions = {
   define?: Record<string, string>;
   clean?: boolean;
   annotateSources?: boolean;
+  i18n?: boolean | BundlerI18nOptions;
   manifest?: boolean | { file?: string };
   onRebuilt?: (result: BundlerBuildResult) => void | Promise<void>;
   onEntrySetChanged?: (entries: Record<string, string>) => void | Promise<void>;

@@ -4,6 +4,9 @@
       "#0e84q8f4ubat": [
         "../../src/constants.ts"
       ],
+      "#15qndurz5u8q": [
+        "../../src/plugins/i18n/shared.ts"
+      ],
       "#17f3fba84f54": [
         "../../src/core/asset-manifest.ts"
       ],
@@ -21,6 +24,9 @@
       ],
       "#47cd321d28f1": [
         "../../src/core/shared.ts"
+      ],
+      "#4qogumyc6jdo": [
+        "../../src/plugins/i18n/plugin.ts"
       ],
       "#577a7bee60a4": [
         "../../src/core/esbuild-options.ts"
@@ -40,6 +46,9 @@
       "#68011e944d8d": [
         "../../src/core/import-graph.ts"
       ],
+      "#6oq2v2e7vq0l": [
+        "../../src/core/i18n-options.ts"
+      ],
       "#6wgcj9fvnm87": [
         "../../src/types/runtime.ts"
       ],
@@ -57,6 +66,9 @@
       ],
       "#axis79i54k87": [
         "../../src/core/discovery/normalize.ts"
+      ],
+      "#b3118bee7w0h": [
+        "../../src/plugins/i18n/validate.ts"
       ],
       "#b78ku6qgmf3o": [
         "../../src/backend/utils/normalize.ts"
@@ -88,17 +100,26 @@
       "#kt3a1qycxbzz": [
         "../../src/plugins/scss/imports.ts"
       ],
+      "#l18iotoaw5lm": [
+        "../../scripts/verify/i18n.mjs"
+      ],
       "#l7l0wczeqcwq": [
         "../../src/core/discovery/resolve.ts"
       ],
       "#lc29x958kzin": [
         "../../src/core/discovery/emit.ts"
       ],
+      "#lor12cww79qp": [
+        "../../src/plugins/i18n/parse.ts"
+      ],
       "#lxr3ttzj8fq9": [
         "../../src/cli.ts"
       ],
       "#m35wkcxfbmmu": [
         "../../src/core/derive_manifest/runtime.ts"
+      ],
+      "#m42z8fvtvpjc": [
+        "../../src/plugins/i18n.ts"
       ],
       "#m7884285ke1w": [
         "../../src/package-metadata.ts"
@@ -108,6 +129,9 @@
       ],
       "#n02ctrtxmyrd": [
         "../../src/core/import_graph/tsconfig.ts"
+      ],
+      "#n2jhviy4ya88": [
+        "../../src/plugins/i18n/transform.ts"
       ],
       "#ohy99nrb7lqv": [
         "../../src/core/import_graph/resolve.ts"
@@ -123,6 +147,9 @@
       ],
       "#tsnh4vdfql8p": [
         "../../src/core/discovery/shared.ts"
+      ],
+      "#uf2o9l93gfe3": [
+        "../../src/types/i18n.ts"
       ],
       "#ulrbecj1la7z": [
         "../../src/plugins/source-annotations.ts"

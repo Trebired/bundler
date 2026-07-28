@@ -8,6 +8,9 @@ coverage/
 # Package artifacts
 *.tgz
 
+# Runtime and generated work files
+.tmp/
+
 # Local environment
 .env
 .env.*

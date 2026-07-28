@@ -29,7 +29,9 @@ async function bundle(options: BundlerOptions): Promise<BundlerBuildResult> {
   const startedAt = Date.now();
 
   try {
-    const resolvedDiscovery = await resolveBundlerEntries(options || {} as BundlerOptions, normalized.rootDir);
+    const resolvedDiscovery = await resolveBundlerEntries(options || {} as BundlerOptions, normalized.rootDir, {}, {
+      ignoredDirs: normalized.i18n.enabled ? [normalized.i18n.dirName] : [],
+    });
     logger.info("build", `entries :: count=${resolvedDiscovery.entries.length}`);
     const result = await runEsbuild(createEsbuildOptions({
       ...normalized,

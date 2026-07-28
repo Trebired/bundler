@@ -4,6 +4,14 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 3.6.0
+
+- Added opt-in generic support for `@trebired/i18n` colocated local translators.
+- Rewrites `createLocalTranslator(import.meta.url, lang)` to static sibling language imports during browser, node, and neutral esbuild builds.
+- Added build-time validation for missing supported language files, unsupported language files, key mismatches, and invalid language default exports.
+- Added configurable i18n languages, fallback language, folder name, and language-file extensions without generated registries or checked-in source artifacts.
+- Added verification coverage for browser and node local translator builds, invalid colocated folders, and the existing non-i18n build path.
+
 ## 3.5.1
 
 - Added package-owned organization metadata and derived bundler log groups from `package.json`.

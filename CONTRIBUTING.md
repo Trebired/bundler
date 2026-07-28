@@ -17,9 +17,10 @@ bun install --frozen-lockfile
 bunx @trebired/code-discipline check
 bun run typecheck
 bun run build
+bun run verify:i18n
 ```
 
-There is no package test script. Committed `*.spec.ts` and `*.spec.tsx` files are banned by Code Discipline.
+Committed `*.spec.ts` and `*.spec.tsx` files are banned by Code Discipline. Verification scripts create their own temporary fixtures.
 
 ## Pull Request Checklist
 

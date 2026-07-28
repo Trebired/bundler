@@ -38,7 +38,9 @@ async function createWatchState(options: BundlerOptions) {
 
   return {
     currentContext: null as BuildContext<any> | null,
-    currentDiscovery: await resolveBundlerEntries(options || {} as BundlerOptions, normalized.rootDir, { allowEmpty: true }),
+    currentDiscovery: await resolveBundlerEntries(options || {} as BundlerOptions, normalized.rootDir, { allowEmpty: true }, {
+      ignoredDirs: normalized.i18n.enabled ? [normalized.i18n.dirName] : [],
+    }),
     discoveryWatcher: null as ReturnType<typeof createDiscoveryWatcher> | null,
     disposed: false,
     logger,
@@ -152,6 +154,8 @@ async function executeRebuild(state: Awaited<ReturnType<typeof createWatchState>
 async function refreshDiscovery(state: Awaited<ReturnType<typeof createWatchState>>): Promise<void> {
   const nextDiscovery = await resolveBundlerEntries(state.options || {} as BundlerOptions, state.normalized.rootDir, {
     allowEmpty: true,
+  }, {
+    ignoredDirs: state.normalized.i18n.enabled ? [state.normalized.i18n.dirName] : [],
   });
   if (nextDiscovery.signature === state.currentDiscovery.signature) return;
 

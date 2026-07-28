@@ -2,13 +2,16 @@ import path from "node:path";
 import type { BuildOptions } from "esbuild";
 
 import { createScssPlugin } from "#751yrciipoz0";
+import { createI18nPlugin } from "#m42z8fvtvpjc";
 import { createSourceAnnotationsPlugin } from "#ulrbecj1la7z";
 import { createVirtualEntriesPlugin } from "#18o0cf9c108j";
 import type {
   BundlerEntryRecord,
   BundlerOptions,
+  NormalizedBundlerI18nOptions,
   NormalizedBundlerLogger,
 } from "#3c8d8166992a";
+import { normalizeBundlerI18nOptions } from "./i18n-options.js";
 import { normalizeManifestOptions, toEntryPointMap } from "./discovery.js";
 
 type NormalizedBundlerOptions = {
@@ -19,6 +22,7 @@ type NormalizedBundlerOptions = {
   entryRecords?: BundlerEntryRecord[];
   external?: string[];
   format?: BundlerOptions["format"];
+  i18n: NormalizedBundlerI18nOptions;
   logger?: BundlerOptions["logger"];
   loggerAdapter?: BundlerOptions["loggerAdapter"];
   manifest: ReturnType<typeof normalizeManifestOptions>;
@@ -50,6 +54,7 @@ function normalizeBundlerOptions(options: BundlerOptions): NormalizedBundlerOpti
     environment: options.environment,
     external: options.external,
     format: options.format,
+    i18n: normalizeBundlerI18nOptions(options.i18n),
     logger: options.logger,
     loggerAdapter: options.loggerAdapter,
     manifest: normalizeManifestOptions(options.manifest),
@@ -106,6 +111,7 @@ function resolveEntryPoints(options: NormalizedBundlerOptions): Record<string, s
 
 function logEsbuildOptions(logger: NormalizedBundlerLogger, options: NormalizedBundlerOptions): void {
   if (options.annotateSources) logger.info("annotate", "inline source annotations enabled");
+  if (options.i18n.enabled) logger.info("i18n", "colocated local translators enabled");
   if (options.minify) logger.info("build", "minify enabled");
   if (options.stripComments && !options.annotateSources) logger.info("build", "comment stripping enabled");
   logger.info("scss", "scss compiler enabled");
@@ -121,6 +127,12 @@ function createPlugins(
       logger,
       rootDir: options.rootDir,
     }),
+    ...(options.i18n.enabled ? [createI18nPlugin({
+      annotateSources: options.annotateSources,
+      i18n: options.i18n,
+      logger,
+      rootDir: options.rootDir,
+    })] : []),
     createScssPlugin({
       annotateSources: options.annotateSources,
       logger,

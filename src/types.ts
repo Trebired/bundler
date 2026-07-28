@@ -59,3 +59,7 @@ export type {
   BundlerWatchSession,
   LoadedBundlerConfig,
 } from "./types/runtime.js";
+export type {
+  BundlerI18nOptions,
+  NormalizedBundlerI18nOptions,
+} from "./types/i18n.js";

@@ -50,8 +50,11 @@ async function resolveBundlerEntries(
   options: BundlerOptions,
   rootDir: string,
   settings: { allowEmpty?: boolean } = {},
+  discoverySettings: { ignoredDirs?: string[] } = {},
 ): Promise<ResolvedDiscovery> {
-  const configs = normalizeDiscoverOptions(rootDir, options.discover);
+  const configs = normalizeDiscoverOptions(rootDir, options.discover, {
+    ignoreDirs: discoverySettings.ignoredDirs || [],
+  });
   const resolvedEntries: BundlerEntryRecord[] = [];
   const rules = new Map<string, BundlerResolvedRule>();
   const sourceOwners = new Map<string, string>();
