@@ -5,6 +5,7 @@
   "type": "module",
   "private": false,
   "license": "AGPL-3.0-only",
+  "author": "Miroslav Machynka (Trebired)",
   "config": {
     "organization": {
       "name": "trebired"
@@ -12,8 +13,7 @@
   },
   "packageManager": "bun@1.3.12",
   "engines": {
-    "bun": ">=1.0.0",
-    "node": ">=18"
+    "bun": ">=1.0.0"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -33,15 +33,15 @@
     "README.md"
   ],
   "scripts": {
-    "build": "bun run prepare:generated && rm -rf dist && tsc -p tsconfig.build.json && node ./scripts/prepare-dist.mjs",
+    "build": "bun run prepare:generated && rm -rf dist && tsc -p tsconfig.build.json && bun ./scripts/prepare-dist.mjs",
     "demo": "bun run examples/dummy.ts",
-    "prepare:generated": "node ./scripts/build/generated/tsconfig.mjs",
+    "prepare:generated": "bun ./scripts/build/generated/tsconfig.mjs",
     "prepublishOnly": "bun run typecheck && bun run build && bun run verify:pack && bun run verify:i18n && bun run verify:bundler && bun run verify:frontend-app",
     "typecheck": "bun run prepare:generated && tsc --noEmit",
-    "verify:bundler": "node ./scripts/verify/bundler.mjs",
-    "verify:frontend-app": "node ./scripts/verify/frontend-app.mjs",
-    "verify:i18n": "node ./scripts/verify/i18n.mjs",
-    "verify:pack": "node ./scripts/verify/pack.mjs"
+    "verify:bundler": "bun ./scripts/verify/bundler.mjs",
+    "verify:frontend-app": "bun ./scripts/verify/frontend-app.mjs",
+    "verify:i18n": "bun ./scripts/verify/i18n.mjs",
+    "verify:pack": "bun ./scripts/verify/pack.mjs"
   },
   "dependencies": {
     "@package/i18n": "npm:@trebired/i18n@^0.3.0",
@@ -61,8 +61,7 @@
     "esbuild",
     "scss",
     "typescript",
-    "bun",
-    "node"
+    "bun"
   ],
   "repository": {
     "type": "git",

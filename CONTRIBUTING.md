@@ -57,7 +57,7 @@ Committed `*.spec.ts` and `*.spec.tsx` files are banned by Code Discipline. Veri
 3. Publish with:
 
    ```sh
-   npm publish
+   bun publish
    ```
 
-`npm publish` runs `prepublishOnly`, which typechecks and runs the package publish verification path.
+`bun publish` runs `prepublishOnly`, which typechecks and runs the package publish verification path.

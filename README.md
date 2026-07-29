@@ -6,7 +6,7 @@ Discover-only bundler wrapper around `esbuild` with SCSS support, watch mode, so
 
 ## Install
 
-Runtime support: Bun 1+ and Node.js 18+.
+Runtime support: Bun 1+.
 
 ```sh
 bun i @trebired/bundler
