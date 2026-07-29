@@ -33,10 +33,11 @@
     "README.md"
   ],
   "scripts": {
-    "build": "rm -rf dist && tsc -p tsconfig.build.json && node ./scripts/prepare-dist.mjs",
+    "build": "bun run prepare:generated && rm -rf dist && tsc -p tsconfig.build.json && node ./scripts/prepare-dist.mjs",
     "demo": "bun run examples/dummy.ts",
+    "prepare:generated": "bun node_modules/@trebired/code-discipline/dist/cli.js fix sync-imports",
     "prepublishOnly": "bun run typecheck && bun run build && bun run verify:pack && bun run verify:i18n && bun run verify:bundler && bun run verify:frontend-app",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bun run prepare:generated && tsc --noEmit",
     "verify:bundler": "node ./scripts/verify/bundler.mjs",
     "verify:frontend-app": "node ./scripts/verify/frontend-app.mjs",
     "verify:i18n": "node ./scripts/verify/i18n.mjs",

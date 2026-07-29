@@ -74,7 +74,7 @@
 
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.28.0", "", { "os": "win32", "cpu": "x64" }, "sha512-pEl1bO9mfAmIC+tW5btTmrKaujg3zGtUmWNdCw/xs70FBjwAL3o9OEKNHvNmnyylD6ubxUERiEhdsL0xBQ9efw=="],
 
-    "@package/i18n": ["@trebired/i18n@0.3.0", "", { "dependencies": { "typescript": "^6.0.2" }, "bin": { "trebired-i18n": "./dist/cli.js" } }, "sha512-i75Vtfpuwa3pcpvOeZ/Zs/3xxCzQZdNH6QtXb7kQgJtWGRwcXO6DWkYLA2GZLpsnYXxA50jPaPpnjgJ7KLmKRQ=="],
+    "@package/i18n": ["@trebired/i18n@0.3.0", "", { "dependencies": { "typescript": "^6.0.2" }, "bin": { "trebired-i18n": "./dist/cli.js" } }, "sha512-P9hrDIZXp/bnZE9EdryR4KSPrqt10qIb/6rXqGAcAgEQxu0Qf2TCXrgmQ66JTViMKmU4eRZ6U6LRAeuOEVD8mg=="],
 
     "@package/logger": ["@trebired/logger@2.5.6", "", { "dependencies": { "@trebired/result": "^0.2.0", "fflate": "^0.8.3", "tar-stream": "^3.2.0" }, "peerDependencies": { "react": ">=18" }, "optionalPeers": ["react"] }, "sha512-XZvSJ7C/ci3h09V4QS+V8bEqf5bVfqEkVWm0m2mKAqwT3uW0kfuwwLw0WtyMOFXNMFnVzbAnC2IyVxT5YDHpZA=="],
 

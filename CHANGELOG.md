@@ -9,6 +9,7 @@ This project follows semantic versioning once published.
 - Switched colocated i18n validation to the shared `@trebired/i18n/checker` parser and checker APIs so message-file grammar has one package-owned source of truth.
 - Removed bundler-local message parsing while keeping bundler focused on local-translator detection, sibling folder resolution, static language imports, transform output, and watch metadata.
 - Accepted static TypeScript message expressions supported by `@trebired/i18n`, including string concatenation across whitespace and comments.
+- Prepared Code Discipline generated path metadata before typecheck/build scripts so fresh checkouts work with generated files ignored.
 
 ## 4.1.0
 
