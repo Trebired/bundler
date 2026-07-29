@@ -840,7 +840,3 @@ This package does not:
 - provide a dev server or HMR
 - invent a custom runtime module system
 - auto-convert grouped shared JS/TS sources into dependency-safe page entry imports
-
-## License
-
-Licensed under AGPL-3.0-only. See [LICENSE](./LICENSE).
