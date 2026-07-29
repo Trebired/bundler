@@ -58,47 +58,9 @@ await bundle({
 });
 ```
 
-## CLI
+## Concepts
 
-Create a config module:
-
-```ts
-import { defineBundlerConfig } from "@trebired/bundler";
-
-export default defineBundlerConfig({
-  discover: {
-    dir: "./src/frontend",
-    rules: [
-      {
-        key: "client",
-        include: ["**/*.client.ts", "**/*.client.tsx"],
-        strategy: "entry",
-      },
-      {
-        key: "global-style",
-        include: ["css/**/*.css", "css/**/*.scss"],
-        strategy: "bundle",
-      },
-      {
-        key: "shared-script",
-        include: ["shared/**/*.ts", "shared/**/*.js"],
-        strategy: "bundle",
-      },
-    ],
-  },
-  outDir: "./dist",
-  manifest: true,
-});
-```
-
-Run:
-
-```sh
-trebired-bundler build --config ./bundler.config.mjs
-trebired-bundler watch --config ./bundler.config.mjs
-```
-
-## Colocated I18n
+### Colocated I18n
 
 Enable `i18n` when feature code uses `@trebired/i18n` local translators:
 
@@ -175,7 +137,7 @@ Options:
 
 When `i18n` is enabled, matching discover roots skip directories with the configured `dirName`; language modules are still statically included through the transformed callers.
 
-## Discover Rules
+### Discover Rules
 
 Rules are ordered. First match wins.
 
@@ -186,7 +148,7 @@ Rules are ordered. First match wins.
 
 Every discovered file must match exactly one rule. If a file is in scope and matches nothing, the build fails.
 
-### `maxBundleSize`
+#### `maxBundleSize`
 
 - only valid on `bundle` rules
 - defaults to `50mb`
@@ -194,7 +156,7 @@ Every discovered file must match exactly one rule. If a file is in scope and mat
 - splits by summed source-file size before handing grouped parts to `esbuild`
 - fails the build if a single grouped file is larger than the configured limit
 
-### Bundle Naming
+#### Bundle Naming
 
 Grouped outputs always use package-owned names:
 
@@ -205,7 +167,7 @@ Grouped outputs always use package-owned names:
 
 Callers do not provide custom grouped bundle names.
 
-### Aggregate Rules
+#### Aggregate Rules
 
 Use `strategy: "aggregate"` when you need one generated entry module without writing any temporary source file to disk.
 
@@ -275,61 +237,7 @@ const ssrPages = createSsrModuleMapRule({
 });
 ```
 
-## Frontend Conventions
-
-This API is meant for conventions like:
-
-- `*.client.ts`
-- `*.client.tsx`
-- `*.client.js`
-- `*.client.jsx`
-- `*.client.css`
-- `*.client.scss`
-- `*.client.defer.ts`
-- `*.client.defer.tsx`
-- `*.client.defer.js`
-- `*.client.defer.jsx`
-- global `css/**/*.css`
-- global `css/**/*.scss`
-
-Typical setup:
-
-- client boot files use `strategy: "entry"`
-- defer boot files use `strategy: "entry"`
-- shared JS/TS helpers use `strategy: "bundle"`
-- global CSS/SCSS uses `strategy: "bundle"`
-- tests and non-runtime files use `strategy: "ignore"`
-
-Important behavior:
-
-- grouped `bundle` rules must stay style-only or script-only; mixing CSS/SCSS with JS/TS in one rule fails
-- `*.client.*` and `*.client.defer.*` entries may not import JS/TS files owned by a grouped bundle rule; that fails the build because those files are treated as shared standalone bundles, not implicit app-entry dependencies
-
-Use the frontend helper when you want those common entry patterns without hiding rules inside bundler core:
-
-```ts
-import { bundle, createFrontendEntryRules } from "@trebired/bundler";
-
-await bundle({
-  discover: {
-    dir: "./src/frontend",
-    rules: [
-      ...createFrontendEntryRules(),
-      {
-        key: "shared-script",
-        include: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
-        exclude: ["**/*.client.*", "**/*.client.defer.*"],
-        strategy: "bundle",
-      },
-    ],
-  },
-  outDir: "./dist",
-});
-```
-
-The helper returns ordinary discover rules. Override `clientInclude`, `deferredInclude`, rule keys, or excludes when a project uses different conventions.
-
-## Frontend App Preset
+### Frontend App Preset
 
 Use the frontend app preset when a project follows the common frontend/SSR shape and should not repeat discover-rule boilerplate.
 
@@ -420,7 +328,7 @@ The sync helpers throw `bundler-frontend-runtime-not-ensured` until `ensure()` h
 
 The preset returns ordinary `BundlerOptions` through `createFrontendAppBundlerOptions()`, so callers can still inspect or pass the client and SSR builds to `bundle()` or `watch()` directly.
 
-## Related Entries
+### Related Entries
 
 Use `collectRelatedEntries()` when server-side or build orchestration code starts from one or more source modules and needs related client or style entry source paths for `collectAssetLinks()`.
 
@@ -458,7 +366,7 @@ const relatedClientEntries = await buildRelatedClientEntryMap({
 });
 ```
 
-## Output Layout
+### Output Layout
 
 Use `outputLayout` when emitted files should be organized by type without a separate relocation step:
 
@@ -485,7 +393,85 @@ Supported tokens are `[path]`, `[dir]`, `[name]`, and `[ext]`. `outputLayout: tr
 
 Common static asset extensions such as images and fonts use esbuild's `file` loader by default so CSS and JS references can emit assets. Override `loader` when a project needs a different asset treatment.
 
-## Precompression
+### Import Graph Walking
+
+Use `walkImportGraph()` when a higher-level tool needs to inspect internal source dependencies without bundling:
+
+```ts
+import { walkImportGraph } from "@trebired/bundler";
+
+const graph = await walkImportGraph({
+  entries: "./src/app.tsx",
+  rootDir: process.cwd(),
+});
+```
+
+It resolves:
+
+- relative imports
+- re-exports
+- string-literal dynamic imports
+- tsconfig `paths`
+
+## Configuration
+
+### Frontend Conventions
+
+This API is meant for conventions like:
+
+- `*.client.ts`
+- `*.client.tsx`
+- `*.client.js`
+- `*.client.jsx`
+- `*.client.css`
+- `*.client.scss`
+- `*.client.defer.ts`
+- `*.client.defer.tsx`
+- `*.client.defer.js`
+- `*.client.defer.jsx`
+- global `css/**/*.css`
+- global `css/**/*.scss`
+
+Typical setup:
+
+- client boot files use `strategy: "entry"`
+- defer boot files use `strategy: "entry"`
+- shared JS/TS helpers use `strategy: "bundle"`
+- global CSS/SCSS uses `strategy: "bundle"`
+- tests and non-runtime files use `strategy: "ignore"`
+
+Important behavior:
+
+- grouped `bundle` rules must stay style-only or script-only; mixing CSS/SCSS with JS/TS in one rule fails
+- `*.client.*` and `*.client.defer.*` entries may not import JS/TS files owned by a grouped bundle rule; that fails the build because those files are treated as shared standalone bundles, not implicit app-entry dependencies
+
+Use the frontend helper when you want those common entry patterns without hiding rules inside bundler core:
+
+```ts
+import { bundle, createFrontendEntryRules } from "@trebired/bundler";
+
+await bundle({
+  discover: {
+    dir: "./src/frontend",
+    rules: [
+      ...createFrontendEntryRules(),
+      {
+        key: "shared-script",
+        include: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+        exclude: ["**/*.client.*", "**/*.client.defer.*"],
+        strategy: "bundle",
+      },
+    ],
+  },
+  outDir: "./dist",
+});
+```
+
+The helper returns ordinary discover rules. Override `clientInclude`, `deferredInclude`, rule keys, or excludes when a project uses different conventions.
+
+## Runtime
+
+### Precompression
 
 Use `precompress` to write `.br` and `.gz` files for selected outputs:
 
@@ -506,7 +492,7 @@ await bundle({
 
 When enabled, JS and CSS outputs are compressed by default. Use `include`, `exclude`, `formats`, and `minSize` to tune the selection. `precompressAssets()` is also exported for standalone output folders and returns the same byte and ratio stats.
 
-## Static Assets
+### Static Assets
 
 Use `serveStaticAsset()` for a framework-neutral static response object, or `createStaticAssetMiddleware()` for an Express-compatible middleware.
 
@@ -535,7 +521,7 @@ The handler:
 
 Use `quarantineUnwritableOutputDir(dir, { logger })` before a build when a project wants to move aside an existing output directory that cannot be written.
 
-## Manifest
+### Manifest
 
 Set `manifest: true` to write `dist/bundler-manifest.json`, or pass `manifest: { file: "custom-name.json" }`.
 
@@ -578,7 +564,7 @@ const assets = collectAssetLinks(assetManifest, [
 });
 ```
 
-### Asset Manifest Shape
+#### Asset Manifest Shape
 
 `result.entries` is a source ownership map:
 
@@ -601,7 +587,7 @@ This lets runtime code resolve either:
 - an entry key to the emitted scripts/styles/assets
 - a grouped bundle back to the exact source files it owns
 
-### Collecting Runtime Links
+#### Collecting Runtime Links
 
 Use `collectAssetLinks()` when app code needs scripts and styles for one or more sources or entry keys.
 
@@ -613,7 +599,7 @@ Supported lookup modes:
 - `from: "ruleKey"`
 - `from: "auto"` (default)
 
-### Manifest Runtime Helpers
+#### Manifest Runtime Helpers
 
 Runtime code can use package helpers instead of digging through the written manifest shape:
 
@@ -651,7 +637,7 @@ const pageId = normalizeAggregateSourceId("src/frontend/pages/docs/index.tsx", {
 
 Use `collectFrontendAssetLinks()` when runtime code wants global styles, global client entries, and page-related client entries in one call. Pass `renderTags: true`, or call `renderAssetLinkTags()` directly, to get plain `<link>` and `<script type="module">` strings.
 
-## Watch Mode
+### Watch Mode
 
 `watch()` stays discover-driven.
 
@@ -692,27 +678,9 @@ const session = await watch({
 await session.dispose();
 ```
 
-## Import Graph Walking
+## Public API
 
-Use `walkImportGraph()` when a higher-level tool needs to inspect internal source dependencies without bundling:
-
-```ts
-import { walkImportGraph } from "@trebired/bundler";
-
-const graph = await walkImportGraph({
-  entries: "./src/app.tsx",
-  rootDir: process.cwd(),
-});
-```
-
-It resolves:
-
-- relative imports
-- re-exports
-- string-literal dynamic imports
-- tsconfig `paths`
-
-## Public Config Shape
+### Public Config Shape
 
 ```ts
 type BundlerDiscoverRule =
@@ -812,6 +780,48 @@ type BundlerOptions = {
 };
 ```
 
+## CLI
+
+### Command Reference
+
+Create a config module:
+
+```ts
+import { defineBundlerConfig } from "@trebired/bundler";
+
+export default defineBundlerConfig({
+  discover: {
+    dir: "./src/frontend",
+    rules: [
+      {
+        key: "client",
+        include: ["**/*.client.ts", "**/*.client.tsx"],
+        strategy: "entry",
+      },
+      {
+        key: "global-style",
+        include: ["css/**/*.css", "css/**/*.scss"],
+        strategy: "bundle",
+      },
+      {
+        key: "shared-script",
+        include: ["shared/**/*.ts", "shared/**/*.js"],
+        strategy: "bundle",
+      },
+    ],
+  },
+  outDir: "./dist",
+  manifest: true,
+});
+```
+
+Run:
+
+```sh
+trebired-bundler build --config ./bundler.config.mjs
+trebired-bundler watch --config ./bundler.config.mjs
+```
+
 ## Migration Notes
 
 This release removes the old mixed entry model.
@@ -830,3 +840,7 @@ This package does not:
 - provide a dev server or HMR
 - invent a custom runtime module system
 - auto-convert grouped shared JS/TS sources into dependency-safe page entry imports
+
+## License
+
+Licensed under AGPL-3.0-only. See [LICENSE](./LICENSE).
