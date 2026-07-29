@@ -36,6 +36,7 @@
   "#buae0whbp1j8": "./scripts/verify/bundler.mjs",
   "#c460d1e7c1c3": "./src/core/derive-manifest.ts",
   "#cacxup1m7cl4": "./src/core/frontend_app/defaults.ts",
+  "#ccxx1umxyw4e": "./scripts/build/generated/tsconfig.mjs",
   "#cjs3kmwh1gzy": "./src/frontend/js/utils/text.ts",
   "#dcx0jw9bw3ka": "./src/logging.ts",
   "#dcywsmusyili": "./src/types/related_entries.ts",

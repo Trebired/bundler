@@ -35,7 +35,7 @@
   "scripts": {
     "build": "bun run prepare:generated && rm -rf dist && tsc -p tsconfig.build.json && node ./scripts/prepare-dist.mjs",
     "demo": "bun run examples/dummy.ts",
-    "prepare:generated": "bun node_modules/@trebired/code-discipline/dist/cli.js fix sync-imports",
+    "prepare:generated": "node ./scripts/build/generated/tsconfig.mjs",
     "prepublishOnly": "bun run typecheck && bun run build && bun run verify:pack && bun run verify:i18n && bun run verify:bundler && bun run verify:frontend-app",
     "typecheck": "bun run prepare:generated && tsc --noEmit",
     "verify:bundler": "node ./scripts/verify/bundler.mjs",
