@@ -4,6 +4,11 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 4.2.1
+
+- Standardized package metadata (author field, config-driven organization name, dropped the Node engine constraint) and migrated `.code-discipline/config.ts` to `defineCodeDisciplineConfig`.
+- Normalized README structure and removed the license footer.
+
 ## 4.2.0
 
 - Switched colocated i18n validation to the shared `@trebired/i18n/checker` parser and checker APIs so message-file grammar has one package-owned source of truth.
