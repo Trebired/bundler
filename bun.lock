@@ -5,14 +5,14 @@
     "": {
       "name": "@trebired/bundler",
       "dependencies": {
-        "@package/i18n": "npm:@trebired/i18n@^0.3.1",
+        "@package/i18n": "npm:@trebired/i18n@^0.4.0",
         "@package/logger-adapter": "npm:@trebired/logger-adapter@^0.2.11",
-        "@package/result": "npm:@trebired/result@^1.1.4",
+        "@package/result": "npm:@trebired/result@^1.1.5",
         "esbuild": "^0.28.0",
         "sass-embedded": "^1.100.0",
       },
       "devDependencies": {
-        "@trebired/code-discipline": "^4.9.2",
+        "@trebired/code-discipline": "^4.9.3",
         "@types/bun": "^1.3.4",
         "@types/node": "^24.10.1",
         "typescript": "^6.0.2",
@@ -74,13 +74,13 @@
 
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.28.0", "", { "os": "win32", "cpu": "x64" }, "sha512-pEl1bO9mfAmIC+tW5btTmrKaujg3zGtUmWNdCw/xs70FBjwAL3o9OEKNHvNmnyylD6ubxUERiEhdsL0xBQ9efw=="],
 
-    "@package/i18n": ["@trebired/i18n@0.3.1", "", { "dependencies": { "typescript": "^6.0.2" }, "bin": { "trebired-i18n": "dist/cli.js" } }, "sha512-C3aRZQiwFMU+AIlkCz/ljQz3ggcFXgg3rrKq55cC+SsUEunv29+AMzNNsF78Aee7pOT5aZXJIfVKsrf0fFz/Xg=="],
+    "@package/i18n": ["@trebired/i18n@0.4.0", "", { "dependencies": { "typescript": "^6.0.2" }, "bin": { "trebired-i18n": "dist/cli.js" } }, "sha512-eKC5MeBACHxjkGdvKxZzdPar1+uosGTZ59Zm3OzmQsmDGZokgUFCcznDDrTwrwYyEw1BWMMBNmcZD854DITomQ=="],
 
-    "@package/logger": ["@trebired/logger@2.5.6", "", { "dependencies": { "@trebired/result": "^0.2.0", "fflate": "^0.8.3", "tar-stream": "^3.2.0" }, "peerDependencies": { "react": ">=18" }, "optionalPeers": ["react"] }, "sha512-XZvSJ7C/ci3h09V4QS+V8bEqf5bVfqEkVWm0m2mKAqwT3uW0kfuwwLw0WtyMOFXNMFnVzbAnC2IyVxT5YDHpZA=="],
+    "@package/logger": ["@trebired/logger@2.5.12", "", { "dependencies": { "@package/result": "npm:@trebired/result@^1.1.4", "fflate": "^0.8.3", "tar-stream": "^3.2.0" }, "peerDependencies": { "react": ">=18" }, "optionalPeers": ["react"] }, "sha512-j6bCrNm9KWtUXCeeUgZhEfRWcEM402bqBVuLv8Rrdqt9NNgZACPxxoO3EAu2+tt3ddlF6LT7wfhkUrFUUPD6nw=="],
 
     "@package/logger-adapter": ["@trebired/logger-adapter@0.2.11", "", {}, "sha512-sGgBBqcON7AJXRjuE1vDDejYcCl6a2yEHWie8uBEFDtQQ5piu8fcTPPzcuJhTMekF90z7x8l59t3uC9deFSwNg=="],
 
-    "@package/result": ["@trebired/result@1.1.4", "", { "dependencies": { "@package/logger-adapter": "npm:@trebired/logger-adapter@^0.2.5" } }, "sha512-h6QzscjWYRfSm8/JqOw/MXw5ImL/Y8ON2nfCP8RXwLklKeahCGVqAhk+m19pKQCIH3sAuys7SqneG/gHhCKreg=="],
+    "@package/result": ["@trebired/result@1.1.5", "", { "dependencies": { "@package/logger-adapter": "npm:@trebired/logger-adapter@^0.2.11" } }, "sha512-o8KnnieV2RAZf0ImmabaeN/wjTTSmEJsg2JPLa4742TXZf5EO4Y1tOysIO3AvWU1z4EGALX+7FXO2IXpOoib0g=="],
 
     "@parcel/watcher": ["@parcel/watcher@2.5.6", "", { "dependencies": { "detect-libc": "^2.0.3", "is-glob": "^4.0.3", "node-addon-api": "^7.0.0", "picomatch": "^4.0.3" }, "optionalDependencies": { "@parcel/watcher-android-arm64": "2.5.6", "@parcel/watcher-darwin-arm64": "2.5.6", "@parcel/watcher-darwin-x64": "2.5.6", "@parcel/watcher-freebsd-x64": "2.5.6", "@parcel/watcher-linux-arm-glibc": "2.5.6", "@parcel/watcher-linux-arm-musl": "2.5.6", "@parcel/watcher-linux-arm64-glibc": "2.5.6", "@parcel/watcher-linux-arm64-musl": "2.5.6", "@parcel/watcher-linux-x64-glibc": "2.5.6", "@parcel/watcher-linux-x64-musl": "2.5.6", "@parcel/watcher-win32-arm64": "2.5.6", "@parcel/watcher-win32-ia32": "2.5.6", "@parcel/watcher-win32-x64": "2.5.6" } }, "sha512-tmmZ3lQxAe/k/+rNnXQRawJ4NjxO2hqiOLTHvWchtGZULp4RyFeh6aU4XdOYBFe2KE1oShQTv4AblOs2iOrNnQ=="],
 
@@ -110,11 +110,7 @@
 
     "@parcel/watcher-win32-x64": ["@parcel/watcher-win32-x64@2.5.6", "", { "os": "win32", "cpu": "x64" }, "sha512-hbQlYcCq5dlAX9Qx+kFb0FHue6vbjlf0FrNzSKdYK2APUf7tGfGxQCk2ihEREmbR6ZMc0MVAD5RIX/41gpUzTw=="],
 
-    "@trebired/code-discipline": ["@trebired/code-discipline@4.9.2", "", { "dependencies": { "@package/logger": "npm:@trebired/logger@^2.5.6", "@package/result": "npm:@trebired/result@^1.1.1", "prettier": "3.9.6", "typescript": "^6.0.3" }, "bin": { "code-discipline": "dist/cli.js" } }, "sha512-JrnaDZ+j3zOMxNQfR1trtCYZjA95TOZHUEELMl25mkEYDSXh1q17/4M/9Aa7Gn8FrHnAoDZ/6ugkwRNopCS6qA=="],
-
-    "@trebired/logger-adapter": ["@trebired/logger-adapter@0.2.2", "", {}, "sha512-8FurbitdICfB8Y5LmY1ucZesw5H0V1SVS1Um3ZqQHyyU2+5SHNlS6jhPSE34y53mAvYExCgriCj1r/5lG3UoWQ=="],
-
-    "@trebired/result": ["@trebired/result@0.2.1", "", { "dependencies": { "@trebired/logger-adapter": "^0.2.2" } }, "sha512-2WEtea6JmdLYGo5nCAn9lgS54o0FcVavmITsCTC/r3CcyhUx0l6jGo2gNfX1cPWN+2/KvAGSyoGD5XcBW++/gQ=="],
+    "@trebired/code-discipline": ["@trebired/code-discipline@4.9.3", "", { "dependencies": { "@package/logger": "npm:@trebired/logger@^2.5.11", "@package/result": "npm:@trebired/result@^1.1.4", "prettier": "3.9.6", "typescript": "^6.0.3" }, "bin": { "code-discipline": "dist/cli.js" } }, "sha512-7f21y2wWh3Zn8iH0oL38SPsimfelVz+FqwycpKEual6ycwrFv4HyE4O0x127a08SKUhbNEb2aM93EzUnU2dfjw=="],
 
     "@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
 

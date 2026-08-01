@@ -20,6 +20,7 @@ async function main() {
   await resetTempRoot();
   await verifyAggregateModuleMap();
   await verifyOutputLayoutAndPrecompression();
+  await verifyScssPackageExports();
   await verifyRelatedEntries();
   verifyFrontendConventions();
   console.log("Bundler feature verification succeeded.");
@@ -137,6 +138,72 @@ async function assertWrittenManifest(result, fixture) {
   for (const compressed of result.precompressed.assets) {
     await fs.access(path.join(fixture, "dist", compressed.output));
   }
+}
+
+async function verifyScssPackageExports() {
+  const fixture = path.join(tempRoot, "scss-package-exports");
+  await writeScssPackageFixture(fixture);
+
+  const result = await bundle({
+    discover: {
+      dir: "src",
+      rules: [
+        { key: "style", include: ["**/*.client.scss"], strategy: "entry" },
+      ],
+    },
+    format: "esm",
+    outDir: "dist",
+    rootDir: fixture,
+  });
+
+  const cssOutput = result.outputs.find((item) => item.endsWith(".css"));
+  assert.ok(cssOutput, "expected bundled SCSS CSS output");
+  const css = await fs.readFile(cssOutput, "utf8");
+  assert.equal(css.includes("--package-accent"), true);
+  assert.equal(css.includes(".package-card"), true);
+  assert.equal(css.includes(".screen"), true);
+}
+
+async function writeScssPackageFixture(fixture) {
+  const packageRoot = path.join(fixture, "node_modules", "@scope", "style-kit");
+  await fs.mkdir(packageRoot, { recursive: true });
+  await fs.writeFile(path.join(packageRoot, "package.json"), JSON.stringify({
+    name: "@scope/style-kit",
+    exports: {
+      "./card/styles": {
+        sass: "./src/card/styles/index.scss",
+        style: "./src/card/styles/index.scss",
+      },
+      "./tokens": {
+        sass: "./src/tokens.scss",
+      },
+    },
+  }, null, 2));
+  await writeFile(fixture, "node_modules/@scope/style-kit/src/tokens.scss", [
+    ":root {",
+    "  --package-accent: black;",
+    "}",
+    "",
+  ].join("\n"));
+  await writeFile(fixture, "node_modules/@scope/style-kit/src/card/styles/index.scss", [
+    "@mixin card-surface {",
+    "  border-color: var(--package-accent);",
+    "}",
+    "",
+    ".package-card {",
+    "  color: var(--package-accent);",
+    "}",
+    "",
+  ].join("\n"));
+  await writeFile(fixture, "src/screen.client.scss", [
+    '@use "@scope/style-kit/tokens";',
+    '@use "@scope/style-kit/card/styles" as card;',
+    "",
+    ".screen {",
+    "  @include card.card-surface;",
+    "}",
+    "",
+  ].join("\n"));
 }
 
 async function verifyRelatedEntries() {

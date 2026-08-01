@@ -4,6 +4,11 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 4.3.0
+
+- Added SCSS package export resolution for Sass `@use`, `@forward`, and `@import` directives so packages can expose style modules through `exports` conditions such as `sass` and `style`.
+- Added verification coverage for bundled SCSS importing package-owned Sass modules from `node_modules`.
+
 ## 4.2.2
 
 - Changed colocated i18n local-translator logging to emit batched count summaries instead of one source path per transformed file.

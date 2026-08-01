@@ -118,6 +118,29 @@ export default defineMessages({
 });
 ```
 
+### SCSS Package Imports
+
+SCSS entries can import package-owned Sass modules from `node_modules` when the package exposes them through `exports`:
+
+```json
+{
+  "exports": {
+    "./actions/styles": {
+      "sass": "./dist/actions/styles/index.scss",
+      "style": "./dist/actions/styles/index.scss"
+    }
+  }
+}
+```
+
+Product SCSS can then use package paths instead of direct `node_modules` file paths:
+
+```scss
+@use "@trebired/frontend/actions/styles";
+```
+
+The Sass resolver prefers `sass`, then `style`, then `import`, then `default` export conditions.
+
 During browser, node, and neutral builds, the bundler rewrites the local translator call to a normal `createTranslator()` call with static sibling imports for the configured language files. Message-file parsing and key validation come from `@trebired/i18n/checker`, so the same static TypeScript grammar is used by the CLI and the bundler. The source tree does not need local `i18n/index.ts` files, JSON dictionaries, app-wide registries, or checked-in generated source.
 
 Builds fail when a used colocated folder is invalid:

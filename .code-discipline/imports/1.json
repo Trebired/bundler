@@ -63,6 +63,7 @@
   "#mnkhjuhyks6y": "./src/core/frontend_app/index.ts",
   "#mo8bgzn48voy": "./examples/dummy.ts",
   "#n02ctrtxmyrd": "./src/core/import_graph/tsconfig.ts",
+  "#n1evfgz101j2": "./src/plugins/scss/package-resolution.ts",
   "#n2jhviy4ya88": "./src/plugins/i18n/transform.ts",
   "#ngvv0rus1q2i": "./src/types/frontend.ts",
   "#nk24fc28wksn": "./src/core/frontend_app/runtime.ts",

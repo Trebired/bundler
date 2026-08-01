@@ -3,10 +3,10 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { existsSync, readdirSync } from "node:fs";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const tempRoot = path.join(rootDir, ".tmp", "verify-pack");
-const npmCacheDir = path.join(tempRoot, "npm-cache");
 
 async function main() {
   await resetTempRoot();
@@ -26,18 +26,16 @@ async function main() {
 
 async function resetTempRoot() {
   await fs.rm(tempRoot, { force: true, recursive: true });
-  await fs.mkdir(npmCacheDir, { recursive: true });
+  await fs.mkdir(tempRoot, { recursive: true });
 }
 
 function packPackage() {
-  const stdout = execFileSync("npm", ["pack", "--json"], {
-    ...createNpmOptions(rootDir),
+  const stdout = execFileSync("bun", ["pm", "pack", "--quiet", "--destination", tempRoot], {
+    cwd: rootDir,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "inherit"],
   });
-  const [entry] = JSON.parse(stdout);
-  if (!entry?.filename) throw new Error("npm pack did not return a tarball filename.");
-  return path.join(rootDir, entry.filename);
+  return resolvePackedTarballPath(stdout);
 }
 
 function validatePackedEntrypoints(packageJson, tarballEntries) {
@@ -101,17 +99,23 @@ function readPackedPackageJson(tarballPath) {
   }));
 }
 
-function createNpmOptions(cwd) {
-  return {
-    cwd,
-    env: {
-      ...process.env,
-      npm_config_audit: "false",
-      npm_config_cache: npmCacheDir,
-      npm_config_fund: "false",
-      npm_config_package_lock: "false",
-    },
-  };
+function resolvePackedTarballPath(stdout) {
+  const printed = String(stdout || "").trim().split(/\r?\n/u).pop() || "";
+  const candidates = [
+    path.resolve(rootDir, printed),
+    path.resolve(tempRoot, printed),
+  ];
+  const resolved = candidates.find((candidate) => existsSync(candidate)) ?? findPackedTarball();
+  if (!resolved) throw new Error("bun pm pack did not return a tarball filename.");
+  return resolved;
+}
+
+function findPackedTarball() {
+  return readdirSync(tempRoot)
+    .filter((entry) => entry.endsWith(".tgz"))
+    .map((entry) => path.join(tempRoot, entry))
+    .sort()
+    .at(0);
 }
 
 await main();

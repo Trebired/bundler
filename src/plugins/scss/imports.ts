@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import type { Importer, Syntax } from "sass-embedded";
+import { resolvePackageFilePath } from "./package-resolution.js";
 const SCSS_ALIAS_SCHEME = "package-scss-alias:";
 type ScssSpecifierOccurrence = {
   end: number;
@@ -312,6 +313,11 @@ function resolveCanonicalFilePath(url: string, context: ScssImportContext): stri
   if (url.startsWith("file:")) {
     return resolveSassFileCandidate(fileURLToPath(new URL(url)));
   }
+  const packageFile = resolvePackageFilePath({
+    resolveSassFileCandidate,
+    rootDir: context.rootDir,
+  }, url);
+  if (packageFile) return packageFile;
   return "";
 }
 function createScssAliasImporter(rootDir: string): Importer<"async"> {
