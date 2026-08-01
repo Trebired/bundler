@@ -1,17 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import type {
-  BundlerAggregateModuleMap,
-  BundlerDiscoverBundleRule,
-  BundlerDiscoverRule,
-  BundlerEntryRecord,
-  BundlerManifestOptions,
-  BundlerOptions,
-  BundlerResolvedDiscovery,
-  BundlerResolvedRule,
-  BundlerVirtualEntryLoader,
-} from "#3c8d8166992a";
+import { BundlerDiscoverBundleRule, BundlerResolvedDiscovery, BundlerVirtualEntryLoader } from "#3c8d8166992a";
 
 const DEFAULT_DISCOVERY_BUNDLE_MAX_SIZE = 50 * 1024 * 1024;
 const DEFAULT_IGNORE_DIRS = [".git", "coverage", "dist", "node_modules"];

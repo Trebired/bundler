@@ -17,10 +17,49 @@ type I18nPluginOptions = {
   rootDir: string;
 };
 
+function createI18nPluginLogState(logger: NormalizedBundlerLogger) {
+  let transformedFiles = 0;
+  let loggedFiles = 0;
+  const transformedFolders = new Set<string>();
+
+  function logBatch(): void {
+    if (transformedFiles - loggedFiles < 10) return;
+    loggedFiles = transformedFiles;
+    logger.info("i18n", "local translators transformed", {
+      transformed_files: transformedFiles,
+      transformed_folders: transformedFolders.size,
+    });
+  }
+
+  return {
+    flush() {
+      if (transformedFiles > 0) {
+        logger.info("i18n", "local translators complete", {
+          transformed_files: transformedFiles,
+          transformed_folders: transformedFolders.size,
+        });
+      }
+
+      transformedFiles = 0;
+      loggedFiles = 0;
+      transformedFolders.clear();
+    },
+    register(folderPath: string) {
+      transformedFiles += 1;
+      transformedFolders.add(folderPath);
+      logBatch();
+    },
+  };
+}
+
 function createI18nPlugin(options: I18nPluginOptions): Plugin {
+  const logState = createI18nPluginLogState(options.logger);
+
   return {
     name: "package-i18n",
     setup(build) {
+      build.onEnd(() => logState.flush());
+
       build.onLoad({ filter: /\.(?:[cm]?[jt]sx?)$/, namespace: "file" }, async (args) => {
         if (!isCodeFile(args.path) || !isInsideDirectory(options.rootDir, args.path)) return undefined;
 
@@ -33,7 +72,8 @@ function createI18nPlugin(options: I18nPluginOptions): Plugin {
         });
         if (!transformed) return undefined;
 
-        options.logger.info("i18n", `local-translator :: ${args.path}`);
+        logState.register(transformed.folder.folderPath);
+
         const contents = options.annotateSources
           ? injectSourceAnnotation({
             contents: transformed.contents,

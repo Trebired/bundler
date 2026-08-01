@@ -2,10 +2,7 @@ import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
 
-import type {
-  BundlerEntryRecord,
-  BundlerResolvedRule,
-} from "#3c8d8166992a";
+import { BundlerEntryRecord } from "#3c8d8166992a";
 import { walkImportGraph } from "#68011e944d8d";
 import {
   matchesAnyPattern,

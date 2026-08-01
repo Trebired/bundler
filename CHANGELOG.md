@@ -4,6 +4,12 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 4.2.2
+
+- Changed colocated i18n local-translator logging to emit batched count summaries instead of one source path per transformed file.
+- Updated Code Discipline configuration to the `imports` rule with dead import removal enabled.
+- Updated bundler log group metadata fallback and internal package dependency ranges to the current published sibling releases.
+
 ## 4.2.1
 
 - Standardized package metadata (author field, config-driven organization name, dropped the Node engine constraint) and migrated `.code-discipline/config.ts` to `defineCodeDisciplineConfig`.

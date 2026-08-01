@@ -37,15 +37,7 @@ import {
   resolveBundleLoader,
   VIRTUAL_ENTRY_PREFIX,
 } from "./shared.js";
-import type {
-  DiscoveredFile,
-  NormalizedAggregateRule,
-  NormalizedBundleRule,
-  NormalizedDiscoverOptions,
-  NormalizedManifestOptions,
-  ResolvedAggregateRootModule,
-  ResolvedDiscovery,
-} from "./shared.js";
+import { DiscoveredFile, NormalizedAggregateRule, NormalizedBundleRule, NormalizedDiscoverOptions, ResolvedAggregateRootModule, ResolvedDiscovery } from "./shared.js";
 
 async function resolveBundlerEntries(
   options: BundlerOptions,

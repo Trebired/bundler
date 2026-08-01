@@ -14,6 +14,7 @@ async function main() {
   await resetTempRoot();
   await verifyBrowserBuild();
   await verifyNodeBuild();
+  await verifyLocalTranslatorLogging();
   await verifyBuildFailures();
   await verifyExistingBuildPath();
   console.log("Bundler i18n verification succeeded.");
@@ -40,6 +41,45 @@ async function verifyNodeBuild() {
   });
   const output = await importOutput(result.outputs);
   assert.equal(output.render("de"), "Title Ada|Nested|Flat");
+}
+
+async function verifyLocalTranslatorLogging() {
+  const fixture = path.join(tempRoot, "logging");
+  await writeI18nStub(fixture);
+  for (let index = 0; index < 12; index += 1) {
+    const featureDir = path.join(fixture, "src", `feature-${index}`);
+    const i18nDir = path.join(featureDir, "i18n");
+    await fs.mkdir(i18nDir, { recursive: true });
+    await writeFeatureEntry(path.join(featureDir, "component.client.ts"));
+    await writeLanguageFile(i18nDir, "en", {
+      "flat.key": "Flat",
+      nested: { value: "Nested" },
+      title: "Title {name}",
+    });
+    await writeLanguageFile(i18nDir, "cs", {
+      "flat.key": "Plocha",
+      nested: { value: "Vnoreno" },
+      title: "Titulek {name}",
+    });
+  }
+
+  const capture = createCaptureLogger();
+  await runBundle(fixture, {
+    environment: "browser",
+    include: ["**/*.client.ts"],
+    logger: capture.logger,
+    outDir: "dist-logging",
+  });
+
+  assert.equal(capture.events.some((event) => event.message.includes("local-translator ::")), false);
+  const batches = capture.events.filter((event) => event.message === "local translators transformed");
+  assert.equal(batches.length, 1);
+  assert.equal(batches[0].metadata?.transformed_files, 10);
+
+  const complete = capture.events.find((event) => event.message === "local translators complete");
+  assert.ok(complete);
+  assert.equal(complete.metadata?.transformed_files, 12);
+  assert.equal(complete.metadata?.transformed_folders, 12);
 }
 
 async function verifyBuildFailures() {
@@ -93,6 +133,7 @@ async function runBundle(fixture, args) {
     i18n: {
       supportedLanguages: ["en", "cs"],
     },
+    logger: args.logger,
     outDir: args.outDir,
     rootDir: fixture,
   });
@@ -188,6 +229,23 @@ async function writeLanguageFile(folder, language, messages, invalid = false) {
       "",
     ].join("\n");
   await fs.writeFile(filePath, contents);
+}
+
+function createCaptureLogger() {
+  const events = [];
+  const record = (level) => (group, message, metadata) => {
+    events.push({ group, level, message, metadata });
+  };
+
+  return {
+    events,
+    logger: {
+      error: record("error"),
+      fail: record("fail"),
+      info: record("info"),
+      warn: record("warn"),
+    },
+  };
 }
 
 function formatMessages(messages) {
