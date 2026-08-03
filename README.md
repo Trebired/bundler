@@ -143,7 +143,7 @@ The Sass resolver prefers `sass`, then `style`, then `import`, then `default` ex
 
 ### Frontend Config CSS
 
-When a browser build can resolve `@trebired/frontend/config`, the bundler loads `.trebired/frontend/config.ts` from the project root, asks `@trebired/frontend` to normalize it, writes `.trebired/frontend/generated/styles.scss`, and includes that generated SCSS as an internal entry. Projects can still keep explicit SCSS entries and package `@use` imports; the generated entry just removes the need to manually import every package-owned frontend style module.
+When a browser build can resolve `@trebired/frontend/config`, the bundler loads `.trebired/frontend/config.ts` from the project root, asks `@trebired/frontend` to normalize it, compiles the config-derived SCSS through an internal virtual entry, and emits normal bundled CSS. Projects can still keep explicit SCSS entries and package `@use` imports; the virtual entry just removes the need to manually import every package-owned frontend style module.
 
 If `.trebired/frontend/config.ts` is missing, package defaults are used. If the config exists but `@trebired/frontend` is not installed, the build fails clearly.
 

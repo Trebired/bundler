@@ -141,7 +141,6 @@ async function createWatchedContext(
   const context = await createContext(createEsbuildOptions({
     ...state.normalized,
     entryRecords: records,
-    frontendConfigScssPath: state.frontendStyles?.generatedScssPath,
   }, state.logger));
   await context.watch();
   return context;

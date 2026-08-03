@@ -1,6 +1,7 @@
 import path from "node:path";
 import type { BuildOptions, Loader } from "esbuild";
 
+import { createFrontendConfigStylesPlugin } from "../plugins/frontend-config-styles.js";
 import { createScssPlugin } from "#751yrciipoz0";
 import { createI18nPlugin } from "#m42z8fvtvpjc";
 import { createSourceAnnotationsPlugin } from "#ulrbecj1la7z";
@@ -37,7 +38,6 @@ type NormalizedBundlerOptions = {
   outDir: string;
   outputLayout: NormalizedBundlerOutputLayoutOptions;
   precompress: NormalizedBundlerPrecompressOptions;
-  frontendConfigScssPath?: string;
   publicPath?: string;
   rootDir: string;
   sourcemap?: BundlerOptions["sourcemap"];
@@ -134,6 +134,12 @@ function createPlugins(
   logger: NormalizedBundlerLogger,
 ): NonNullable<BuildOptions["plugins"]> {
   return [
+    createFrontendConfigStylesPlugin({
+      annotateSources: options.annotateSources,
+      logger,
+      rootDir: options.rootDir,
+      sourcemapEnabled: Boolean(options.sourcemap),
+    }),
     createVirtualEntriesPlugin({
       entries: options.entryRecords || [],
       logger,
@@ -147,7 +153,6 @@ function createPlugins(
     })] : []),
     createScssPlugin({
       annotateSources: options.annotateSources,
-      frontendConfigScssPath: options.frontendConfigScssPath,
       logger,
       rootDir: options.rootDir,
       sourcemapEnabled: Boolean(options.sourcemap),

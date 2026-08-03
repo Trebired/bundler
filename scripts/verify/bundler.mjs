@@ -226,11 +226,13 @@ async function verifyFrontendConfigStyles() {
     rootDir: fixture,
   });
   const configuredCss = await readFirstCss(configured.outputs);
-  const configuredScss = await fs.readFile(path.join(fixture, ".trebired/frontend/generated/styles.scss"), "utf8");
   assert.ok(configuredCss.includes("--app-color-brand: #123456;"));
   assert.ok(configuredCss.includes(".tbf-icon"));
   assert.ok(configuredCss.includes(".tbf-flash"));
-  assert.equal(configuredScss.includes('@use "@trebired/frontend/modal/styles"'), false);
+  await assert.rejects(
+    () => fs.access(path.join(fixture, ".trebired/frontend/generated/styles.scss")),
+    /ENOENT/u,
+  );
   assert.equal(/^\.tbf-modal\b/mu.test(configuredCss), false);
 
   await fs.unlink(configPath);
@@ -333,7 +335,6 @@ function frontendConfigFixtureModule() {
     "import path from 'node:path';",
     "",
     "const configRel = '.trebired/frontend/config.ts';",
-    "const generatedRel = '.trebired/frontend/generated/styles.scss';",
     "",
     "export function defineTrebiredFrontendConfig(config) {",
     "  return config;",
@@ -371,12 +372,11 @@ function frontendConfigFixtureModule() {
     "  return {",
     "    config,",
     "    configPath: found ? configPath : null,",
-    "    generatedScssPath: path.join(rootDir, generatedRel),",
+    "    generatedScss: generateTrebiredFrontendScss(config),",
     "  };",
     "}",
     "",
-    "export async function writeGeneratedTrebiredFrontendScss(rootDir, config) {",
-    "  const outputPath = path.join(rootDir, generatedRel);",
+    "export function generateTrebiredFrontendScss(config) {",
     "  const lines = [",
     "    '@use \"@trebired/frontend/styles/tokens\" as *;',",
     "    '@use \"@trebired/frontend/styles/utils\" as *;',",
@@ -387,9 +387,7 @@ function frontendConfigFixtureModule() {
     "  lines.push('', ':root {', `  --${config.prefix}-icon-endpoint: \"/__icons/svg\";`);",
     "  if (config.token) lines.push(`  --${config.prefix}-color-brand: ${config.token};`);",
     "  lines.push('}', '');",
-    "  await fs.mkdir(path.dirname(outputPath), { recursive: true });",
-    "  await fs.writeFile(outputPath, lines.join('\\n'));",
-    "  return outputPath;",
+    "  return lines.join('\\n');",
     "}",
     "",
   ].join("\n");

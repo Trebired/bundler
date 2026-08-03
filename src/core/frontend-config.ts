@@ -8,6 +8,7 @@ import type {
   BundlerResolvedDiscovery,
   NormalizedBundlerLogger,
 } from "#3c8d8166992a";
+import { VIRTUAL_ENTRY_PREFIX } from "#5kd9snhn6zft";
 import type { ResolvedDiscovery } from "./discovery.js";
 
 type FrontendConfigApi = {
@@ -15,22 +16,22 @@ type FrontendConfigApi = {
   loadTrebiredFrontendConfig?: (projectRoot?: string, options?: Record<string, unknown>) => Promise<{
     config: unknown;
     configPath: string | null;
-    generatedScssPath: string;
+    generatedScss?: string;
   }>;
-  writeGeneratedTrebiredFrontendScss?: (projectRoot: string, config: unknown) => Promise<string>;
+  generateTrebiredFrontendScss?: (config: unknown) => string;
 };
 
 type PreparedFrontendConfigStyles = {
   configPath: string | null;
   entryRecord: BundlerEntryRecord;
-  generatedScssPath: string;
 };
 
 const FRONTEND_CONFIG_PATH = ".trebired/frontend/config.ts";
-const FRONTEND_GENERATED_SCSS_PATH = ".trebired/frontend/generated/styles.scss";
 const FRONTEND_CONFIG_RULE_KEY = "trebired-frontend-config";
 const FRONTEND_CONFIG_ENTRY_KEY = "trebired-frontend-config:styles";
 const FRONTEND_CONFIG_ENTRY_NAME = "trebired-frontend";
+const FRONTEND_CONFIG_VIRTUAL_ENTRY_NAME = "trebired-frontend-config-styles";
+const FRONTEND_CONFIG_VIRTUAL_ENTRY_PATH = `${VIRTUAL_ENTRY_PREFIX}${FRONTEND_CONFIG_VIRTUAL_ENTRY_NAME}`;
 
 async function pathExists(filePath: string): Promise<boolean> {
   try {
@@ -102,19 +103,21 @@ async function loadFrontendConfigApi(rootDir: string): Promise<FrontendConfigApi
   return await import(url.href) as FrontendConfigApi;
 }
 
-function createFrontendConfigEntryRecord(rootDir: string, generatedScssPath: string): BundlerEntryRecord {
-  const source = normalizePath(path.relative(rootDir, generatedScssPath));
+function createFrontendConfigEntryRecord(configPath: string | null, rootDir: string): BundlerEntryRecord {
+  const source = configPath ? normalizePath(path.relative(rootDir, configPath)) : FRONTEND_CONFIG_PATH;
   return {
     entrySource: source,
+    contents: "",
     generated: true,
     key: FRONTEND_CONFIG_ENTRY_KEY,
     kind: "entry",
     name: FRONTEND_CONFIG_ENTRY_NAME,
     ownedSources: [source],
-    path: generatedScssPath,
+    path: FRONTEND_CONFIG_VIRTUAL_ENTRY_PATH,
     ruleKey: FRONTEND_CONFIG_RULE_KEY,
-    source: "discover",
+    source: "internal",
     strategy: "entry",
+    virtualLoader: "css",
   };
 }
 
@@ -134,31 +137,24 @@ async function prepareFrontendConfigStyles(args: {
     if (configPath) throw new Error("bundler-frontend-config-package-missing :: @trebired/frontend");
     return null;
   }
-  if (typeof api.loadTrebiredFrontendConfig !== "function" || typeof api.writeGeneratedTrebiredFrontendScss !== "function") {
+  if (typeof api.loadTrebiredFrontendConfig !== "function") {
     throw new Error("bundler-frontend-config-api-missing");
   }
   const loaded = await api.loadTrebiredFrontendConfig(args.rootDir, {
     defaultIfMissing: true,
     searchFrom: args.rootDir,
   });
-  const generatedScssPath = await api.writeGeneratedTrebiredFrontendScss(args.rootDir, loaded.config);
-  args.logger.info("frontend", `config-styles :: ${normalizePath(path.relative(args.rootDir, generatedScssPath))}`);
+  const generatedScss = typeof loaded.generatedScss === "string"
+    ? loaded.generatedScss
+    : typeof api.generateTrebiredFrontendScss === "function"
+      ? api.generateTrebiredFrontendScss(loaded.config)
+      : "";
+  if (!generatedScss) throw new Error("bundler-frontend-config-scss-missing");
+  args.logger.info("frontend", "config-styles :: virtual");
   return {
     configPath: loaded.configPath,
-    entryRecord: createFrontendConfigEntryRecord(args.rootDir, generatedScssPath),
-    generatedScssPath,
+    entryRecord: createFrontendConfigEntryRecord(loaded.configPath, args.rootDir),
   };
-}
-
-async function refreshFrontendConfigScss(rootDir: string): Promise<{ configPath: string | null; generatedScssPath: string } | null> {
-  const api = await loadFrontendConfigApi(rootDir);
-  if (!api?.loadTrebiredFrontendConfig || !api.writeGeneratedTrebiredFrontendScss) return null;
-  const loaded = await api.loadTrebiredFrontendConfig(rootDir, {
-    defaultIfMissing: true,
-    searchFrom: rootDir,
-  });
-  const generatedScssPath = await api.writeGeneratedTrebiredFrontendScss(rootDir, loaded.config);
-  return { configPath: loaded.configPath, generatedScssPath };
 }
 
 function appendFrontendConfigStyleEntry(
@@ -206,18 +202,14 @@ function createEmptyResolvedDiscovery(): ResolvedDiscovery {
   };
 }
 
-function defaultFrontendGeneratedScssPath(rootDir: string): string {
-  return path.resolve(rootDir, FRONTEND_GENERATED_SCSS_PATH);
-}
-
 export {
   FRONTEND_CONFIG_PATH,
-  FRONTEND_GENERATED_SCSS_PATH,
+  FRONTEND_CONFIG_VIRTUAL_ENTRY_NAME,
+  FRONTEND_CONFIG_VIRTUAL_ENTRY_PATH,
   appendFrontendConfigStyleEntry,
   createEmptyResolvedDiscovery,
-  defaultFrontendGeneratedScssPath,
   findFrontendConfigFile,
+  loadFrontendConfigApi,
   prepareFrontendConfigStyles,
-  refreshFrontendConfigScss,
 };
 export type { PreparedFrontendConfigStyles };

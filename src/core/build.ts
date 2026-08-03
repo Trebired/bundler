@@ -48,7 +48,6 @@ async function bundle(options: BundlerOptions): Promise<BundlerBuildResult> {
     const result = await runEsbuild(createEsbuildOptions({
       ...normalized,
       entryRecords: resolvedDiscovery.entries,
-      frontendConfigScssPath: frontendStyles?.generatedScssPath,
     }, logger));
     const postProcessed = await postProcessBuildOutput({ normalized, result });
     logWarnings(logger, result.warnings);
