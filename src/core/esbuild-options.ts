@@ -37,6 +37,7 @@ type NormalizedBundlerOptions = {
   outDir: string;
   outputLayout: NormalizedBundlerOutputLayoutOptions;
   precompress: NormalizedBundlerPrecompressOptions;
+  frontendConfigScssPath?: string;
   publicPath?: string;
   rootDir: string;
   sourcemap?: BundlerOptions["sourcemap"];
@@ -146,6 +147,7 @@ function createPlugins(
     })] : []),
     createScssPlugin({
       annotateSources: options.annotateSources,
+      frontendConfigScssPath: options.frontendConfigScssPath,
       logger,
       rootDir: options.rootDir,
       sourcemapEnabled: Boolean(options.sourcemap),

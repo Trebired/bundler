@@ -38,6 +38,7 @@
   "#cacxup1m7cl4": "./src/core/frontend_app/defaults.ts",
   "#ccxx1umxyw4e": "./scripts/build/generated/tsconfig.mjs",
   "#cjs3kmwh1gzy": "./src/frontend/js/utils/text.ts",
+  "#d0ppiu0440kk": "./src/core/frontend-config.ts",
   "#dcx0jw9bw3ka": "./src/logging.ts",
   "#dcywsmusyili": "./src/types/related_entries.ts",
   "#df3icj7pr6k8": "./src/core/discovery_watch/runtime.ts",

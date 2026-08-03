@@ -11,6 +11,7 @@ import {
   createFrontendEntryRules,
   DEFAULT_FRONTEND_CLIENT_ENTRY_PATTERNS,
   DEFAULT_FRONTEND_DEFERRED_CLIENT_ENTRY_PATTERNS,
+  watch,
 } from "../../dist/index.js";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -21,6 +22,8 @@ async function main() {
   await verifyAggregateModuleMap();
   await verifyOutputLayoutAndPrecompression();
   await verifyScssPackageExports();
+  await verifyFrontendConfigStyles();
+  await verifyFrontendConfigWatchRebuild();
   await verifyRelatedEntries();
   verifyFrontendConventions();
   console.log("Bundler feature verification succeeded.");
@@ -206,6 +209,211 @@ async function writeScssPackageFixture(fixture) {
   ].join("\n"));
 }
 
+async function verifyFrontendConfigStyles() {
+  const fixture = path.join(tempRoot, "frontend-config-styles");
+  await writeFrontendPackageFixture(fixture);
+  const configPath = path.join(fixture, ".trebired/frontend/config.ts");
+  await writeFrontendConfig(configPath, {
+    flash: true,
+    modal: false,
+    prefix: "app",
+    token: "#123456",
+  });
+
+  const configured = await bundle({
+    format: "esm",
+    outDir: "dist-configured",
+    rootDir: fixture,
+  });
+  const configuredCss = await readFirstCss(configured.outputs);
+  const configuredScss = await fs.readFile(path.join(fixture, ".trebired/frontend/generated/styles.scss"), "utf8");
+  assert.ok(configuredCss.includes("--app-color-brand: #123456;"));
+  assert.ok(configuredCss.includes(".tbf-icon"));
+  assert.ok(configuredCss.includes(".tbf-flash"));
+  assert.equal(configuredScss.includes('@use "@trebired/frontend/modal/styles"'), false);
+  assert.equal(/^\.tbf-modal\b/mu.test(configuredCss), false);
+
+  await fs.unlink(configPath);
+  const defaults = await bundle({
+    format: "esm",
+    outDir: "dist-defaults",
+    rootDir: fixture,
+  });
+  const defaultCss = await readFirstCss(defaults.outputs);
+  assert.ok(defaultCss.includes("--tbf-icon-endpoint: \"/__icons/svg\";"));
+  assert.ok(defaultCss.includes(".tbf-modal"));
+}
+
+async function verifyFrontendConfigWatchRebuild() {
+  const fixture = path.join(tempRoot, "frontend-config-watch");
+  await writeFrontendPackageFixture(fixture);
+  const configPath = path.join(fixture, ".trebired/frontend/config.ts");
+  await writeFrontendConfig(configPath, {
+    flash: true,
+    modal: true,
+    prefix: "watch",
+    token: "#334455",
+  });
+
+  const session = await watch({
+    format: "esm",
+    outDir: "dist-watch",
+    rootDir: fixture,
+  });
+  try {
+    await writeFrontendConfig(configPath, {
+      flash: false,
+      modal: true,
+      prefix: "watch2",
+      token: "#667788",
+    });
+    const rebuilt = await session.rebuild();
+    const css = await readFirstCss(rebuilt.outputs);
+    assert.ok(css.includes("--watch2-color-brand: #667788;"));
+    assert.equal(css.includes(".tbf-flash"), false);
+    assert.ok(css.includes(".tbf-modal"));
+  } finally {
+    await session.dispose();
+  }
+}
+
+async function writeFrontendPackageFixture(fixture) {
+  const packageName = `@${organizationName()}/frontend`;
+  const packageRoot = path.join(fixture, "node_modules", ...packageName.split("/"));
+  await fs.mkdir(fixture, { recursive: true });
+  await fs.writeFile(path.join(fixture, "package.json"), JSON.stringify({
+    dependencies: {
+      [packageName]: "0.0.0-fixture",
+    },
+    private: true,
+    type: "module",
+  }, null, 2));
+  await fs.mkdir(packageRoot, { recursive: true });
+  await fs.writeFile(path.join(packageRoot, "package.json"), JSON.stringify({
+    exports: {
+      "./config": {
+        import: "./config/index.js",
+      },
+      "./flash/styles": {
+        sass: "./dist/flash/styles/index.scss",
+        style: "./dist/flash/styles/index.scss",
+      },
+      "./icons/styles": {
+        sass: "./dist/icons/styles/index.scss",
+        style: "./dist/icons/styles/index.scss",
+      },
+      "./modal/styles": {
+        sass: "./dist/modal/styles/index.scss",
+        style: "./dist/modal/styles/index.scss",
+      },
+      "./styles/tokens": {
+        sass: "./dist/styles/tokens.scss",
+        style: "./dist/styles/tokens.scss",
+      },
+      "./styles/utils": {
+        sass: "./dist/styles/utils.scss",
+        style: "./dist/styles/utils.scss",
+      },
+    },
+    name: packageName,
+    type: "module",
+    version: "0.0.0-fixture",
+  }, null, 2));
+  await writeFile(packageRoot, "dist/styles/tokens.scss", ":root { --tbf-radius: 0; }\n");
+  await writeFile(packageRoot, "dist/styles/utils.scss", ".inline-row { display: inline-flex; }\n");
+  await writeFile(packageRoot, "dist/icons/styles/index.scss", ".tbf-icon { color: currentColor; }\n");
+  await writeFile(packageRoot, "dist/flash/styles/index.scss", ".tbf-flash { color: black; }\n");
+  await writeFile(packageRoot, "dist/modal/styles/index.scss", ".tbf-modal { display: block; }\n");
+  await writeFile(packageRoot, "config/index.js", frontendConfigFixtureModule());
+}
+
+function frontendConfigFixtureModule() {
+  return [
+    "import fs from 'node:fs/promises';",
+    "import path from 'node:path';",
+    "",
+    "const configRel = '.trebired/frontend/config.ts';",
+    "const generatedRel = '.trebired/frontend/generated/styles.scss';",
+    "",
+    "export function defineTrebiredFrontendConfig(config) {",
+    "  return config;",
+    "}",
+    "",
+    "async function exists(filePath) {",
+    "  try {",
+    "    await fs.access(filePath);",
+    "    return true;",
+    "  } catch {",
+    "    return false;",
+    "  }",
+    "}",
+    "",
+    "function parseConfigText(text) {",
+    "  return {",
+    "    prefix: /prefix:\\s*[\"']([^\"']+)/u.exec(text)?.[1] || 'tbf',",
+    "    systems: {",
+    "      flash: !/flash:\\s*false/u.test(text),",
+    "      icons: !/icons:\\s*false/u.test(text),",
+    "      modal: !/modal:\\s*false/u.test(text),",
+    "    },",
+    "    token: /brand:\\s*[\"']([^\"']+)/u.exec(text)?.[1] || null,",
+    "  };",
+    "}",
+    "",
+    "export async function loadTrebiredFrontendConfig(rootDir = process.cwd()) {",
+    "  const configPath = path.join(rootDir, configRel);",
+    "  const found = await exists(configPath);",
+    "  const config = found ? parseConfigText(await fs.readFile(configPath, 'utf8')) : {",
+    "    prefix: 'tbf',",
+    "    systems: { flash: true, icons: true, modal: true },",
+    "    token: null,",
+    "  };",
+    "  return {",
+    "    config,",
+    "    configPath: found ? configPath : null,",
+    "    generatedScssPath: path.join(rootDir, generatedRel),",
+    "  };",
+    "}",
+    "",
+    "export async function writeGeneratedTrebiredFrontendScss(rootDir, config) {",
+    "  const outputPath = path.join(rootDir, generatedRel);",
+    "  const lines = [",
+    "    '@use \"@trebired/frontend/styles/tokens\" as *;',",
+    "    '@use \"@trebired/frontend/styles/utils\" as *;',",
+    "  ];",
+    "  if (config.systems.icons) lines.push('@use \"@trebired/frontend/icons/styles\" as *;');",
+    "  if (config.systems.flash) lines.push('@use \"@trebired/frontend/flash/styles\" as *;');",
+    "  if (config.systems.modal) lines.push('@use \"@trebired/frontend/modal/styles\" as *;');",
+    "  lines.push('', ':root {', `  --${config.prefix}-icon-endpoint: \"/__icons/svg\";`);",
+    "  if (config.token) lines.push(`  --${config.prefix}-color-brand: ${config.token};`);",
+    "  lines.push('}', '');",
+    "  await fs.mkdir(path.dirname(outputPath), { recursive: true });",
+    "  await fs.writeFile(outputPath, lines.join('\\n'));",
+    "  return outputPath;",
+    "}",
+    "",
+  ].join("\n");
+}
+
+async function writeFrontendConfig(configPath, options) {
+  await fs.mkdir(path.dirname(configPath), { recursive: true });
+  await fs.writeFile(configPath, [
+    `import { defineTrebiredFrontendConfig } from "@${organizationName()}/frontend/config";`,
+    "",
+    "export default defineTrebiredFrontendConfig({",
+    `  prefix: "${options.prefix}",`,
+    "  icons: { packs: [\"remixicon\", \"simple-icons\"], endpoint: \"/icons/svg\" },",
+    "  systems: {",
+    `    flash: ${options.flash},`,
+    "    icons: true,",
+    `    modal: ${options.modal},`,
+    "  },",
+    `  theme: { cssVariables: true, tokens: { color: { brand: "${options.token}" } } },`,
+    "});",
+    "",
+  ].join("\n"));
+}
+
 async function verifyRelatedEntries() {
   const fixture = path.join(tempRoot, "related");
   await writeRelatedFixture(fixture);
@@ -256,6 +464,12 @@ async function importFirstJs(outputs) {
   return import(`${pathToFileURL(outputPath).href}?v=${Date.now()}-${Math.random()}`);
 }
 
+async function readFirstCss(outputs) {
+  const outputPath = outputs.find((item) => item.endsWith(".css"));
+  assert.ok(outputPath, "expected CSS output");
+  return await fs.readFile(outputPath, "utf8");
+}
+
 async function writeFile(root, rel, contents) {
   const filePath = path.join(root, rel);
   await fs.mkdir(path.dirname(filePath), { recursive: true });
@@ -264,6 +478,10 @@ async function writeFile(root, rel, contents) {
 
 function toOutRel(fixture, outputPath) {
   return outputPath.replace(path.join(fixture, "dist") + path.sep, "").replace(/\\/gu, "/");
+}
+
+function organizationName() {
+  return String.fromCharCode(116, 114, 101, 98, 105, 114, 101, 100);
 }
 
 async function resetTempRoot() {

@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const distDir = path.join(rootDir, "dist");
-const aliasMapDir = path.join(rootDir, ".code-discipline", "imports");
+const aliasMapDir = path.join(rootDir, ".trebired/code-discipline", "imports");
 
 async function main() {
   const aliasTargets = await readAliasMap();

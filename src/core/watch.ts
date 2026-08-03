@@ -9,6 +9,12 @@ import { createEsbuildOptions, normalizeBundlerOptions } from "./esbuild-options
 import { postProcessBuildOutput } from "./post-build.js";
 import { resolveBundlerEntries, normalizeDiscoverRoots } from "./discovery.js";
 import { createDiscoveryWatcher } from "./discovery-watch.js";
+import {
+  appendFrontendConfigStyleEntry,
+  createEmptyResolvedDiscovery,
+  prepareFrontendConfigStyles,
+  type PreparedFrontendConfigStyles,
+} from "./frontend-config.js";
 import { cleanOutDir, formatFailure, logWarnings, toBuildResult } from "./shared.js";
 
 async function watch(options: BundlerOptions): Promise<BundlerWatchSession> {
@@ -37,13 +43,23 @@ async function createWatchState(options: BundlerOptions) {
     await cleanOutDir(normalized.outDir);
   }
 
+  const frontendStyles = await prepareFrontendConfigStyles({
+    environment: normalized.environment,
+    logger,
+    rootDir: normalized.rootDir,
+  });
+  const discoveredEntries = options?.discover || !frontendStyles
+    ? await resolveBundlerEntries(options || {} as BundlerOptions, normalized.rootDir, { allowEmpty: true }, {
+      ignoredDirs: normalized.i18n.enabled ? [normalized.i18n.dirName] : [],
+    })
+    : createEmptyResolvedDiscovery();
+
   return {
     currentContext: null as BuildContext<any> | null,
-    currentDiscovery: await resolveBundlerEntries(options || {} as BundlerOptions, normalized.rootDir, { allowEmpty: true }, {
-      ignoredDirs: normalized.i18n.enabled ? [normalized.i18n.dirName] : [],
-    }),
+    currentDiscovery: appendFrontendConfigStyleEntry(discoveredEntries, frontendStyles),
     discoveryWatcher: null as ReturnType<typeof createDiscoveryWatcher> | null,
     disposed: false,
+    frontendStyles: frontendStyles as PreparedFrontendConfigStyles | null,
     logger,
     normalized,
     options,
@@ -82,6 +98,7 @@ async function failWatchState(state: Awaited<ReturnType<typeof createWatchState>
 }
 
 function createWatchStateWatcher(state: Awaited<ReturnType<typeof createWatchState>>) {
+  if (!state.options.discover) return null;
   const discoveryRoots = normalizeDiscoverRoots(state.normalized.rootDir, state.options.discover);
   return discoveryRoots.length
     ? createDiscoveryWatcher({
@@ -124,6 +141,7 @@ async function createWatchedContext(
   const context = await createContext(createEsbuildOptions({
     ...state.normalized,
     entryRecords: records,
+    frontendConfigScssPath: state.frontendStyles?.generatedScssPath,
   }, state.logger));
   await context.watch();
   return context;
@@ -156,11 +174,19 @@ async function executeRebuild(state: Awaited<ReturnType<typeof createWatchState>
 }
 
 async function refreshDiscovery(state: Awaited<ReturnType<typeof createWatchState>>): Promise<void> {
-  const nextDiscovery = await resolveBundlerEntries(state.options || {} as BundlerOptions, state.normalized.rootDir, {
-    allowEmpty: true,
-  }, {
-    ignoredDirs: state.normalized.i18n.enabled ? [state.normalized.i18n.dirName] : [],
+  state.frontendStyles = await prepareFrontendConfigStyles({
+    environment: state.normalized.environment,
+    logger: state.logger,
+    rootDir: state.normalized.rootDir,
   });
+  const discoveredEntries = state.options?.discover || !state.frontendStyles
+    ? await resolveBundlerEntries(state.options || {} as BundlerOptions, state.normalized.rootDir, {
+      allowEmpty: true,
+    }, {
+      ignoredDirs: state.normalized.i18n.enabled ? [state.normalized.i18n.dirName] : [],
+    })
+    : createEmptyResolvedDiscovery();
+  const nextDiscovery = appendFrontendConfigStyleEntry(discoveredEntries, state.frontendStyles);
   if (nextDiscovery.signature === state.currentDiscovery.signature) return;
 
   state.logger.info("watch", `entry-set-changed :: count=${nextDiscovery.entries.length}`);

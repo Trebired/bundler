@@ -4,6 +4,14 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 4.4.0
+
+- Added automatic `@trebired/frontend` config integration for browser builds: bundler discovers `.trebired/frontend/config.ts`, generates `.trebired/frontend/generated/styles.scss`, and includes it as an internal SCSS entry.
+- Added config-only build support so projects can emit configured frontend CSS without a hand-authored SCSS entry.
+- Added watch-session refresh for managed frontend SCSS, with config file and `.trebired/frontend` directory watch metadata from the SCSS plugin.
+- Switched package export resolution for `@trebired/frontend/config` to import-condition-aware package export lookup.
+- Updated Code Discipline paths and dependency metadata to the `.trebired/code-discipline` structure.
+
 ## 4.3.0
 
 - Added SCSS package export resolution for Sass `@use`, `@forward`, and `@import` directives so packages can expose style modules through `exports` conditions such as `sass` and `style`.

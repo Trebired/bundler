@@ -141,6 +141,25 @@ Product SCSS can then use package paths instead of direct `node_modules` file pa
 
 The Sass resolver prefers `sass`, then `style`, then `import`, then `default` export conditions.
 
+### Frontend Config CSS
+
+When a browser build can resolve `@trebired/frontend/config`, the bundler loads `.trebired/frontend/config.ts` from the project root, asks `@trebired/frontend` to normalize it, writes `.trebired/frontend/generated/styles.scss`, and includes that generated SCSS as an internal entry. Projects can still keep explicit SCSS entries and package `@use` imports; the generated entry just removes the need to manually import every package-owned frontend style module.
+
+If `.trebired/frontend/config.ts` is missing, package defaults are used. If the config exists but `@trebired/frontend` is not installed, the build fails clearly.
+
+Config-only projects are supported:
+
+```ts
+import { bundle } from "@trebired/bundler";
+
+await bundle({
+  outDir: "./dist",
+  rootDir: process.cwd(),
+});
+```
+
+Watch-session rebuilds refresh the generated SCSS from `.trebired/frontend/config.ts`, and the SCSS plugin reports the config file and `.trebired/frontend` directory as watch inputs for the managed generated entry.
+
 During browser, node, and neutral builds, the bundler rewrites the local translator call to a normal `createTranslator()` call with static sibling imports for the configured language files. Message-file parsing and key validation come from `@trebired/i18n/checker`, so the same static TypeScript grammar is used by the CLI and the bundler. The source tree does not need local `i18n/index.ts` files, JSON dictionaries, app-wide registries, or checked-in generated source.
 
 Builds fail when a used colocated folder is invalid:
