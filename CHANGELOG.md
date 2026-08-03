@@ -4,6 +4,10 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 4.4.1
+
+- Refreshed package dependency ranges and lockfile state with `bun update` after adopting the `.trebired/code-discipline` structure.
+
 ## 4.4.0
 
 - Added automatic `@trebired/frontend` config integration for browser builds: bundler discovers `.trebired/frontend/config.ts`, generates `.trebired/frontend/generated/styles.scss`, and includes it as an internal SCSS entry.
