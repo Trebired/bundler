@@ -158,7 +158,16 @@ await bundle({
 });
 ```
 
-Watch-session rebuilds refresh the generated SCSS from `.trebired/frontend/config.ts`, and the SCSS plugin reports the config file and `.trebired/frontend` directory as watch inputs for the managed generated entry.
+Watch-session rebuilds refresh the generated SCSS from `.trebired/frontend/config.ts`, and the SCSS plugin reports the `.trebired/frontend` directory plus every file the config module reports as a dependency as watch inputs for the managed generated entry.
+
+The watched set is not limited to `config.ts` itself. `@trebired/frontend` resolves the config file's relative import graph and returns it as `dependencies`, so a project can keep design tokens (or any other generated-CSS input) in a sibling module and get the same zero-config, watch-aware treatment:
+
+```
+.trebired/frontend/config.ts    # imports ./tokens.js
+.trebired/frontend/tokens.ts    # editing this retriggers config CSS compilation
+```
+
+This is contract-driven, not path-driven: the bundler watches whatever the installed `@trebired/frontend` reports. A version that does not report `dependencies` still works, with the config file alone watched, as before.
 
 During browser, node, and neutral builds, the bundler rewrites the local translator call to a normal `createTranslator()` call with static sibling imports for the configured language files. Message-file parsing and key validation come from `@trebired/i18n/checker`, so the same static TypeScript grammar is used by the CLI and the bundler. The source tree does not need local `i18n/index.ts` files, JSON dictionaries, app-wide registries, or checked-in generated source.
 

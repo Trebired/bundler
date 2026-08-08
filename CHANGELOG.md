@@ -4,6 +4,12 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 4.5.0
+
+- Generalized frontend config style watching beyond `.trebired/frontend/config.ts`: the managed virtual entry now reports every file the frontend config module declares as a dependency as an esbuild watch input, so editing a design-tokens module the config imports retriggers config CSS compilation.
+- Added `dependencies` to `PreparedFrontendConfigStyles` and consolidated config loading into `resolveFrontendConfigStyles()`, shared by the core build/watch paths and the config styles plugin.
+- Kept compatibility with `@trebired/frontend` versions that do not report `dependencies`; the config file remains the watched input in that case.
+
 ## 4.4.2
 
 - Changed frontend config CSS integration to compile config-derived SCSS in memory through a virtual bundler entry instead of writing `.trebired/frontend/generated/styles.scss` into projects.

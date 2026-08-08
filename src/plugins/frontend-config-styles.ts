@@ -4,7 +4,7 @@ import { pathToFileURL } from "node:url";
 import { compileStringAsync } from "sass-embedded";
 import type { Plugin } from "esbuild";
 
-import { FRONTEND_CONFIG_PATH, FRONTEND_CONFIG_VIRTUAL_ENTRY_NAME, FRONTEND_CONFIG_VIRTUAL_ENTRY_PATH, loadFrontendConfigApi } from "../core/frontend-config.js";
+import { FRONTEND_CONFIG_PATH, FRONTEND_CONFIG_VIRTUAL_ENTRY_NAME, FRONTEND_CONFIG_VIRTUAL_ENTRY_PATH, resolveFrontendConfigStyles } from "../core/frontend-config.js";
 import { injectSourceAnnotation } from "./source-annotations.js";
 import { createScssAliasImporter, rewriteScssAliasDirectives } from "./scss/imports.js";
 import type { NormalizedBundlerLogger } from "#3c8d8166992a";
@@ -32,7 +32,7 @@ function createFrontendConfigStylesPlugin(options: FrontendConfigStylesPluginOpt
 
       build.onLoad({ filter: /.*/, namespace: FRONTEND_CONFIG_STYLES_NAMESPACE }, async () => {
         try {
-          const loaded = await loadFrontendConfigStyles(options.rootDir);
+          const loaded = await resolveFrontendConfigStyles(options.rootDir);
           const importer = createScssAliasImporter(options.rootDir);
           const virtualScssPath = path.join(options.rootDir, ".trebired", "frontend", "config.virtual.scss");
           const result = await compileStringAsync(
@@ -63,7 +63,7 @@ function createFrontendConfigStylesPlugin(options: FrontendConfigStylesPluginOpt
             resolveDir: options.rootDir,
             watchDirs: await existingWatchDirs(options.rootDir),
             watchFiles: [
-              ...(loaded.configPath ? [loaded.configPath] : []),
+              ...loaded.dependencies,
               ...result.loadedUrls
                 .filter((url) => url.protocol === "file:")
                 .map((url) => url.pathname),
@@ -77,28 +77,6 @@ function createFrontendConfigStylesPlugin(options: FrontendConfigStylesPluginOpt
         }
       });
     },
-  };
-}
-
-async function loadFrontendConfigStyles(rootDir: string): Promise<{ configPath: string | null; scss: string }> {
-  const api = await loadFrontendConfigApi(rootDir);
-  if (!api?.loadTrebiredFrontendConfig) {
-    throw new Error("bundler-frontend-config-api-missing");
-  }
-  const loaded = await api.loadTrebiredFrontendConfig(rootDir, {
-    defaultIfMissing: true,
-    searchFrom: rootDir,
-  });
-  const scss = typeof loaded.generatedScss === "string"
-    ? loaded.generatedScss
-    : typeof api.generateTrebiredFrontendScss === "function"
-      ? api.generateTrebiredFrontendScss(loaded.config)
-      : "";
-
-  if (!scss) throw new Error("bundler-frontend-config-scss-missing");
-  return {
-    configPath: loaded.configPath,
-    scss,
   };
 }
 

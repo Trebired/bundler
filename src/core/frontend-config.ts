@@ -11,18 +11,28 @@ import type {
 import { VIRTUAL_ENTRY_PREFIX } from "#5kd9snhn6zft";
 import type { ResolvedDiscovery } from "./discovery.js";
 
+type LoadedFrontendConfig = {
+  config: unknown;
+  configPath: string | null;
+  dependencies?: readonly string[];
+  generatedScss?: string;
+};
+
 type FrontendConfigApi = {
   findTrebiredFrontendConfig?: (startDir?: string, boundaryDir?: string) => Promise<string | null>;
-  loadTrebiredFrontendConfig?: (projectRoot?: string, options?: Record<string, unknown>) => Promise<{
-    config: unknown;
-    configPath: string | null;
-    generatedScss?: string;
-  }>;
+  loadTrebiredFrontendConfig?: (projectRoot?: string, options?: Record<string, unknown>) => Promise<LoadedFrontendConfig>;
   generateTrebiredFrontendScss?: (config: unknown) => string;
+};
+
+type ResolvedFrontendConfigStyles = {
+  configPath: string | null;
+  dependencies: string[];
+  scss: string;
 };
 
 type PreparedFrontendConfigStyles = {
   configPath: string | null;
+  dependencies: string[];
   entryRecord: BundlerEntryRecord;
 };
 
@@ -125,6 +135,40 @@ function normalizePath(value: string): string {
   return value.replace(/\\/gu, "/");
 }
 
+function normalizeConfigDependencies(value: unknown, configPath: string | null): string[] {
+  const dependencies = new Set<string>();
+  if (configPath) dependencies.add(path.resolve(configPath));
+  for (const item of Array.isArray(value) ? value : []) {
+    if (typeof item === "string" && item.trim()) dependencies.add(path.resolve(item));
+  }
+  return [...dependencies];
+}
+
+async function resolveFrontendConfigStyles(
+  rootDir: string,
+  preloadedApi?: FrontendConfigApi | null,
+): Promise<ResolvedFrontendConfigStyles> {
+  const api = preloadedApi || await loadFrontendConfigApi(rootDir);
+  if (typeof api?.loadTrebiredFrontendConfig !== "function") {
+    throw new Error("bundler-frontend-config-api-missing");
+  }
+  const loaded = await api.loadTrebiredFrontendConfig(rootDir, {
+    defaultIfMissing: true,
+    searchFrom: rootDir,
+  });
+  const scss = typeof loaded.generatedScss === "string"
+    ? loaded.generatedScss
+    : typeof api.generateTrebiredFrontendScss === "function"
+      ? api.generateTrebiredFrontendScss(loaded.config)
+      : "";
+  if (!scss) throw new Error("bundler-frontend-config-scss-missing");
+  return {
+    configPath: loaded.configPath,
+    dependencies: normalizeConfigDependencies(loaded.dependencies, loaded.configPath),
+    scss,
+  };
+}
+
 async function prepareFrontendConfigStyles(args: {
   environment?: string;
   logger: NormalizedBundlerLogger;
@@ -137,23 +181,12 @@ async function prepareFrontendConfigStyles(args: {
     if (configPath) throw new Error("bundler-frontend-config-package-missing :: @trebired/frontend");
     return null;
   }
-  if (typeof api.loadTrebiredFrontendConfig !== "function") {
-    throw new Error("bundler-frontend-config-api-missing");
-  }
-  const loaded = await api.loadTrebiredFrontendConfig(args.rootDir, {
-    defaultIfMissing: true,
-    searchFrom: args.rootDir,
-  });
-  const generatedScss = typeof loaded.generatedScss === "string"
-    ? loaded.generatedScss
-    : typeof api.generateTrebiredFrontendScss === "function"
-      ? api.generateTrebiredFrontendScss(loaded.config)
-      : "";
-  if (!generatedScss) throw new Error("bundler-frontend-config-scss-missing");
-  args.logger.info("frontend", "config-styles :: virtual");
+  const resolved = await resolveFrontendConfigStyles(args.rootDir, api);
+  args.logger.info("frontend", `config-styles :: virtual watch=${resolved.dependencies.length}`);
   return {
-    configPath: loaded.configPath,
-    entryRecord: createFrontendConfigEntryRecord(loaded.configPath, args.rootDir),
+    configPath: resolved.configPath,
+    dependencies: resolved.dependencies,
+    entryRecord: createFrontendConfigEntryRecord(resolved.configPath, args.rootDir),
   };
 }
 
@@ -211,5 +244,6 @@ export {
   findFrontendConfigFile,
   loadFrontendConfigApi,
   prepareFrontendConfigStyles,
+  resolveFrontendConfigStyles,
 };
-export type { PreparedFrontendConfigStyles };
+export type { LoadedFrontendConfig, PreparedFrontendConfigStyles, ResolvedFrontendConfigStyles };
