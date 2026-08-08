@@ -192,9 +192,28 @@ function sourceMapFileReference(plan: OutputPlan): string {
 
 function replaceOutputReference(text: string, from: string, to: string): string {
   if (!from || from === to) return text;
-  const withoutDot = from.startsWith("./") ? from.slice(2) : "";
-  const replaced = text.split(from).join(to);
-  return withoutDot ? replaced.split(withoutDot).join(to.replace(/^\.\//u, "")) : replaced;
+  const replacements: Array<[string, string]> = [[from, to]];
+  if (from.startsWith("./")) {
+    replacements.push([from.slice(2), to.replace(/^\.\//u, "")]);
+  }
+  const pattern = new RegExp(replacements.map(([value]) => escapeRegExp(value)).join("|"), "gu");
+  const byReference = new Map(replacements);
+  return text.replace(pattern, (match: string, offset: number, sourceText: string) => {
+    if (match !== from && !isBareOutputReference(sourceText, offset, match.length)) {
+      return match;
+    }
+    return byReference.get(match) || match;
+  });
+}
+
+function isBareOutputReference(text: string, start: number, length: number): boolean {
+  const before = start > 0 ? text[start - 1] : "";
+  const after = text[start + length] || "";
+  return !/[./\w~-]/u.test(before) && !/[./\w~-]/u.test(after);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[\\^$.*+?()[\]{}|]/gu, "\\$&");
 }
 
 async function removeOldOutputs(plans: OutputPlan[]): Promise<void> {

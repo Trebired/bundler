@@ -134,6 +134,12 @@ async function assertOutputLayoutFiles(result, fixture) {
   assert.ok(result.assetManifest.entries["entry:style:src/style.client"].css.every((item) => item.startsWith("css/")));
   const links = collectAssetLinks(result.assetManifest, ["src/app.client.ts"], { from: "source", publicPath: "/static/" });
   assert.ok(links.scripts.every((item) => item.startsWith("/static/js/")));
+  const cssOutput = result.outputs.find((item) => item.endsWith(".css"));
+  assert.ok(cssOutput, "expected CSS output");
+  const css = await fs.readFile(cssOutput, "utf8");
+  assert.match(css, /url\(["']?\/static\/assets\/icon-[A-Z0-9]+\.svg["']?\)/u);
+  assert.equal(css.includes("/static/assets/assets/"), false);
+  assert.equal(css.includes("/static/../assets/"), false);
 }
 
 async function assertWrittenManifest(result, fixture) {

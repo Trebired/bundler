@@ -4,6 +4,10 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 4.5.1
+
+- Fixed output-layout reference rewriting so public asset URLs are rewritten once, avoiding duplicated paths such as `/assets/assets/...` for bundled Fontsource files.
+
 ## 4.5.0
 
 - Generalized frontend config style watching beyond `.trebired/frontend/config.ts`: the managed virtual entry now reports every file the frontend config module declares as a dependency as an esbuild watch input, so editing a design-tokens module the config imports retriggers config CSS compilation.
