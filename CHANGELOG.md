@@ -4,6 +4,10 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 4.5.2
+
+- Updated managed frontend config CSS integration to consume the brand-neutral `@trebired/frontend/config` helper names and neutral virtual rule keys.
+
 ## 4.5.1
 
 - Fixed output-layout reference rewriting so public asset URLs are rewritten once, avoiding duplicated paths such as `/assets/assets/...` for bundled Fontsource files.

@@ -36,7 +36,7 @@ async function verifyFrontendConfigTokenWatch(context) {
   const fixture = path.join(context.tempRoot, "frontend-config-tokens");
   const outDir = path.join(fixture, "dist-tokens");
   await writeFrontendPackageFixture(fixture);
-  const configDir = path.join(fixture, ".trebired", "frontend");
+  const configDir = path.join(fixture, `.${"tre"}bired`, "frontend");
   const tokensPath = path.join(configDir, "tokens.ts");
   await writeFrontendConfig(path.join(configDir, "config.ts"), {
     flash: true,

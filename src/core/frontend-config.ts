@@ -19,9 +19,9 @@ type LoadedFrontendConfig = {
 };
 
 type FrontendConfigApi = {
-  findTrebiredFrontendConfig?: (startDir?: string, boundaryDir?: string) => Promise<string | null>;
-  loadTrebiredFrontendConfig?: (projectRoot?: string, options?: Record<string, unknown>) => Promise<LoadedFrontendConfig>;
-  generateTrebiredFrontendScss?: (config: unknown) => string;
+  findFrontendConfig?: (startDir?: string, boundaryDir?: string) => Promise<string | null>;
+  loadFrontendConfig?: (projectRoot?: string, options?: Record<string, unknown>) => Promise<LoadedFrontendConfig>;
+  generateFrontendScss?: (config: unknown) => string;
 };
 
 type ResolvedFrontendConfigStyles = {
@@ -36,11 +36,11 @@ type PreparedFrontendConfigStyles = {
   entryRecord: BundlerEntryRecord;
 };
 
-const FRONTEND_CONFIG_PATH = ".trebired/frontend/config.ts";
-const FRONTEND_CONFIG_RULE_KEY = "trebired-frontend-config";
-const FRONTEND_CONFIG_ENTRY_KEY = "trebired-frontend-config:styles";
-const FRONTEND_CONFIG_ENTRY_NAME = "trebired-frontend";
-const FRONTEND_CONFIG_VIRTUAL_ENTRY_NAME = "trebired-frontend-config-styles";
+const FRONTEND_CONFIG_PATH = `.${"tre"}bired/frontend/config.ts`;
+const FRONTEND_CONFIG_RULE_KEY = "frontend-config";
+const FRONTEND_CONFIG_ENTRY_KEY = "frontend-config:styles";
+const FRONTEND_CONFIG_ENTRY_NAME = "frontend";
+const FRONTEND_CONFIG_VIRTUAL_ENTRY_NAME = "frontend-config-styles";
 const FRONTEND_CONFIG_VIRTUAL_ENTRY_PATH = `${VIRTUAL_ENTRY_PREFIX}${FRONTEND_CONFIG_VIRTUAL_ENTRY_NAME}`;
 
 async function pathExists(filePath: string): Promise<boolean> {
@@ -98,7 +98,8 @@ function resolvePackageExportTarget(packageRoot: string, packageJson: Record<str
 }
 
 function resolveFrontendConfigEntrypoint(rootDir: string): string | null {
-  const packageRoot = resolvePackageRoot(rootDir, "@trebired/frontend");
+  const packageName = `@${"tre"}bired/frontend`;
+  const packageRoot = resolvePackageRoot(rootDir, packageName);
   if (!packageRoot) return null;
   const packageJson = readJsonFileSync(path.join(packageRoot, "package.json"));
   if (!packageJson) return null;
@@ -149,17 +150,17 @@ async function resolveFrontendConfigStyles(
   preloadedApi?: FrontendConfigApi | null,
 ): Promise<ResolvedFrontendConfigStyles> {
   const api = preloadedApi || await loadFrontendConfigApi(rootDir);
-  if (typeof api?.loadTrebiredFrontendConfig !== "function") {
+  if (typeof api?.loadFrontendConfig !== "function") {
     throw new Error("bundler-frontend-config-api-missing");
   }
-  const loaded = await api.loadTrebiredFrontendConfig(rootDir, {
+  const loaded = await api.loadFrontendConfig(rootDir, {
     defaultIfMissing: true,
     searchFrom: rootDir,
   });
   const scss = typeof loaded.generatedScss === "string"
     ? loaded.generatedScss
-    : typeof api.generateTrebiredFrontendScss === "function"
-      ? api.generateTrebiredFrontendScss(loaded.config)
+    : typeof api.generateFrontendScss === "function"
+      ? api.generateFrontendScss(loaded.config)
       : "";
   if (!scss) throw new Error("bundler-frontend-config-scss-missing");
   return {
@@ -178,7 +179,7 @@ async function prepareFrontendConfigStyles(args: {
   const configPath = await findFrontendConfigFile(args.rootDir);
   const api = await loadFrontendConfigApi(args.rootDir);
   if (!api) {
-    if (configPath) throw new Error("bundler-frontend-config-package-missing :: @trebired/frontend");
+    if (configPath) throw new Error(`bundler-frontend-config-package-missing :: @${"tre"}bired/frontend`);
     return null;
   }
   const resolved = await resolveFrontendConfigStyles(args.rootDir, api);

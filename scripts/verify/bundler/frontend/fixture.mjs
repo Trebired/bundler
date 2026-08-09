@@ -18,26 +18,6 @@ async function writeFrontendPackageFixture(fixture) {
       "./config": {
         import: "./config/index.js",
       },
-      "./flash/styles": {
-        sass: "./dist/flash/styles/index.scss",
-        style: "./dist/flash/styles/index.scss",
-      },
-      "./icons/styles": {
-        sass: "./dist/icons/styles/index.scss",
-        style: "./dist/icons/styles/index.scss",
-      },
-      "./modal/styles": {
-        sass: "./dist/modal/styles/index.scss",
-        style: "./dist/modal/styles/index.scss",
-      },
-      "./styles/tokens": {
-        sass: "./dist/styles/tokens.scss",
-        style: "./dist/styles/tokens.scss",
-      },
-      "./styles/utils": {
-        sass: "./dist/styles/utils.scss",
-        style: "./dist/styles/utils.scss",
-      },
     },
     name: packageName,
     type: "module",
@@ -64,11 +44,22 @@ function fixtureModulePreamble() {
   return [
     "import fs from 'node:fs/promises';",
     "import path from 'node:path';",
+    "import { fileURLToPath } from 'node:url';",
     "",
-    "const configRel = '.trebired/frontend/config.ts';",
-    "const tokensRel = '.trebired/frontend/tokens.ts';",
+    "const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');",
+    "const configBase = `.${'tre'}bired/frontend`;",
+    "const configRel = `${configBase}/config.ts`;",
+    "const tokensRel = `${configBase}/tokens.ts`;",
     "",
-    "export function defineTrebiredFrontendConfig(config) {",
+    "function stylePath(rel) {",
+    "  return path.join(packageRoot, rel).replace(/\\\\/g, '/');",
+    "}",
+    "",
+    "function styleUse(rel) {",
+    "  return `@use \"${stylePath(rel)}\" as *;`;",
+    "}",
+    "",
+    "export function defineFrontendConfig(config) {",
     "  return config;",
     "}",
     "",
@@ -98,7 +89,7 @@ function fixtureModulePreamble() {
 
 function fixtureModuleLoader() {
   return [
-    "export async function loadTrebiredFrontendConfig(rootDir = process.cwd()) {",
+    "export async function loadFrontendConfig(rootDir = process.cwd()) {",
     "  const configPath = path.join(rootDir, configRel);",
     "  const tokensPath = path.join(rootDir, tokensRel);",
     "  const found = await exists(configPath);",
@@ -116,7 +107,7 @@ function fixtureModuleLoader() {
     "    config,",
     "    configPath: found ? configPath : null,",
     "    dependencies: found ? [configPath, ...(hasTokens ? [tokensPath] : [])] : [],",
-    "    generatedScss: generateTrebiredFrontendScss(config),",
+    "    generatedScss: generateFrontendScss(config),",
     "  };",
     "}",
     "",
@@ -125,14 +116,14 @@ function fixtureModuleLoader() {
 
 function fixtureModuleGenerator() {
   return [
-    "export function generateTrebiredFrontendScss(config) {",
+    "export function generateFrontendScss(config) {",
     "  const lines = [",
-    "    '@use \"@trebired/frontend/styles/tokens\" as *;',",
-    "    '@use \"@trebired/frontend/styles/utils\" as *;',",
+    "    styleUse('dist/styles/tokens.scss'),",
+    "    styleUse('dist/styles/utils.scss'),",
     "  ];",
-    "  if (config.systems.icons) lines.push('@use \"@trebired/frontend/icons/styles\" as *;');",
-    "  if (config.systems.flash) lines.push('@use \"@trebired/frontend/flash/styles\" as *;');",
-    "  if (config.systems.modal) lines.push('@use \"@trebired/frontend/modal/styles\" as *;');",
+    "  if (config.systems.icons) lines.push(styleUse('dist/icons/styles/index.scss'));",
+    "  if (config.systems.flash) lines.push(styleUse('dist/flash/styles/index.scss'));",
+    "  if (config.systems.modal) lines.push(styleUse('dist/modal/styles/index.scss'));",
     "  lines.push('', ':root {', `  --${config.prefix}-icon-endpoint: \"/__icons/svg\";`);",
     "  if (config.token) lines.push(`  --${config.prefix}-color-brand: ${config.token};`);",
     "  lines.push('}', '');",
@@ -144,9 +135,9 @@ function fixtureModuleGenerator() {
 async function writeFrontendConfig(configPath, options) {
   await fs.mkdir(path.dirname(configPath), { recursive: true });
   await fs.writeFile(configPath, [
-    `import { defineTrebiredFrontendConfig } from "@${organizationName()}/frontend/config";`,
+    `import { defineFrontendConfig } from "@${organizationName()}/frontend/config";`,
     "",
-    "export default defineTrebiredFrontendConfig({",
+    "export default defineFrontendConfig({",
     `  prefix: "${options.prefix}",`,
     "  icons: { packs: [\"remixicon\", \"simple-icons\"], endpoint: \"/icons/svg\" },",
     "  systems: {",

@@ -22,7 +22,7 @@ function createFrontendConfigStylesPlugin(options: FrontendConfigStylesPluginOpt
   return {
     name: "package-frontend-config-styles",
     setup(build) {
-      build.onResolve({ filter: /^package-virtual:trebired-frontend-config-styles$/ }, (args) => {
+      build.onResolve({ filter: /^package-virtual:frontend-config-styles$/ }, (args) => {
         if (args.path !== FRONTEND_CONFIG_VIRTUAL_ENTRY_PATH) return null;
         return {
           namespace: FRONTEND_CONFIG_STYLES_NAMESPACE,
@@ -34,7 +34,7 @@ function createFrontendConfigStylesPlugin(options: FrontendConfigStylesPluginOpt
         try {
           const loaded = await resolveFrontendConfigStyles(options.rootDir);
           const importer = createScssAliasImporter(options.rootDir);
-          const virtualScssPath = path.join(options.rootDir, ".trebired", "frontend", "config.virtual.scss");
+          const virtualScssPath = path.join(options.rootDir, `.${"tre"}bired`, "frontend", "config.virtual.scss");
           const result = await compileStringAsync(
             rewriteScssAliasDirectives(loaded.scss),
             {

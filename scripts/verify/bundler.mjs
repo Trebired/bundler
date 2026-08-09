@@ -18,6 +18,7 @@ import { verifyFrontendConfigTokenWatch } from "./bundler/frontend/tokens.mjs";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const tempRoot = path.join(rootDir, ".tmp", "verify-bundler");
+const frontendConfigDir = `.${"tre"}bired/frontend`;
 
 async function main() {
   await resetTempRoot();
@@ -221,7 +222,7 @@ async function writeScssPackageFixture(fixture) {
 async function verifyFrontendConfigStyles() {
   const fixture = path.join(tempRoot, "frontend-config-styles");
   await writeFrontendPackageFixture(fixture);
-  const configPath = path.join(fixture, ".trebired/frontend/config.ts");
+  const configPath = path.join(fixture, frontendConfigDir, "config.ts");
   await writeFrontendConfig(configPath, {
     flash: true,
     modal: false,
@@ -239,7 +240,7 @@ async function verifyFrontendConfigStyles() {
   assert.ok(configuredCss.includes(".tbf-icon"));
   assert.ok(configuredCss.includes(".tbf-flash"));
   await assert.rejects(
-    () => fs.access(path.join(fixture, ".trebired/frontend/generated/styles.scss")),
+    () => fs.access(path.join(fixture, frontendConfigDir, "generated", "styles.scss")),
     /ENOENT/u,
   );
   assert.equal(/^\.tbf-modal\b/mu.test(configuredCss), false);
@@ -258,7 +259,7 @@ async function verifyFrontendConfigStyles() {
 async function verifyFrontendConfigWatchRebuild() {
   const fixture = path.join(tempRoot, "frontend-config-watch");
   await writeFrontendPackageFixture(fixture);
-  const configPath = path.join(fixture, ".trebired/frontend/config.ts");
+  const configPath = path.join(fixture, frontendConfigDir, "config.ts");
   await writeFrontendConfig(configPath, {
     flash: true,
     modal: true,

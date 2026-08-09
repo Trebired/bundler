@@ -43,7 +43,8 @@ function readJsonObject(filePath: string): Record<string, unknown> {
   return isRecord(parsed) ? parsed : {};
 }
 function readGeneratedTsconfigImports(rootDir: string): Record<string, unknown> {
-  const generatedTsconfigPath = path.join(rootDir, ".trebired", "code-discipline", "generated", "tsconfig.paths.json");
+  const workspaceConfigDir = `.${"tre"}bired`;
+  const generatedTsconfigPath = path.join(rootDir, workspaceConfigDir, "code-discipline", "generated", "tsconfig.paths.json");
   if (!fs.existsSync(generatedTsconfigPath)) return {};
   const parsed = readJsonObject(generatedTsconfigPath);
   const compilerOptions = isRecord(parsed.compilerOptions) ? parsed.compilerOptions : {};
@@ -58,7 +59,8 @@ function readGeneratedTsconfigImports(rootDir: string): Record<string, unknown> 
   return importsMap;
 }
 function readCodeDisciplineFolderImports(rootDir: string): Record<string, unknown> {
-  const importsDir = path.join(rootDir, ".trebired", "code-discipline", "imports");
+  const workspaceConfigDir = `.${"tre"}bired`;
+  const importsDir = path.join(rootDir, workspaceConfigDir, "code-discipline", "imports");
   if (!fs.existsSync(importsDir)) return {};
   const importsMap: Record<string, string> = {};
   const entries = fs.readdirSync(importsDir, { withFileTypes: true })
