@@ -1,7 +1,7 @@
 import path from "node:path";
 import type { BuildOptions, Loader } from "esbuild";
 
-import { createFrontendConfigStylesPlugin } from "../plugins/frontend-config-styles.js";
+import { createFrontendConfigStylesPlugin } from "#txn6vz7y3qut";
 import { createScssPlugin } from "#751yrciipoz0";
 import { createI18nPlugin } from "#m42z8fvtvpjc";
 import { createSourceAnnotationsPlugin } from "#ulrbecj1la7z";

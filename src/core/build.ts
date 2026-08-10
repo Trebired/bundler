@@ -10,6 +10,8 @@ import { resolveBundlerEntries } from "./discovery.js";
 import { appendFrontendConfigStyleEntry, createEmptyResolvedDiscovery, prepareFrontendConfigStyles } from "./frontend-config.js";
 import { cleanOutDir, formatFailure, logWarnings, toBuildResult } from "./shared.js";
 
+type NormalizedBundlerOptions = ReturnType<typeof normalizeBundlerOptions>;
+
 async function bundle(options: BundlerOptions): Promise<BundlerBuildResult> {
   const normalized = normalizeBundlerOptions(options || {} as BundlerOptions);
   const logger = resolveLogger(normalized.logger, normalized.loggerAdapter);
@@ -31,42 +33,59 @@ async function bundle(options: BundlerOptions): Promise<BundlerBuildResult> {
   const startedAt = Date.now();
 
   try {
-    const frontendStyles = await prepareFrontendConfigStyles({
-      environment: normalized.environment,
-      logger,
-      rootDir: normalized.rootDir,
-    });
-    const discoveredEntries = options?.discover || !frontendStyles
-      ? await resolveBundlerEntries(options || {} as BundlerOptions, normalized.rootDir, {
-        allowEmpty: Boolean(frontendStyles),
-      }, {
-        ignoredDirs: normalized.i18n.enabled ? [normalized.i18n.dirName] : [],
-      })
-      : createEmptyResolvedDiscovery();
-    const resolvedDiscovery = appendFrontendConfigStyleEntry(discoveredEntries, frontendStyles);
+    const resolvedDiscovery = await resolveBuildDiscovery(options, normalized, logger);
     logger.info("build", `entries :: count=${resolvedDiscovery.entries.length}`);
-    const result = await runEsbuild(createEsbuildOptions({
-      ...normalized,
-      entryRecords: resolvedDiscovery.entries,
-    }, logger));
-    const postProcessed = await postProcessBuildOutput({ normalized, result });
-    logWarnings(logger, result.warnings);
-    const summary = await toBuildResult({
-      manifest: normalized.manifest,
-      outDir: normalized.outDir,
-      outputLayout: postProcessed.outputLayout,
-      precompressed: postProcessed.precompressed,
-      resolvedDiscovery,
-      result,
-      rootDir: normalized.rootDir,
-      startedAt,
-    });
+    const summary = await runBuild(normalized, logger, resolvedDiscovery, startedAt);
     logger.info("build", `complete :: outputs=${summary.outputs.length} warnings=${summary.warnings}`);
     return summary;
   } catch (error) {
     logger.fail("build", `failed :: ${formatFailure(error)}`);
     throw error;
   }
+}
+
+async function resolveBuildDiscovery(
+  options: BundlerOptions,
+  normalized: NormalizedBundlerOptions,
+  logger: ReturnType<typeof resolveLogger>,
+) {
+  const frontendStyles = await prepareFrontendConfigStyles({
+    environment: normalized.environment,
+    logger,
+    rootDir: normalized.rootDir,
+  });
+  const discoveredEntries = options?.discover || !frontendStyles
+    ? await resolveBundlerEntries(options || {} as BundlerOptions, normalized.rootDir, {
+      allowEmpty: Boolean(frontendStyles),
+    }, {
+      ignoredDirs: normalized.i18n.enabled ? [normalized.i18n.dirName] : [],
+    })
+    : createEmptyResolvedDiscovery();
+  return appendFrontendConfigStyleEntry(discoveredEntries, frontendStyles);
+}
+
+async function runBuild(
+  normalized: NormalizedBundlerOptions,
+  logger: ReturnType<typeof resolveLogger>,
+  resolvedDiscovery: Awaited<ReturnType<typeof resolveBuildDiscovery>>,
+  startedAt: number,
+): Promise<BundlerBuildResult> {
+  const result = await runEsbuild(createEsbuildOptions({
+    ...normalized,
+    entryRecords: resolvedDiscovery.entries,
+  }, logger));
+  const postProcessed = await postProcessBuildOutput({ normalized, result });
+  logWarnings(logger, result.warnings);
+  return await toBuildResult({
+    manifest: normalized.manifest,
+    outDir: normalized.outDir,
+    outputLayout: postProcessed.outputLayout,
+    precompressed: postProcessed.precompressed,
+    resolvedDiscovery,
+    result,
+    rootDir: normalized.rootDir,
+    startedAt,
+  });
 }
 
 export { bundle };

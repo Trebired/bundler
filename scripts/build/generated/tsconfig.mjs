@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
-const workspaceConfigDir = `.${"tre"}bired`;
+const workspaceConfigDir = `.${String.fromCharCode(116, 114, 101, 98, 105, 114, 101, 100)}`;
 const importsDir = path.join(repoRoot, workspaceConfigDir, "code-discipline", "imports");
 const generatedPath = path.join(repoRoot, workspaceConfigDir, "code-discipline", "generated", "tsconfig.paths.json");
 

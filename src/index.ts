@@ -57,7 +57,16 @@ export { collectRelatedEntries } from "./core/related-entries.js";
 export { deriveManifest } from "./core/derive-manifest.js";
 export { walkImportGraph } from "./core/import-graph.js";
 export { watch } from "./core/watch.js";
-export { defineBundlerConfig } from "./config/index.js";
+export {
+  BUNDLER_PROJECT_CONFIG_PATH,
+  createBundlerNamespace,
+  defineBundlerConfig,
+  defineBundlerProjectConfig,
+  findBundlerProjectConfig,
+  loadBundlerProjectConfig,
+  normalizeBundlerPrefix,
+  normalizeBundlerProjectConfig,
+} from "./config/index.js";
 export { resolveLogger } from "./logging.js";
 export { buildSourceAnnotation, injectSourceAnnotation, resolveSourceLabel } from "./plugins/source-annotations.js";
 export { createScssPlugin } from "./plugins/scss.js";
@@ -143,7 +152,9 @@ export type {
   BundlerFrontendRuntime,
   BundlerFrontendRuntimeConfig,
   BundlerFrontendRuntimeState,
+  BundlerNamespace,
   BundlerQuarantineResult,
+  BundlerProjectConfig,
   BundlerRelatedClientEntryMapOptions,
   BundlerRenderedAssetTags,
   BundlerResolvedSsrModuleMapRuleOptions,
@@ -160,8 +171,10 @@ export type {
   BundlerTsconfigPaths,
   BundlerWatchSession,
   LoadedBundlerConfig,
-  NormalizedBundlerLogger,
+  LoadedBundlerProjectConfig,
   NormalizedBundlerI18nOptions,
+  NormalizedBundlerLogger,
+  NormalizedBundlerProjectConfig,
 } from "./types.js";
 
 export { bundle as default } from "./core/build.js";

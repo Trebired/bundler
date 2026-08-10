@@ -4,6 +4,11 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 4.6.0
+
+- Added project config discovery for `.trebired/bundler/config.ts` with optional prefix normalization.
+- Added public namespace helpers for class names, data attributes, and CSS variables; missing or false prefixes normalize to unprefixed output.
+
 ## 4.5.2
 
 - Updated managed frontend config CSS integration to consume the brand-neutral `@trebired/frontend/config` helper names and neutral virtual rule keys.

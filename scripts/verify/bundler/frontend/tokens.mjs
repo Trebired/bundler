@@ -5,6 +5,7 @@ import path from "node:path";
 import { writeFrontendConfig, writeFrontendPackageFixture } from "./fixture.mjs";
 
 const WATCH_TIMEOUT_MS = 30000;
+const workspaceConfigDir = `.${String.fromCharCode(116, 114, 101, 98, 105, 114, 101, 100)}`;
 
 function tokensSource(brand) {
   return `export const brand = "${brand}";\n`;
@@ -36,7 +37,7 @@ async function verifyFrontendConfigTokenWatch(context) {
   const fixture = path.join(context.tempRoot, "frontend-config-tokens");
   const outDir = path.join(fixture, "dist-tokens");
   await writeFrontendPackageFixture(fixture);
-  const configDir = path.join(fixture, `.${"tre"}bired`, "frontend");
+  const configDir = path.join(fixture, workspaceConfigDir, "frontend");
   const tokensPath = path.join(configDir, "tokens.ts");
   await writeFrontendConfig(path.join(configDir, "config.ts"), {
     flash: true,

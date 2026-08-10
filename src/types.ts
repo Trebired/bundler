@@ -110,9 +110,13 @@ export type {
 export type {
   BundlerBuildResult,
   BundlerEnvironment,
+  BundlerNamespace,
   BundlerOptions,
+  BundlerProjectConfig,
   BundlerWatchSession,
   LoadedBundlerConfig,
+  LoadedBundlerProjectConfig,
+  NormalizedBundlerProjectConfig,
 } from "./types/runtime.js";
 export type {
   BundlerI18nOptions,

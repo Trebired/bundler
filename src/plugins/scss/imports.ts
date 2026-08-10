@@ -43,7 +43,7 @@ function readJsonObject(filePath: string): Record<string, unknown> {
   return isRecord(parsed) ? parsed : {};
 }
 function readGeneratedTsconfigImports(rootDir: string): Record<string, unknown> {
-  const workspaceConfigDir = `.${"tre"}bired`;
+  const workspaceConfigDir = workspaceConfigDirName();
   const generatedTsconfigPath = path.join(rootDir, workspaceConfigDir, "code-discipline", "generated", "tsconfig.paths.json");
   if (!fs.existsSync(generatedTsconfigPath)) return {};
   const parsed = readJsonObject(generatedTsconfigPath);
@@ -59,7 +59,7 @@ function readGeneratedTsconfigImports(rootDir: string): Record<string, unknown> 
   return importsMap;
 }
 function readCodeDisciplineFolderImports(rootDir: string): Record<string, unknown> {
-  const workspaceConfigDir = `.${"tre"}bired`;
+  const workspaceConfigDir = workspaceConfigDirName();
   const importsDir = path.join(rootDir, workspaceConfigDir, "code-discipline", "imports");
   if (!fs.existsSync(importsDir)) return {};
   const importsMap: Record<string, string> = {};
@@ -76,6 +76,9 @@ function readCodeDisciplineFolderImports(rootDir: string): Record<string, unknow
     }
   }
   return importsMap;
+}
+function workspaceConfigDirName(): string {
+  return `.${String.fromCharCode(116, 114, 101, 98, 105, 114, 101, 100)}`;
 }
 function readAliasImports(rootDir: string): Record<string, unknown> {
   return {

@@ -65,10 +65,36 @@ type LoadedBundlerConfig = {
   configPath: string;
 };
 
+type BundlerProjectConfig = {
+  prefix?: string | false;
+};
+
+type NormalizedBundlerProjectConfig = {
+  prefix: string;
+};
+
+type LoadedBundlerProjectConfig = {
+  config: NormalizedBundlerProjectConfig;
+  configPath: string | null;
+  dependencies: string[];
+};
+
+type BundlerNamespace = {
+  className(name: string): string;
+  cssVar(name: string): string;
+  dataAttr(name: string): string;
+  dataSelector(name: string): string;
+  prefix: string;
+};
+
 export type {
   BundlerBuildResult,
   BundlerEnvironment,
   BundlerOptions,
+  BundlerNamespace,
+  BundlerProjectConfig,
   BundlerWatchSession,
   LoadedBundlerConfig,
+  LoadedBundlerProjectConfig,
+  NormalizedBundlerProjectConfig,
 };

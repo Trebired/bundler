@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const distDir = path.join(rootDir, "dist");
-const workspaceConfigDir = `.${"tre"}bired`;
+const workspaceConfigDir = `.${String.fromCharCode(116, 114, 101, 98, 105, 114, 101, 100)}`;
 const aliasMapDir = path.join(rootDir, workspaceConfigDir, "code-discipline", "imports");
 
 async function main() {

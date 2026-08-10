@@ -5,28 +5,43 @@ import { pathToFileURL, fileURLToPath } from "node:url";
 
 import {
   bundle,
+  createBundlerNamespace,
   collectAssetLinks,
   collectRelatedEntries,
   collectRelatedFrontendEntries,
   createFrontendEntryRules,
+  findBundlerProjectConfig,
   DEFAULT_FRONTEND_CLIENT_ENTRY_PATTERNS,
   DEFAULT_FRONTEND_DEFERRED_CLIENT_ENTRY_PATTERNS,
+  loadBundlerProjectConfig,
+  normalizeBundlerPrefix,
   watch,
 } from "../../dist/index.js";
-import { writeFrontendConfig, writeFrontendPackageFixture } from "./bundler/frontend/fixture.mjs";
+import {
+  verifyFrontendConfigStyles,
+  verifyFrontendConfigWatchRebuild,
+} from "./bundler/frontend-config-styles.mjs";
+import { verifyBundlerProjectConfig } from "./bundler/project-config.mjs";
 import { verifyFrontendConfigTokenWatch } from "./bundler/frontend/tokens.mjs";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const tempRoot = path.join(rootDir, ".tmp", "verify-bundler");
-const frontendConfigDir = `.${"tre"}bired/frontend`;
 
 async function main() {
   await resetTempRoot();
   await verifyAggregateModuleMap();
   await verifyOutputLayoutAndPrecompression();
   await verifyScssPackageExports();
-  await verifyFrontendConfigStyles();
-  await verifyFrontendConfigWatchRebuild();
+  await verifyBundlerProjectConfig({
+    createBundlerNamespace,
+    findBundlerProjectConfig,
+    loadBundlerProjectConfig,
+    normalizeBundlerPrefix,
+    tempRoot,
+    writeFile,
+  });
+  await verifyFrontendConfigStyles({ bundle, readFirstCss, tempRoot });
+  await verifyFrontendConfigWatchRebuild({ readFirstCss, tempRoot, watch });
   await verifyFrontendConfigTokenWatch({ readFirstCss, tempRoot, watch });
   await verifyRelatedEntries();
   verifyFrontendConventions();
@@ -219,77 +234,6 @@ async function writeScssPackageFixture(fixture) {
   ].join("\n"));
 }
 
-async function verifyFrontendConfigStyles() {
-  const fixture = path.join(tempRoot, "frontend-config-styles");
-  await writeFrontendPackageFixture(fixture);
-  const configPath = path.join(fixture, frontendConfigDir, "config.ts");
-  await writeFrontendConfig(configPath, {
-    flash: true,
-    modal: false,
-    prefix: "app",
-    token: "#123456",
-  });
-
-  const configured = await bundle({
-    format: "esm",
-    outDir: "dist-configured",
-    rootDir: fixture,
-  });
-  const configuredCss = await readFirstCss(configured.outputs);
-  assert.ok(configuredCss.includes("--app-color-brand: #123456;"));
-  assert.ok(configuredCss.includes(".tbf-icon"));
-  assert.ok(configuredCss.includes(".tbf-flash"));
-  await assert.rejects(
-    () => fs.access(path.join(fixture, frontendConfigDir, "generated", "styles.scss")),
-    /ENOENT/u,
-  );
-  assert.equal(/^\.tbf-modal\b/mu.test(configuredCss), false);
-
-  await fs.unlink(configPath);
-  const defaults = await bundle({
-    format: "esm",
-    outDir: "dist-defaults",
-    rootDir: fixture,
-  });
-  const defaultCss = await readFirstCss(defaults.outputs);
-  assert.ok(defaultCss.includes("--tbf-icon-endpoint: \"/__icons/svg\";"));
-  assert.ok(defaultCss.includes(".tbf-modal"));
-}
-
-async function verifyFrontendConfigWatchRebuild() {
-  const fixture = path.join(tempRoot, "frontend-config-watch");
-  await writeFrontendPackageFixture(fixture);
-  const configPath = path.join(fixture, frontendConfigDir, "config.ts");
-  await writeFrontendConfig(configPath, {
-    flash: true,
-    modal: true,
-    prefix: "watch",
-    token: "#334455",
-  });
-
-  const session = await watch({
-    format: "esm",
-    outDir: "dist-watch",
-    rootDir: fixture,
-  });
-  try {
-    await writeFrontendConfig(configPath, {
-      flash: false,
-      modal: true,
-      prefix: "watch2",
-      token: "#667788",
-    });
-    const rebuilt = await session.rebuild();
-    const css = await readFirstCss(rebuilt.outputs);
-    assert.ok(css.includes("--watch2-color-brand: #667788;"));
-    assert.equal(css.includes(".tbf-flash"), false);
-    assert.ok(css.includes(".tbf-modal"));
-  } finally {
-    await session.dispose();
-  }
-}
-
-
 async function verifyRelatedEntries() {
   const fixture = path.join(tempRoot, "related");
   await writeRelatedFixture(fixture);
@@ -354,10 +298,6 @@ async function writeFile(root, rel, contents) {
 
 function toOutRel(fixture, outputPath) {
   return outputPath.replace(path.join(fixture, "dist") + path.sep, "").replace(/\\/gu, "/");
-}
-
-function organizationName() {
-  return String.fromCharCode(116, 114, 101, 98, 105, 114, 101, 100);
 }
 
 async function resetTempRoot() {
