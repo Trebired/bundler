@@ -4,6 +4,13 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 4.6.1
+
+- Fixed managed frontend config CSS asset manifests so virtual config styles remain addressable by rule key and their emitted font assets are exposed as SSR font preload tags.
+- Added `fontPreloads` to collected/rendered frontend asset links, with preload tags rendered before stylesheets and scripts.
+- Updated the package Code Discipline config to the platform-aligned rule set, including formatting, redundant path segment cleanup, removable comment checks, structural blank lines, and dry checks.
+- Updated the Code Discipline devDependency and lockfile to the current public `@trebired/code-discipline@^5.3.0`.
+
 ## 4.6.0
 
 - Added project config discovery for `.trebired/bundler/config.ts` with optional prefix normalization.

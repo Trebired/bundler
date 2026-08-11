@@ -14,41 +14,41 @@ type VirtualEntriesPluginOptions = {
 function createVirtualEntriesPlugin(options: VirtualEntriesPluginOptions): Plugin {
   const byName = new Map(
     options.entries
-      .filter((entry) => entry.source === "internal")
-      .map((entry) => [entry.name, {
-        contents: entry.contents || "",
-        loader: entry.virtualLoader || "ts" as BundlerVirtualEntryLoader,
-      }]),
+    .filter((entry) => entry.source === "internal")
+    .map((entry) => [entry.name, {
+          contents: entry.contents || "",
+          loader: entry.virtualLoader || "ts" as BundlerVirtualEntryLoader,
+    }]),
   );
 
   return {
     name: "package-virtual-entries",
     setup(build) {
       build.onResolve({ filter: /^package-virtual:/ }, (args) => {
-        const name = args.path.slice(VIRTUAL_ENTRY_PREFIX.length);
+          const name = args.path.slice(VIRTUAL_ENTRY_PREFIX.length);
 
-        if (!byName.has(name)) {
-          options.logger.fail("build", `virtual-entry-missing :: ${name}`);
-          throw new Error(`bundler-virtual-entry-missing :: ${name}`);
-        }
+          if (!byName.has(name)) {
+            options.logger.fail("build", `virtual-entry-missing :: ${name}`);
+            throw new Error(`bundler-virtual-entry-missing :: ${name}`);
+          }
 
-        return {
-          namespace: VIRTUAL_ENTRY_NAMESPACE,
-          path: name,
-        };
+          return {
+            namespace: VIRTUAL_ENTRY_NAMESPACE,
+            path: name,
+          };
       });
 
       build.onLoad({ filter: /.*/, namespace: VIRTUAL_ENTRY_NAMESPACE }, async (args) => {
-        const entry = byName.get(args.path) || {
-          contents: "",
-          loader: "ts" as BundlerVirtualEntryLoader,
-        };
+          const entry = byName.get(args.path) || {
+            contents: "",
+            loader: "ts" as BundlerVirtualEntryLoader,
+          };
 
-        return {
-          contents: entry.contents,
-          loader: entry.loader,
-          resolveDir: options.rootDir,
-        };
+          return {
+            contents: entry.contents,
+            loader: entry.loader,
+            resolveDir: options.rootDir,
+          };
       });
     },
   };

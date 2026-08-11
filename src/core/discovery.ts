@@ -7,6 +7,8 @@ export {
   resolveBundlerEntries,
 } from "./discovery/resolve.js";
 export {
+  escapeRegExp,
+  normalizePathValue,
   toPosixPath,
   VIRTUAL_ENTRY_PREFIX,
 } from "./discovery/shared.js";

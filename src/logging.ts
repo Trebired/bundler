@@ -23,10 +23,10 @@ function resolveLogger(
   adapter?: BundlerLoggerAdapter,
 ): NormalizedBundlerLogger {
   const resolved = resolveSharedLogger({
-    adapter,
-    fallback: "console",
-    logger,
-    source: BUNDLER_PACKAGE_NAME,
+      adapter,
+      fallback: "console",
+      logger,
+      source: BUNDLER_PACKAGE_NAME,
   }) as NormalizedBundlerLogger;
 
   return {

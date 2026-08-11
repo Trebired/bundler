@@ -10,7 +10,7 @@ import type {
   BundlerPrecompressStats,
   BundlerPrecompressedAsset,
 } from "#3c8d8166992a";
-import { matchesAnyPattern, normalizePathValue } from "./discovery/shared.js";
+import { matchesAnyPattern, normalizePathValue, normalizeStringList } from "./discovery/shared.js";
 
 const brotliCompressAsync = promisify(zlib.brotliCompress);
 const gzipAsync = promisify(zlib.gzip);
@@ -35,13 +35,14 @@ function normalizeBundlerPrecompressOptions(options: BundlerPrecompressOptions |
   if (!options) return { ...createDefaultPrecompressOptions(), enabled: false };
   if (options === true) return createDefaultPrecompressOptions();
 
+  const include = normalizeStringList(options.include);
   return {
     brotliQuality: clampInteger(options.brotliQuality, 0, 11, DEFAULT_BROTLI_QUALITY),
     enabled: options.enabled !== false,
-    exclude: normalizePatternList(options.exclude),
+    exclude: normalizeStringList(options.exclude),
     formats: normalizeFormats(options.formats),
     gzipLevel: clampInteger(options.gzipLevel, 0, 9, DEFAULT_GZIP_LEVEL),
-    include: normalizePatternList(options.include).length ? normalizePatternList(options.include) : DEFAULT_PRECOMPRESS_INCLUDE,
+    include: include.length ? include : DEFAULT_PRECOMPRESS_INCLUDE,
     minSize: parseSize(options.minSize, DEFAULT_PRECOMPRESS_MIN_SIZE),
   };
 }
@@ -111,7 +112,7 @@ async function compressBuffer(
 ): Promise<Buffer> {
   if (format === "br") {
     return brotliCompressAsync(content, {
-      params: { [zlib.constants.BROTLI_PARAM_QUALITY]: options.brotliQuality },
+        params: { [zlib.constants.BROTLI_PARAM_QUALITY]: options.brotliQuality },
     });
   }
   return gzipAsync(content, { level: options.gzipLevel });
@@ -161,10 +162,6 @@ function createDefaultPrecompressOptions(): NormalizedBundlerPrecompressOptions 
 function normalizeFormats(values: readonly BundlerPrecompressFormat[] | undefined): BundlerPrecompressFormat[] {
   const formats = (values || DEFAULT_PRECOMPRESS_FORMATS).filter((item) => item === "br" || item === "gzip");
   return Array.from(new Set(formats.length ? formats : DEFAULT_PRECOMPRESS_FORMATS));
-}
-
-function normalizePatternList(values: readonly string[] | undefined): string[] {
-  return (values || []).map(normalizePathValue).filter(Boolean);
 }
 
 function clampInteger(value: number | undefined, min: number, max: number, fallback: number): number {

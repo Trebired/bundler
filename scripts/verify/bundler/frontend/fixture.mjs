@@ -1,34 +1,37 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
+import { organizationName, writeFixtureFile } from "#0ss24zzupv8u";
+
 async function writeFrontendPackageFixture(fixture) {
   const packageName = `@${organizationName()}/frontend`;
   const packageRoot = path.join(fixture, "node_modules", ...packageName.split("/"));
   await fs.mkdir(fixture, { recursive: true });
   await fs.writeFile(path.join(fixture, "package.json"), JSON.stringify({
-    dependencies: {
-      [packageName]: "0.0.0-fixture",
-    },
-    private: true,
-    type: "module",
-  }, null, 2));
+        dependencies: {
+          [packageName]: "0.0.0-fixture",
+        },
+        private: true,
+        type: "module",
+      }, null, 2));
   await fs.mkdir(packageRoot, { recursive: true });
   await fs.writeFile(path.join(packageRoot, "package.json"), JSON.stringify({
-    exports: {
-      "./config": {
-        import: "./config/index.js",
-      },
-    },
-    name: packageName,
-    type: "module",
-    version: "0.0.0-fixture",
-  }, null, 2));
-  await writeFile(packageRoot, "dist/styles/tokens.scss", ":root { --tbf-radius: 0; }\n");
-  await writeFile(packageRoot, "dist/styles/utils.scss", ".inline-row { display: inline-flex; }\n");
-  await writeFile(packageRoot, "dist/icons/styles/index.scss", ".tbf-icon { color: currentColor; }\n");
-  await writeFile(packageRoot, "dist/flash/styles/index.scss", ".tbf-flash { color: black; }\n");
-  await writeFile(packageRoot, "dist/modal/styles/index.scss", ".tbf-modal { display: block; }\n");
-  await writeFile(packageRoot, "config/index.js", frontendConfigFixtureModule());
+        exports: {
+          "./config": {
+            import: "./config/index.js",
+          },
+        },
+        name: packageName,
+        type: "module",
+        version: "0.0.0-fixture",
+      }, null, 2));
+  await writeFixtureFile(packageRoot, "dist/styles/tokens.scss", ":root { --tbf-radius: 0; }\n");
+  await writeFixtureFile(packageRoot, "dist/styles/utils.scss", ".inline-row { display: inline-flex; }\n");
+  await writeFixtureFile(packageRoot, "dist/fonts/inter.woff2", "fixture-font\n");
+  await writeFixtureFile(packageRoot, "dist/icons/styles/index.scss", ".tbf-icon { color: currentColor; }\n");
+  await writeFixtureFile(packageRoot, "dist/flash/styles/index.scss", ".tbf-flash { color: black; }\n");
+  await writeFixtureFile(packageRoot, "dist/modal/styles/index.scss", ".tbf-modal { display: block; }\n");
+  await writeFixtureFile(packageRoot, "config/index.js", frontendConfigFixtureModule());
 }
 
 function frontendConfigFixtureModule() {
@@ -55,8 +58,8 @@ function fixtureModulePreamble() {
     "  return path.join(packageRoot, rel).replace(/\\\\/g, '/');",
     "}",
     "",
-    "function styleUse(rel) {",
-    "  return `@use \"${stylePath(rel)}\" as *;`;",
+    "function styleLoad(rel) {",
+    "  return `@include meta.load-css(\"${stylePath(rel)}\");`;",
     "}",
     "",
     "export function defineFrontendConfig(config) {",
@@ -118,12 +121,14 @@ function fixtureModuleGenerator() {
   return [
     "export function generateFrontendScss(config) {",
     "  const lines = [",
-    "    styleUse('dist/styles/tokens.scss'),",
-    "    styleUse('dist/styles/utils.scss'),",
+    "    '@use \"sass:meta\";',",
+    `    \`@font-face { font-family: Fixture; font-display: swap; src: url("\${stylePath('dist/fonts/inter.woff2')}") format("woff2"); }\`,`,
+    "    styleLoad('dist/styles/tokens.scss'),",
+    "    styleLoad('dist/styles/utils.scss'),",
     "  ];",
-    "  if (config.systems.icons) lines.push(styleUse('dist/icons/styles/index.scss'));",
-    "  if (config.systems.flash) lines.push(styleUse('dist/flash/styles/index.scss'));",
-    "  if (config.systems.modal) lines.push(styleUse('dist/modal/styles/index.scss'));",
+    "  if (config.systems.icons) lines.push(styleLoad('dist/icons/styles/index.scss'));",
+    "  if (config.systems.flash) lines.push(styleLoad('dist/flash/styles/index.scss'));",
+    "  if (config.systems.modal) lines.push(styleLoad('dist/modal/styles/index.scss'));",
     "  lines.push('', ':root {', `  --${config.prefix}-icon-endpoint: \"/__icons/svg\";`);",
     "  if (config.token) lines.push(`  --${config.prefix}-color-brand: ${config.token};`);",
     "  lines.push('}', '');",
@@ -135,30 +140,20 @@ function fixtureModuleGenerator() {
 async function writeFrontendConfig(configPath, options) {
   await fs.mkdir(path.dirname(configPath), { recursive: true });
   await fs.writeFile(configPath, [
-    `import { defineFrontendConfig } from "@${organizationName()}/frontend/config";`,
-    "",
-    "export default defineFrontendConfig({",
-    `  prefix: "${options.prefix}",`,
-    "  icons: { packs: [\"remixicon\", \"simple-icons\"], endpoint: \"/icons/svg\" },",
-    "  systems: {",
-    `    flash: ${options.flash},`,
-    "    icons: true,",
-    `    modal: ${options.modal},`,
-    "  },",
-    `  theme: { cssVariables: true, tokens: { color: { brand: "${options.token}" } } },`,
-    "});",
-    "",
-  ].join("\n"));
-}
-
-async function writeFile(root, rel, contents) {
-  const filePath = path.join(root, rel);
-  await fs.mkdir(path.dirname(filePath), { recursive: true });
-  await fs.writeFile(filePath, contents);
-}
-
-function organizationName() {
-  return String.fromCharCode(116, 114, 101, 98, 105, 114, 101, 100);
+      `import { defineFrontendConfig } from "@${organizationName()}/frontend/config";`,
+      "",
+      "export default defineFrontendConfig({",
+      `  prefix: "${options.prefix}",`,
+      "  icons: { packs: [\"remixicon\", \"simple-icons\"], endpoint: \"/icons/svg\" },",
+      "  systems: {",
+      `    flash: ${options.flash},`,
+      "    icons: true,",
+      `    modal: ${options.modal},`,
+      "  },",
+      `  theme: { cssVariables: true, tokens: { color: { brand: "${options.token}" } } },`,
+      "});",
+      "",
+    ].join("\n"));
 }
 
 export { writeFrontendConfig, writeFrontendPackageFixture };

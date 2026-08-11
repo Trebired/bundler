@@ -22,17 +22,17 @@ function resolveTsconfigExtends(tsconfigAbs: string, specifier: string): string 
 
 function createTsconfigMatchers(paths: BundlerTsconfigPaths | undefined, targetRootAbs: string): TsconfigPathMatcher[] {
   return Object.entries(paths || {})
-    .map(([key, values]) => ({
-      key,
-      prefix: key.includes("*") ? key.split("*")[0] || "" : key,
-      suffix: key.includes("*") ? key.split("*").slice(1).join("*") : "",
-      hasWildcard: key.includes("*"),
-      targets: (values || []).map((value) => path.resolve(targetRootAbs, value)),
-    }))
-    .sort((a, b) => {
+  .map(([key, values]) => ({
+        key,
+        prefix: key.includes("*") ? key.split("*")[0] || "" : key,
+        suffix: key.includes("*") ? key.split("*").slice(1).join("*") : "",
+        hasWildcard: key.includes("*"),
+        targets: (values || []).map((value) => path.resolve(targetRootAbs, value)),
+  }))
+  .sort((a, b) => {
       if (a.hasWildcard !== b.hasWildcard) return a.hasWildcard ? 1 : -1;
       return b.key.length - a.key.length;
-    });
+  });
 }
 
 function loadTsconfigFromFile(tsconfigAbs: string, seen = new Set<string>()): LoadedTsconfig {
@@ -42,15 +42,15 @@ function loadTsconfigFromFile(tsconfigAbs: string, seen = new Set<string>()): Lo
 
   const parsed = parseJsonLike(fs.readFileSync(normalizedAbs, "utf8"));
   const compilerOptions = parsed && typeof parsed === "object" && parsed.compilerOptions && typeof parsed.compilerOptions === "object"
-    ? parsed.compilerOptions as { baseUrl?: string; paths?: BundlerTsconfigPaths }
-    : {};
+  ? parsed.compilerOptions as { baseUrl?: string; paths?: BundlerTsconfigPaths }
+  : {};
   const parentAbs = parsed && typeof parsed === "object" && typeof parsed.extends === "string"
-    ? resolveTsconfigExtends(normalizedAbs, parsed.extends)
-    : "";
+  ? resolveTsconfigExtends(normalizedAbs, parsed.extends)
+  : "";
   const inherited = parentAbs ? loadTsconfigFromFile(parentAbs, seen) : { matchers: [], baseUrlAbs: undefined };
   const baseUrlAbs = typeof compilerOptions.baseUrl === "string" && compilerOptions.baseUrl.trim()
-    ? path.resolve(path.dirname(normalizedAbs), compilerOptions.baseUrl)
-    : inherited.baseUrlAbs;
+  ? path.resolve(path.dirname(normalizedAbs), compilerOptions.baseUrl)
+  : inherited.baseUrlAbs;
   const targetRootAbs = baseUrlAbs || path.dirname(normalizedAbs);
 
   return {
@@ -83,11 +83,11 @@ function loadInlineTsconfig(
   tsconfig: Exclude<BundlerImportGraphTsconfigOptions, boolean | string | undefined>,
 ): LoadedTsconfig {
   const fileConfig = tsconfig.file
-    ? loadTsconfigFromFile(path.resolve(rootDir, tsconfig.file))
-    : { matchers: [], baseUrlAbs: undefined };
+  ? loadTsconfigFromFile(path.resolve(rootDir, tsconfig.file))
+  : { matchers: [], baseUrlAbs: undefined };
   const baseUrlAbs = typeof tsconfig.baseUrl === "string" && tsconfig.baseUrl.trim()
-    ? path.resolve(rootDir, tsconfig.baseUrl)
-    : fileConfig.baseUrlAbs;
+  ? path.resolve(rootDir, tsconfig.baseUrl)
+  : fileConfig.baseUrlAbs;
   const targetRootAbs = baseUrlAbs || rootDir;
 
   return {

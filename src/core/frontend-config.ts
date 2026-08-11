@@ -1,5 +1,4 @@
 import fsSync from "node:fs";
-import fs from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -8,8 +7,10 @@ import type {
   BundlerResolvedDiscovery,
   NormalizedBundlerLogger,
 } from "#3c8d8166992a";
-import { VIRTUAL_ENTRY_PREFIX } from "#5kd9snhn6zft";
+import { VIRTUAL_ENTRY_PREFIX, toPosixPath } from "#5kd9snhn6zft";
+import { PACKAGE_ORGANIZATION_NAME, PACKAGE_WORKSPACE_CONFIG_DIR } from "#m7884285ke1w";
 import type { ResolvedDiscovery } from "./discovery.js";
+import { pathExists } from "./shared.js";
 
 type LoadedFrontendConfig = {
   config: unknown;
@@ -36,29 +37,12 @@ type PreparedFrontendConfigStyles = {
   entryRecord: BundlerEntryRecord;
 };
 
-const FRONTEND_CONFIG_PATH = `${workspaceConfigDir()}/frontend/config.ts`;
+const FRONTEND_CONFIG_PATH = `${PACKAGE_WORKSPACE_CONFIG_DIR}/frontend/config.ts`;
 const FRONTEND_CONFIG_RULE_KEY = "frontend-config";
 const FRONTEND_CONFIG_ENTRY_KEY = "frontend-config:styles";
 const FRONTEND_CONFIG_ENTRY_NAME = "frontend";
 const FRONTEND_CONFIG_VIRTUAL_ENTRY_NAME = "frontend-config-styles";
 const FRONTEND_CONFIG_VIRTUAL_ENTRY_PATH = `${VIRTUAL_ENTRY_PREFIX}${FRONTEND_CONFIG_VIRTUAL_ENTRY_NAME}`;
-
-function organizationName(): string {
-  return String.fromCharCode(116, 114, 101, 98, 105, 114, 101, 100);
-}
-
-function workspaceConfigDir(): string {
-  return `.${organizationName()}`;
-}
-
-async function pathExists(filePath: string): Promise<boolean> {
-  try {
-    await fs.access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 async function findFrontendConfigFile(startDir: string): Promise<string | null> {
   let current = path.resolve(startDir);
@@ -92,26 +76,26 @@ function readJsonFileSync(filePath: string): Record<string, unknown> | null {
   }
 }
 
-function resolvePackageExportTarget(packageRoot: string, packageJson: Record<string, unknown>, subpath: string): string | null {
+function resolveFrontendPackageExportTarget(packageRoot: string, packageJson: Record<string, unknown>, subpath: string): string | null {
   const exportsMap = packageJson.exports;
   if (!exportsMap || typeof exportsMap !== "object" || Array.isArray(exportsMap)) return null;
   const entry = (exportsMap as Record<string, unknown>)[subpath];
   const target = typeof entry === "string"
-    ? entry
-    : entry && typeof entry === "object" && !Array.isArray(entry)
-      ? (entry as Record<string, unknown>).import || (entry as Record<string, unknown>).default
-      : null;
+  ? entry
+  : entry && typeof entry === "object" && !Array.isArray(entry)
+  ? (entry as Record<string, unknown>).import || (entry as Record<string, unknown>).default
+  : null;
   if (typeof target !== "string") return null;
   return path.resolve(packageRoot, target);
 }
 
 function resolveFrontendConfigEntrypoint(rootDir: string): string | null {
-  const packageName = `@${organizationName()}/frontend`;
+  const packageName = `@${PACKAGE_ORGANIZATION_NAME}/frontend`;
   const packageRoot = resolvePackageRoot(rootDir, packageName);
   if (!packageRoot) return null;
   const packageJson = readJsonFileSync(path.join(packageRoot, "package.json"));
   if (!packageJson) return null;
-  return resolvePackageExportTarget(packageRoot, packageJson, "./config");
+  return resolveFrontendPackageExportTarget(packageRoot, packageJson, "./config");
 }
 
 async function loadFrontendConfigApi(rootDir: string): Promise<FrontendConfigApi | null> {
@@ -123,7 +107,7 @@ async function loadFrontendConfigApi(rootDir: string): Promise<FrontendConfigApi
 }
 
 function createFrontendConfigEntryRecord(configPath: string | null, rootDir: string): BundlerEntryRecord {
-  const source = configPath ? normalizePath(path.relative(rootDir, configPath)) : FRONTEND_CONFIG_PATH;
+  const source = configPath ? toPosixPath(path.relative(rootDir, configPath)) : FRONTEND_CONFIG_PATH;
   return {
     entrySource: source,
     contents: "",
@@ -138,10 +122,6 @@ function createFrontendConfigEntryRecord(configPath: string | null, rootDir: str
     strategy: "entry",
     virtualLoader: "css",
   };
-}
-
-function normalizePath(value: string): string {
-  return value.replace(/\\/gu, "/");
 }
 
 function normalizeConfigDependencies(value: unknown, configPath: string | null): string[] {
@@ -162,14 +142,14 @@ async function resolveFrontendConfigStyles(
     throw new Error("bundler-frontend-config-api-missing");
   }
   const loaded = await api.loadFrontendConfig(rootDir, {
-    defaultIfMissing: true,
-    searchFrom: rootDir,
+      defaultIfMissing: true,
+      searchFrom: rootDir,
   });
   const scss = typeof loaded.generatedScss === "string"
-    ? loaded.generatedScss
-    : typeof api.generateFrontendScss === "function"
-      ? api.generateFrontendScss(loaded.config)
-      : "";
+  ? loaded.generatedScss
+  : typeof api.generateFrontendScss === "function"
+  ? api.generateFrontendScss(loaded.config)
+  : "";
   if (!scss) throw new Error("bundler-frontend-config-scss-missing");
   return {
     configPath: loaded.configPath,
@@ -179,15 +159,15 @@ async function resolveFrontendConfigStyles(
 }
 
 async function prepareFrontendConfigStyles(args: {
-  environment?: string;
-  logger: NormalizedBundlerLogger;
-  rootDir: string;
+    environment?: string;
+    logger: NormalizedBundlerLogger;
+    rootDir: string;
 }): Promise<PreparedFrontendConfigStyles | null> {
   if (args.environment === "node") return null;
   const configPath = await findFrontendConfigFile(args.rootDir);
   const api = await loadFrontendConfigApi(args.rootDir);
   if (!api) {
-    if (configPath) throw new Error(`bundler-frontend-config-package-missing :: @${organizationName()}/frontend`);
+    if (configPath) throw new Error(`bundler-frontend-config-package-missing :: @${PACKAGE_ORGANIZATION_NAME}/frontend`);
     return null;
   }
   const resolved = await resolveFrontendConfigStyles(args.rootDir, api);
@@ -207,7 +187,7 @@ function appendFrontendConfigStyleEntry(
   const entry = prepared.entryRecord;
   const next: BundlerResolvedDiscovery = {
     entries: [...discovery.entries.filter((item) => item.key !== entry.key), entry]
-      .sort((a, b) => a.key.localeCompare(b.key)),
+    .sort((a, b) => a.key.localeCompare(b.key)),
     rules: {
       ...discovery.rules,
       [FRONTEND_CONFIG_RULE_KEY]: {
@@ -225,8 +205,8 @@ function appendFrontendConfigStyleEntry(
   return {
     ...next,
     signature: JSON.stringify({
-      base: discovery.signature,
-      frontendConfigEntry: entry.ownedSources[0],
+        base: discovery.signature,
+        frontendConfigEntry: entry.ownedSources[0],
     }),
   };
 }
@@ -236,9 +216,9 @@ function createEmptyResolvedDiscovery(): ResolvedDiscovery {
     entries: [],
     rules: {},
     signature: JSON.stringify({
-      entries: [],
-      rules: {},
-      sourceOwners: {},
+        entries: [],
+        rules: {},
+        sourceOwners: {},
     }),
     sourceOwners: {},
   };
@@ -246,6 +226,7 @@ function createEmptyResolvedDiscovery(): ResolvedDiscovery {
 
 export {
   FRONTEND_CONFIG_PATH,
+  FRONTEND_CONFIG_RULE_KEY,
   FRONTEND_CONFIG_VIRTUAL_ENTRY_NAME,
   FRONTEND_CONFIG_VIRTUAL_ENTRY_PATH,
   appendFrontendConfigStyleEntry,

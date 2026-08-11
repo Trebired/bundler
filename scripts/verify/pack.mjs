@@ -4,12 +4,14 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { existsSync, readdirSync } from "node:fs";
+import { resetTemporaryRoot } from "./shared.mjs";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const tempRoot = path.join(rootDir, ".tmp", "verify-pack");
+const DOT_SLASH_PREFIX = new RegExp("^\\.\\/", "u");
 
-async function main() {
-  await resetTempRoot();
+async function verifyPackagePack() {
+  await resetTemporaryRoot(tempRoot);
   const tarballPath = packPackage();
   try {
     const packageJson = readPackedPackageJson(tarballPath);
@@ -24,16 +26,11 @@ async function main() {
   console.log("Pack verification succeeded.");
 }
 
-async function resetTempRoot() {
-  await fs.rm(tempRoot, { force: true, recursive: true });
-  await fs.mkdir(tempRoot, { recursive: true });
-}
-
 function packPackage() {
   const stdout = execFileSync("bun", ["pm", "pack", "--quiet", "--destination", tempRoot], {
-    cwd: rootDir,
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "inherit"],
+      cwd: rootDir,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "inherit"],
   });
   return resolvePackedTarballPath(stdout);
 }
@@ -52,7 +49,7 @@ async function validatePackedBins(packageJson, tarballPath, tarballEntries) {
   for (const target of Object.values(packageJson.bin || {})) {
     if (typeof target !== "string") continue;
     assertTarEntryExists(tarballEntries, target, `Missing packed bin target: ${target}`);
-    const localPath = path.join(rootDir, target.replace(/^\.\//u, ""));
+    const localPath = path.join(rootDir, target.replace(DOT_SLASH_PREFIX, ""));
     const localStats = await fs.stat(localPath);
     assert.notEqual(localStats.mode & 0o111, 0, `Built bin is not executable: ${target}`);
     assertTarEntryExecutable(tarballPath, target);
@@ -76,12 +73,12 @@ function collectExportTargets(value, targets) {
 }
 
 function assertTarEntryExists(tarballEntries, packagePath, message) {
-  const entryPath = `package/${String(packagePath).replace(/^\.\//u, "")}`;
+  const entryPath = `package/${String(packagePath).replace(DOT_SLASH_PREFIX, "")}`;
   assert.equal(tarballEntries.has(entryPath), true, message);
 }
 
 function assertTarEntryExecutable(tarballPath, packagePath) {
-  const entryPath = `package/${String(packagePath).replace(/^\.\//u, "")}`;
+  const entryPath = `package/${String(packagePath).replace(DOT_SLASH_PREFIX, "")}`;
   const listing = execFileSync("tar", ["-tvf", tarballPath, entryPath], { encoding: "utf8" });
   const mode = listing.trim().split(/\s+/u)[0] || "";
   assert.equal(mode.includes("x"), true, `Packed bin is not executable: ${packagePath}`);
@@ -89,13 +86,13 @@ function assertTarEntryExecutable(tarballPath, packagePath) {
 
 function listTarEntries(tarballPath) {
   return new Set(execFileSync("tar", ["-tf", tarballPath], {
-    encoding: "utf8",
-  }).split("\n").map((entry) => entry.trim()).filter(Boolean));
+        encoding: "utf8",
+    }).split("\n").map((entry) => entry.trim()).filter(Boolean));
 }
 
 function readPackedPackageJson(tarballPath) {
   return JSON.parse(execFileSync("tar", ["-xOf", tarballPath, "package/package.json"], {
-    encoding: "utf8",
+        encoding: "utf8",
   }));
 }
 
@@ -112,10 +109,10 @@ function resolvePackedTarballPath(stdout) {
 
 function findPackedTarball() {
   return readdirSync(tempRoot)
-    .filter((entry) => entry.endsWith(".tgz"))
-    .map((entry) => path.join(tempRoot, entry))
-    .sort()
-    .at(0);
+  .filter((entry) => entry.endsWith(".tgz"))
+  .map((entry) => path.join(tempRoot, entry))
+  .sort()
+  .at(0);
 }
 
-await main();
+await verifyPackagePack();

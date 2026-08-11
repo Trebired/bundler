@@ -102,6 +102,11 @@ type BundlerAssetManifest = {
   sources: Record<string, BundlerAssetManifestSource>;
 };
 
+type BundlerFontPreloadLink = {
+  href: string;
+  type: string;
+};
+
 type BundlerBuildAssetManifestOptions = {
   metafile: Metafile;
   resolvedDiscovery?: BundlerResolvedDiscovery;
@@ -120,6 +125,7 @@ type BundlerCollectedAssetLinks = {
   entryKeys: string[];
   scripts: string[];
   styles: string[];
+  fontPreloads: BundlerFontPreloadLink[];
   assets: string[];
   outputs: string[];
   missing: string[];
@@ -140,5 +146,6 @@ export type {
   BundlerDerivedManifestEntry,
   BundlerDerivedManifestOutput,
   BundlerDerivedManifestOutputKind,
+  BundlerFontPreloadLink,
   BundlerManifestOptions,
 };

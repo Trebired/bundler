@@ -26,8 +26,8 @@ function createI18nPluginLogState(logger: NormalizedBundlerLogger) {
     if (transformedFiles - loggedFiles < 10) return;
     loggedFiles = transformedFiles;
     logger.info("i18n", "local translators transformed", {
-      transformed_files: transformedFiles,
-      transformed_folders: transformedFolders.size,
+        transformed_files: transformedFiles,
+        transformed_folders: transformedFolders.size,
     });
   }
 
@@ -35,8 +35,8 @@ function createI18nPluginLogState(logger: NormalizedBundlerLogger) {
     flush() {
       if (transformedFiles > 0) {
         logger.info("i18n", "local translators complete", {
-          transformed_files: transformedFiles,
-          transformed_folders: transformedFolders.size,
+            transformed_files: transformedFiles,
+            transformed_folders: transformedFolders.size,
         });
       }
 
@@ -61,34 +61,34 @@ function createI18nPlugin(options: I18nPluginOptions): Plugin {
       build.onEnd(() => logState.flush());
 
       build.onLoad({ filter: /\.(?:[cm]?[jt]sx?)$/, namespace: "file" }, async (args) => {
-        if (!isCodeFile(args.path) || !isInsideDirectory(options.rootDir, args.path)) return undefined;
+          if (!isCodeFile(args.path) || !isInsideDirectory(options.rootDir, args.path)) return undefined;
 
-        const source = await fs.readFile(args.path, "utf8");
-        const transformed = await transformLocalTranslators({
-          callerPath: args.path,
-          i18n: options.i18n,
-          rootDir: options.rootDir,
-          source,
-        });
-        if (!transformed) return undefined;
+          const source = await fs.readFile(args.path, "utf8");
+          const transformed = await transformLocalTranslators({
+              callerPath: args.path,
+              i18n: options.i18n,
+              rootDir: options.rootDir,
+              source,
+          });
+          if (!transformed) return undefined;
 
-        logState.register(transformed.folder.folderPath);
+          logState.register(transformed.folder.folderPath);
 
-        const contents = options.annotateSources
+          const contents = options.annotateSources
           ? injectSourceAnnotation({
-            contents: transformed.contents,
-            filePath: args.path,
-            kind: "code",
-            rootDir: options.rootDir,
+              contents: transformed.contents,
+              filePath: args.path,
+              kind: "code",
+              rootDir: options.rootDir,
           })
           : transformed.contents;
 
-        return {
-          contents,
-          loader: resolveCodeLoader(args.path),
-          watchDirs: [transformed.folder.folderPath],
-          watchFiles: [args.path, ...transformed.folder.modules.map((item) => item.filePath)],
-        };
+          return {
+            contents,
+            loader: resolveCodeLoader(args.path),
+            watchDirs: [transformed.folder.folderPath],
+            watchFiles: [args.path, ...transformed.folder.modules.map((item) => item.filePath)],
+          };
       });
     },
   };

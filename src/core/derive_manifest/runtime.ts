@@ -9,6 +9,7 @@ import type {
   BundlerDerivedManifestOutputKind,
 } from "#3c8d8166992a";
 import { VIRTUAL_ENTRY_NAMESPACE } from "#18o0cf9c108j";
+import { FRONTEND_CONFIG_STYLES_NAMESPACE } from "#txn6vz7y3qut";
 import { VIRTUAL_ENTRY_PREFIX, toPosixPath } from "#5kd9snhn6zft";
 
 type DeriveManifestOptions = {
@@ -19,7 +20,13 @@ type DeriveManifestOptions = {
 function normalizeFilePath(filePath: string, rootDir: string): string {
   if (filePath.startsWith(VIRTUAL_ENTRY_PREFIX)) return `virtual:${filePath.slice(VIRTUAL_ENTRY_PREFIX.length)}`;
   if (filePath.startsWith(`${VIRTUAL_ENTRY_NAMESPACE}:`)) return `virtual:${filePath.slice(VIRTUAL_ENTRY_NAMESPACE.length + 1)}`;
-  return toPosixPath(path.relative(rootDir, path.isAbsolute(filePath) ? filePath : path.resolve(rootDir, filePath)));
+  if (filePath.startsWith(`${FRONTEND_CONFIG_STYLES_NAMESPACE}:`)) {
+    return `virtual:${filePath.slice(FRONTEND_CONFIG_STYLES_NAMESPACE.length + 1)}`;
+  }
+  return toPosixPath(path.relative(
+      rootDir,
+      path.isAbsolute(filePath) ? filePath : path.resolve(rootDir, filePath),
+  ));
 }
 
 function deriveManifest(metafile: Metafile, options: DeriveManifestOptions): BundlerDerivedManifest {
@@ -33,7 +40,16 @@ function deriveManifest(metafile: Metafile, options: DeriveManifestOptions): Bun
     const outputRel = normalizeFilePath(outputPath, options.rootDir);
     const outputInfo = allOutputs[outputRel];
     if (!outputInfo) continue;
-    if (outputInfo.kind === "entry") entries[outputRel] = createDerivedEntry(outputRel, outputPath, outputInfo, allOutputs, metafile, options.rootDir);
+    if (outputInfo.kind === "entry") {
+      entries[outputRel] = createDerivedEntry(
+        outputRel,
+        outputPath,
+        outputInfo,
+        allOutputs,
+        metafile,
+        options.rootDir,
+      );
+    }
     if (outputInfo.kind === "chunk") chunks[outputRel] = createDerivedChunk(outputRel, outputInfo);
   }
 
@@ -96,8 +112,8 @@ function createDerivedEntry(
     inputs: outputInfo.inputs,
     js: reachable.filter((value) => /\.(?:[mc]?js)$/i.test(value)),
     css: Array.from(new Set(reachable.flatMap((value) => {
-      const info = allOutputs[value];
-      return info ? info.css : value.endsWith(".css") ? [value] : [];
+            const info = allOutputs[value];
+            return info ? info.css : value.endsWith(".css") ? [value] : [];
     }))).sort(),
     imports: outputInfo.imports,
   };
@@ -115,7 +131,10 @@ function createDerivedChunk(outputRel: string, outputInfo: BundlerDerivedManifes
 function resolveImportedOutputs(metafile: Metafile, outputPath: string, rootDir: string): string[] {
   const output = metafile.outputs[outputPath];
   if (!output) return [];
-  return output.imports.filter((item) => !item.external && Boolean(metafile.outputs[item.path])).map((item) => normalizeFilePath(item.path, rootDir)).sort();
+  return output.imports
+  .filter((item) => !item.external && Boolean(metafile.outputs[item.path]))
+  .map((item) => normalizeFilePath(item.path, rootDir))
+  .sort();
 }
 
 function resolveOutputKind(

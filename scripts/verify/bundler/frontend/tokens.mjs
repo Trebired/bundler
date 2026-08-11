@@ -40,17 +40,17 @@ async function verifyFrontendConfigTokenWatch(context) {
   const configDir = path.join(fixture, workspaceConfigDir, "frontend");
   const tokensPath = path.join(configDir, "tokens.ts");
   await writeFrontendConfig(path.join(configDir, "config.ts"), {
-    flash: true,
-    modal: true,
-    prefix: "tok",
-    token: "#111111",
+      flash: true,
+      modal: true,
+      prefix: "tok",
+      token: "#111111",
   });
   await fs.writeFile(tokensPath, tokensSource("#aabbcc"));
 
   const session = await context.watch({
-    format: "esm",
-    outDir: "dist-tokens",
-    rootDir: fixture,
+      format: "esm",
+      outDir: "dist-tokens",
+      rootDir: fixture,
   });
   try {
     const initial = await readCssOutput(outDir);

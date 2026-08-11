@@ -6,17 +6,18 @@ const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const distDir = path.join(rootDir, "dist");
 const workspaceConfigDir = `.${String.fromCharCode(116, 114, 101, 98, 105, 114, 101, 100)}`;
 const aliasMapDir = path.join(rootDir, workspaceConfigDir, "code-discipline", "imports");
+const DOT_SLASH_PREFIX = new RegExp("^\\.\\/", "u");
 
-async function main() {
+async function prepareDistPackage() {
   const aliasTargets = await readAliasMap();
   await promotePublicDistFiles();
 
   const files = await collectDistFiles(distDir);
   await Promise.all(files.map(async (filePath) => {
-    const kind = filePath.endsWith(".d.ts") ? "types" : "runtime";
-    const original = await fs.readFile(filePath, "utf8");
-    const rewritten = rewriteAliasImports(original, filePath, aliasTargets, kind);
-    if (rewritten !== original) await fs.writeFile(filePath, rewritten);
+        const kind = filePath.endsWith(".d.ts") ? "types" : "runtime";
+        const original = await fs.readFile(filePath, "utf8");
+        const rewritten = rewriteAliasImports(original, filePath, aliasTargets, kind);
+        if (rewritten !== original) await fs.writeFile(filePath, rewritten);
   }));
   await chmodExecutableCli();
 }
@@ -69,48 +70,48 @@ async function collectDistFiles(startDir) {
 
 function rewriteAliasImports(source, filePath, aliasTargets, kind) {
   return source.replace(/(["'])(#[^"']+)\1/g, (match, quote, alias) => {
-    const target = aliasTargets[alias];
-    if (!target) return match;
+        const target = aliasTargets[alias];
+        if (!target) return match;
 
-    const compiledPath = resolveCompiledTarget(target, kind);
-    if (!compiledPath) return match;
+        const compiledPath = resolveCompiledTarget(target, kind);
+        if (!compiledPath) return match;
 
-    const relativePath = toRelativeImport(path.relative(path.dirname(filePath), compiledPath));
-    return `${quote}${relativePath}${quote}`;
-  });
-}
+        const relativePath = toCompiledRelativeImport(path.relative(path.dirname(filePath), compiledPath));
+        return `${quote}${relativePath}${quote}`;
+        });
+        }
 
-function resolveCompiledTarget(target, kind) {
-  const normalized = normalizePath(target);
-  if (!normalized.startsWith("src/") && !normalized.startsWith("internal/")) return undefined;
+        function resolveCompiledTarget(target, kind) {
+        const normalized = normalizeDistPath(target);
+        if (!normalized.startsWith("src/") && !normalized.startsWith("internal/")) return undefined;
 
-  const baseDir = normalized.startsWith("src/") ? "dist/src" : "dist/internal";
-  const relativeTarget = normalized.replace(/^(src|internal)\//u, "");
-  const compiledRelative = relativeTarget.replace(/\.(ts|tsx|js|jsx)$/u, kind === "types" ? ".d.ts" : ".js");
-  return path.join(rootDir, baseDir, compiledRelative);
-}
+        const baseDir = normalized.startsWith("src/") ? "dist/src" : "dist/internal";
+        const relativeTarget = normalized.replace(/^(src|internal)\//u, "");
+        const compiledRelative = relativeTarget.replace(/\.(ts|tsx|js|jsx)$/u, kind === "types" ? ".d.ts" : ".js");
+        return path.join(rootDir, baseDir, compiledRelative);
+        }
 
-function toRelativeImport(value) {
-  const normalized = normalizePath(value);
-  return normalized.startsWith(".") ? normalized : `./${normalized}`;
-}
+        function toCompiledRelativeImport(value) {
+        const normalized = normalizeDistPath(value);
+        return normalized.startsWith(".") ? normalized : `./${normalized}`;
+        }
 
-function normalizePath(value) {
-  return value.replace(/\\/g, "/").replace(/^\.\//u, "");
-}
+        function normalizeDistPath(value) {
+        return String(value || "").split(path.sep).join("/").replace(DOT_SLASH_PREFIX, "");
+        }
 
-async function promotePublicDistFiles() {
-  const publicDistDir = path.join(distDir, "src");
-  await fs.cp(publicDistDir, distDir, { force: true, recursive: true });
-}
+        async function promotePublicDistFiles() {
+        const publicDistDir = path.join(distDir, "src");
+        await fs.cp(publicDistDir, distDir, { force: true, recursive: true });
+        }
 
-async function chmodExecutableCli() {
-  try {
-    await fs.chmod(path.join(distDir, "cli.js"), 0o755);
-  }
-  catch (error) {
-    if (error?.code !== "ENOENT") throw error;
-  }
-}
+        async function chmodExecutableCli() {
+        try {
+        await fs.chmod(path.join(distDir, "cli.js"), 0o755);
+        }
+        catch (error) {
+        if (error?.code !== "ENOENT") throw error;
+        }
+        }
 
-await main();
+        await prepareDistPackage();

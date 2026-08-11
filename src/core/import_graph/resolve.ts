@@ -32,11 +32,11 @@ function resolveFileCandidate(baseAbs: string, extensions: string[]): string {
 }
 
 function resolveImportSpecifier(args: {
-  fromAbs: string;
-  rootDir: string;
-  specifier: string;
-  extensions: string[];
-  tsconfig: LoadedTsconfig;
+    fromAbs: string;
+    rootDir: string;
+    specifier: string;
+    extensions: string[];
+    tsconfig: LoadedTsconfig;
 }): string {
   const specifier = String(args.specifier || "").trim();
   if (!specifier) return "";
@@ -55,13 +55,13 @@ function resolveImportSpecifier(args: {
   }
 
   return args.tsconfig.baseUrlAbs
-    ? resolveFileCandidate(path.resolve(args.tsconfig.baseUrlAbs, specifier), args.extensions)
-    : "";
+  ? resolveFileCandidate(path.resolve(args.tsconfig.baseUrlAbs, specifier), args.extensions)
+  : "";
 }
 
 async function walkImportGraph(options: BundlerImportGraphOptions): Promise<BundlerImportGraph> {
   const rootDir = path.resolve(String(options.rootDir || "").trim() || process.cwd());
-  const extensions = normalizeExtensions(options.extensions);
+  const extensions = normalizeGraphExtensions(options.extensions);
   const tsconfig = loadTsconfig(rootDir, options.tsconfig);
   const entryAbsList = normalizeEntryAbsList(options.entries, rootDir);
   const files = new Map<string, BundlerImportGraphFile>();
@@ -88,19 +88,19 @@ async function walkImportGraph(options: BundlerImportGraphOptions): Promise<Bund
   };
 }
 
-function normalizeExtensions(extensions: string[] | undefined): string[] {
+function normalizeGraphExtensions(extensions: string[] | undefined): string[] {
   return (extensions && extensions.length ? extensions : DEFAULT_IMPORT_GRAPH_EXTENSIONS)
-    .map((value) => String(value || "").trim().toLowerCase())
-    .filter(Boolean)
-    .map((value) => value.startsWith(".") ? value : `.${value}`);
+  .map((value) => String(value || "").trim().toLowerCase())
+  .filter(Boolean)
+  .map((value) => value.startsWith(".") ? value : `.${value}`);
 }
 
 function normalizeEntryAbsList(entries: string | string[], rootDir: string): string[] {
   const entryList = Array.isArray(entries) ? entries : [entries];
   return entryList
-    .map((value) => String(value || "").trim())
-    .filter(Boolean)
-    .map((value) => path.isAbsolute(value) ? path.resolve(value) : path.resolve(rootDir, value));
+  .map((value) => String(value || "").trim())
+  .filter(Boolean)
+  .map((value) => path.isAbsolute(value) ? path.resolve(value) : path.resolve(rootDir, value));
 }
 
 function createImportGraphFile(
@@ -111,16 +111,16 @@ function createImportGraphFile(
 ): BundlerImportGraphFile {
   const source = fs.readFileSync(normalizedAbs, "utf8");
   const imports = collectImports(source).map((item) => {
-    const resolvedAbs = resolveImportSpecifier({
-      fromAbs: normalizedAbs,
-      rootDir,
-      specifier: item.specifier,
-      extensions,
-      tsconfig,
-    });
-    const inRoot = resolvedAbs ? normalizePathInRoot(rootDir, resolvedAbs) : "";
-    const resolved = inRoot && !inRoot.startsWith("..") ? inRoot : undefined;
-    return { ...item, external: !resolved, resolved };
+      const resolvedAbs = resolveImportSpecifier({
+          fromAbs: normalizedAbs,
+          rootDir,
+          specifier: item.specifier,
+          extensions,
+          tsconfig,
+      });
+      const inRoot = resolvedAbs ? normalizePathInRoot(rootDir, resolvedAbs) : "";
+      const resolved = inRoot && !inRoot.startsWith("..") ? inRoot : undefined;
+      return { ...item, external: !resolved, resolved };
   });
 
   return {

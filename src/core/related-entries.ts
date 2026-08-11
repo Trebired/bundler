@@ -6,16 +6,16 @@ import type {
   BundlerRelatedEntriesResult,
   BundlerRelatedEntryMatch,
 } from "#3c8d8166992a";
-import { walkImportGraph } from "./import-graph.js";
+import { walkImportGraph } from "./import_graph/resolve.js";
 import { normalizePathValue } from "./discovery/shared.js";
 
 async function collectRelatedEntries(options: BundlerRelatedEntriesOptions): Promise<BundlerRelatedEntriesResult> {
   const rootDir = path.resolve(String(options.rootDir || "").trim() || process.cwd());
   const graph = await walkImportGraph({
-    entries: options.sources,
-    extensions: options.extensions,
-    rootDir,
-    tsconfig: options.tsconfig,
+      entries: options.sources,
+      extensions: options.extensions,
+      rootDir,
+      tsconfig: options.tsconfig,
   });
   const patterns = normalizeCandidatePatterns(options);
   const matches = collectCandidateMatches(Object.keys(graph.files), patterns, rootDir);

@@ -12,16 +12,16 @@ async function verifyFrontendConfigStyles(context) {
   await writeFrontendPackageFixture(fixture);
   const configPath = path.join(fixture, frontendConfigDir, "config.ts");
   await writeFrontendConfig(configPath, {
-    flash: true,
-    modal: false,
-    prefix: "app",
-    token: "#123456",
+      flash: true,
+      modal: false,
+      prefix: "app",
+      token: "#123456",
   });
 
   const configured = await context.bundle({
-    format: "esm",
-    outDir: "dist-configured",
-    rootDir: fixture,
+      format: "esm",
+      outDir: "dist-configured",
+      rootDir: fixture,
   });
   const configuredCss = await context.readFirstCss(configured.outputs);
   assert.ok(configuredCss.includes("--app-color-brand: #123456;"));
@@ -32,16 +32,42 @@ async function verifyFrontendConfigStyles(context) {
     /ENOENT/u,
   );
   assert.equal(/^\.tbf-modal\b/mu.test(configuredCss), false);
+  assertFrontendConfigFontLinks(context, configured);
 
   await fs.unlink(configPath);
   const defaults = await context.bundle({
-    format: "esm",
-    outDir: "dist-defaults",
-    rootDir: fixture,
+      format: "esm",
+      outDir: "dist-defaults",
+      rootDir: fixture,
   });
   const defaultCss = await context.readFirstCss(defaults.outputs);
   assert.ok(defaultCss.includes("--tbf-icon-endpoint: \"/__icons/svg\";"));
   assert.ok(defaultCss.includes(".tbf-modal"));
+}
+
+function assertFrontendConfigFontLinks(context, result) {
+  const rule = result.assetManifest.rules["frontend-config"];
+  assert.ok(rule?.entryKeys?.length, "expected frontend config rule entry");
+  const entry = result.assetManifest.entries[rule.entryKeys[0]];
+  assert.ok(entry, "expected frontend config asset manifest entry");
+  assert.ok(entry.css.some((item) => item.endsWith(".css")));
+  assert.ok(entry.assets.some((item) => item.endsWith(".woff2")));
+
+  const links = context.collectAssetLinks(result.assetManifest, ["frontend-config"], {
+      from: "ruleKey",
+      publicPath: "/",
+  });
+  const rendered = context.renderAssetLinkTags(links);
+  const frontendLinks = context.collectFrontendAssetLinks({
+      collect: { publicPath: "/" },
+      manifest: result.assetManifest,
+      renderTags: true,
+  });
+
+  assert.ok(links.fontPreloads.some((item) => item.href.endsWith(".woff2")));
+  assert.ok(rendered.fontPreloads.includes('type="font/woff2"'));
+  assert.ok(frontendLinks.fontPreloads.some((item) => item.href.endsWith(".woff2")));
+  assert.ok(frontendLinks.tags.fontPreloads.includes('rel="preload"'));
 }
 
 async function verifyFrontendConfigWatchRebuild(context) {
@@ -49,23 +75,23 @@ async function verifyFrontendConfigWatchRebuild(context) {
   await writeFrontendPackageFixture(fixture);
   const configPath = path.join(fixture, frontendConfigDir, "config.ts");
   await writeFrontendConfig(configPath, {
-    flash: true,
-    modal: true,
-    prefix: "watch",
-    token: "#334455",
+      flash: true,
+      modal: true,
+      prefix: "watch",
+      token: "#334455",
   });
 
   const session = await context.watch({
-    format: "esm",
-    outDir: "dist-watch",
-    rootDir: fixture,
+      format: "esm",
+      outDir: "dist-watch",
+      rootDir: fixture,
   });
   try {
     await writeFrontendConfig(configPath, {
-      flash: false,
-      modal: true,
-      prefix: "watch2",
-      token: "#667788",
+        flash: false,
+        modal: true,
+        prefix: "watch2",
+        token: "#667788",
     });
     const rebuilt = await session.rebuild();
     const css = await context.readFirstCss(rebuilt.outputs);

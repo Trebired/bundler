@@ -150,8 +150,8 @@ function createClientDiscoverRules(
   return [
     createIgnoredSourceRule(options, base),
     ...createFrontendEntryRules({
-      clientKey: DEFAULT_FRONTEND_CLIENT_ENTRY_KEY,
-      deferredKey: base.deferredClientEntryKey,
+        clientKey: DEFAULT_FRONTEND_CLIENT_ENTRY_KEY,
+        deferredKey: base.deferredClientEntryKey,
     }),
     createGlobalStyleRule(options, base),
     createRuntimeSourceIgnoreRule(options),
@@ -167,8 +167,8 @@ function createSsrDiscoverRules(
   return [
     createIgnoredSourceRule(options),
     createSsrModuleMapRule({
-      ...ssr,
-      exclude: mergeLists(ssr.exclude, DEFAULT_FRONTEND_CLIENT_ENTRY_PATTERNS, DEFAULT_FRONTEND_DEFERRED_CLIENT_ENTRY_PATTERNS),
+        ...ssr,
+        exclude: mergeLists(ssr.exclude, DEFAULT_FRONTEND_CLIENT_ENTRY_PATTERNS, DEFAULT_FRONTEND_DEFERRED_CLIENT_ENTRY_PATTERNS),
     }),
     ...(options.extraSsrRules || []),
     createCatchAllIgnoreRule("ignored-ssr-rest"),

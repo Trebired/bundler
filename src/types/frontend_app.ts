@@ -141,6 +141,7 @@ type BundlerFrontendAssetLinksOptions = {
 };
 
 type BundlerRenderedAssetTags = {
+  fontPreloads: string;
   html: string;
   scripts: string;
   styles: string;

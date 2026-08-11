@@ -1,4 +1,3 @@
-import fs from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -10,6 +9,8 @@ import type {
   LoadedBundlerProjectConfig,
   NormalizedBundlerProjectConfig,
 } from "#3c8d8166992a";
+import { PACKAGE_WORKSPACE_CONFIG_DIR } from "#m7884285ke1w";
+import { pathExists } from "#47cd321d28f1";
 
 type LoadBundlerProjectConfigOptions = {
   configPath?: string;
@@ -17,28 +18,14 @@ type LoadBundlerProjectConfigOptions = {
   searchFrom?: string;
 };
 
-const BUNDLER_PROJECT_CONFIG_PATH = `${workspaceConfigDir()}/bundler/config.ts`;
+const BUNDLER_PROJECT_CONFIG_PATH = `${PACKAGE_WORKSPACE_CONFIG_DIR}/bundler/config.ts`;
 
-function workspaceConfigDir(): string {
-  return `.${String.fromCharCode(116, 114, 101, 98, 105, 114, 101, 100)}`;
+function createConfigDefiner<T>(): (config: T) => T {
+  return (config) => config;
 }
 
-function defineBundlerConfig(config: BundlerOptions): BundlerOptions {
-  return config;
-}
-
-function defineBundlerProjectConfig(config: BundlerProjectConfig): BundlerProjectConfig {
-  return config;
-}
-
-async function pathExists(filePath: string): Promise<boolean> {
-  try {
-    await fs.access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
-}
+const defineBundlerConfig = createConfigDefiner<BundlerOptions>();
+const defineBundlerProjectConfig = createConfigDefiner<BundlerProjectConfig>();
 
 async function loadBundlerConfigModule(projectRoot: string, configPath: string): Promise<LoadedBundlerConfig> {
   const resolvedPath = path.resolve(projectRoot, configPath);
@@ -131,8 +118,8 @@ async function loadBundlerProjectConfig(
 ): Promise<LoadedBundlerProjectConfig> {
   const root = path.resolve(projectRoot);
   const configPath = options.configPath
-    ? path.resolve(root, options.configPath)
-    : await findBundlerProjectConfig(options.searchFrom || root, root);
+  ? path.resolve(root, options.configPath)
+  : await findBundlerProjectConfig(options.searchFrom || root, root);
   if (!configPath) {
     if (options.defaultIfMissing === false) throw new Error("Bundler project config was not found");
     return { config: normalizeBundlerProjectConfig({}), configPath: null, dependencies: [] };

@@ -12,13 +12,13 @@ type ManifestWriteResult = {
 };
 
 async function writeBundlerManifest(args: {
-  metafile?: Metafile;
-  manifest: NormalizedManifestOptions;
-  outDir: string;
-  outputLayout?: BundlerOutputLayoutStats;
-  precompressed?: BundlerPrecompressStats;
-  resolvedDiscovery: BundlerResolvedDiscovery;
-  rootDir: string;
+    metafile?: Metafile;
+    manifest: NormalizedManifestOptions;
+    outDir: string;
+    outputLayout?: BundlerOutputLayoutStats;
+    precompressed?: BundlerPrecompressStats;
+    resolvedDiscovery: BundlerResolvedDiscovery;
+    rootDir: string;
 }): Promise<ManifestWriteResult> {
   if (!args.manifest.enabled || !args.manifest.file || !args.metafile) {
     return {};
@@ -31,16 +31,16 @@ async function writeBundlerManifest(args: {
     generatedAt: new Date().toISOString(),
     resolvedDiscovery: args.resolvedDiscovery,
     assetManifest: buildAssetManifest({
-      metafile: args.metafile,
-      outDir: args.outDir,
-      resolvedDiscovery: args.resolvedDiscovery,
-      rootDir: args.rootDir,
+        metafile: args.metafile,
+        outDir: args.outDir,
+        resolvedDiscovery: args.resolvedDiscovery,
+        rootDir: args.rootDir,
     }),
     ...(args.outputLayout ? { outputLayout: args.outputLayout } : {}),
     ...(args.precompressed ? { precompressed: args.precompressed } : {}),
     ...deriveManifest(args.metafile, {
-      outDir: args.outDir,
-      rootDir: args.rootDir,
+        outDir: args.outDir,
+        rootDir: args.rootDir,
     }),
   };
 

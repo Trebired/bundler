@@ -8,7 +8,7 @@ import type { BundlerBuildResult, BundlerOptions, BundlerWatchSession } from "#3
 import { createEsbuildOptions, normalizeBundlerOptions } from "./esbuild-options.js";
 import { postProcessBuildOutput } from "./post-build.js";
 import { resolveBundlerEntries, normalizeDiscoverRoots } from "./discovery.js";
-import { createDiscoveryWatcher } from "./discovery-watch.js";
+import { createDiscoveryWatcher } from "./discovery_watch/runtime.js";
 import {
   appendFrontendConfigStyleEntry,
   createEmptyResolvedDiscovery,
@@ -32,11 +32,11 @@ async function createWatchState(options: BundlerOptions) {
   const normalized = normalizeBundlerOptions(options || {} as BundlerOptions);
   const logger = resolveLogger(normalized.logger, normalized.loggerAdapter);
   logPackageInitialized({
-    adapter: normalized.loggerAdapter,
-    fallback: "console",
-    group: BUNDLER_LOG_GROUP,
-    logger: normalized.logger,
-    source: BUNDLER_PACKAGE_NAME,
+      adapter: normalized.loggerAdapter,
+      fallback: "console",
+      group: BUNDLER_LOG_GROUP,
+      logger: normalized.logger,
+      source: BUNDLER_PACKAGE_NAME,
   });
   if (normalized.clean) {
     logger.info("watch", `clean :: ${normalized.outDir}`);
@@ -44,15 +44,15 @@ async function createWatchState(options: BundlerOptions) {
   }
 
   const frontendStyles = await prepareFrontendConfigStyles({
-    environment: normalized.environment,
-    logger,
-    rootDir: normalized.rootDir,
+      environment: normalized.environment,
+      logger,
+      rootDir: normalized.rootDir,
   });
   const discoveredEntries = options?.discover || !frontendStyles
-    ? await resolveBundlerEntries(options || {} as BundlerOptions, normalized.rootDir, { allowEmpty: true }, {
+  ? await resolveBundlerEntries(options || {} as BundlerOptions, normalized.rootDir, { allowEmpty: true }, {
       ignoredDirs: normalized.i18n.enabled ? [normalized.i18n.dirName] : [],
-    })
-    : createEmptyResolvedDiscovery();
+  })
+  : createEmptyResolvedDiscovery();
 
   return {
     currentContext: null as BuildContext<any> | null,
@@ -80,13 +80,13 @@ async function startWatchState(state: Awaited<ReturnType<typeof createWatchState
 function createWatchSession(state: Awaited<ReturnType<typeof createWatchState>>): BundlerWatchSession {
   return {
     rebuild: () => runExclusive(state, async () => {
-      try {
-        await refreshDiscovery(state);
-        return await executeRebuild(state);
-      } catch (error) {
-        state.logger.fail("watch", `rebuild-failed :: ${formatFailure(error)}`);
-        throw error;
-      }
+        try {
+          await refreshDiscovery(state);
+          return await executeRebuild(state);
+        } catch (error) {
+          state.logger.fail("watch", `rebuild-failed :: ${formatFailure(error)}`);
+          throw error;
+        }
     }),
     dispose: () => disposeWatchState(state),
   };
@@ -101,20 +101,20 @@ function createWatchStateWatcher(state: Awaited<ReturnType<typeof createWatchSta
   if (!state.options.discover) return null;
   const discoveryRoots = normalizeDiscoverRoots(state.normalized.rootDir, state.options.discover);
   return discoveryRoots.length
-    ? createDiscoveryWatcher({
+  ? createDiscoveryWatcher({
       dirs: discoveryRoots,
       onChange() {
         void runExclusive(state, async () => {
-          if (state.disposed) return;
-          try {
-            await refreshDiscovery(state);
-          } catch (error) {
-            state.logger.fail("watch", `discovery-refresh-failed :: ${formatFailure(error)}`);
-          }
+            if (state.disposed) return;
+            try {
+              await refreshDiscovery(state);
+            } catch (error) {
+              state.logger.fail("watch", `discovery-refresh-failed :: ${formatFailure(error)}`);
+            }
         });
       },
-    })
-    : null;
+  })
+  : null;
 }
 
 async function callHook(
@@ -139,9 +139,9 @@ async function createWatchedContext(
   records = state.currentDiscovery.entries,
 ): Promise<BuildContext<any>> {
   const context = await createContext(createEsbuildOptions({
-    ...state.normalized,
-    entryRecords: records,
-  }, state.logger));
+        ...state.normalized,
+        entryRecords: records,
+      }, state.logger));
   await context.watch();
   return context;
 }
@@ -158,14 +158,14 @@ async function executeRebuild(state: Awaited<ReturnType<typeof createWatchState>
   const postProcessed = await postProcessBuildOutput({ normalized: state.normalized, result });
   logWarnings(state.logger, result.warnings);
   const summary = await toBuildResult({
-    manifest: state.normalized.manifest,
-    outDir: state.normalized.outDir,
-    outputLayout: postProcessed.outputLayout,
-    precompressed: postProcessed.precompressed,
-    resolvedDiscovery: state.currentDiscovery,
-    result,
-    rootDir: state.normalized.rootDir,
-    startedAt,
+      manifest: state.normalized.manifest,
+      outDir: state.normalized.outDir,
+      outputLayout: postProcessed.outputLayout,
+      precompressed: postProcessed.precompressed,
+      resolvedDiscovery: state.currentDiscovery,
+      result,
+      rootDir: state.normalized.rootDir,
+      startedAt,
   });
   state.logger.info("watch", `rebuilt :: outputs=${summary.outputs.length} warnings=${summary.warnings}`);
   await callHook(state, { hook: state.normalized.onRebuilt, name: "onRebuilt", payload: summary });
@@ -174,25 +174,25 @@ async function executeRebuild(state: Awaited<ReturnType<typeof createWatchState>
 
 async function refreshDiscovery(state: Awaited<ReturnType<typeof createWatchState>>): Promise<void> {
   state.frontendStyles = await prepareFrontendConfigStyles({
-    environment: state.normalized.environment,
-    logger: state.logger,
-    rootDir: state.normalized.rootDir,
+      environment: state.normalized.environment,
+      logger: state.logger,
+      rootDir: state.normalized.rootDir,
   });
   const discoveredEntries = state.options?.discover || !state.frontendStyles
-    ? await resolveBundlerEntries(state.options || {} as BundlerOptions, state.normalized.rootDir, {
+  ? await resolveBundlerEntries(state.options || {} as BundlerOptions, state.normalized.rootDir, {
       allowEmpty: true,
     }, {
       ignoredDirs: state.normalized.i18n.enabled ? [state.normalized.i18n.dirName] : [],
-    })
-    : createEmptyResolvedDiscovery();
+  })
+  : createEmptyResolvedDiscovery();
   const nextDiscovery = appendFrontendConfigStyleEntry(discoveredEntries, state.frontendStyles);
   if (nextDiscovery.signature === state.currentDiscovery.signature) return;
 
   state.logger.info("watch", `entry-set-changed :: count=${nextDiscovery.entries.length}`);
   await callHook(state, {
-    hook: state.normalized.onEntrySetChanged,
-    name: "onEntrySetChanged",
-    payload: nextDiscovery.sourceOwners,
+      hook: state.normalized.onEntrySetChanged,
+      name: "onEntrySetChanged",
+      payload: nextDiscovery.sourceOwners,
   });
   state.currentDiscovery = nextDiscovery;
   if (state.currentContext) {

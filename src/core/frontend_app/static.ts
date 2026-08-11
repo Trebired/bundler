@@ -32,10 +32,10 @@ async function serveStaticAsset(
   return {
     body,
     headers: createAssetHeaders({
-      compressedEncoding: selected.encoding,
-      mode: options.mode || "production",
-      options,
-      requestPath: match.requestPath,
+        compressedEncoding: selected.encoding,
+        mode: options.mode || "production",
+        options,
+        requestPath: match.requestPath,
     }),
     status: 200,
   };
@@ -92,10 +92,10 @@ async function selectPrecompressedFile(
 }
 
 function createAssetHeaders(args: {
-  compressedEncoding?: "br" | "gzip";
-  mode: "development" | "production";
-  options: BundlerStaticAssetHandlerOptions;
-  requestPath: string;
+    compressedEncoding?: "br" | "gzip";
+    mode: "development" | "production";
+    options: BundlerStaticAssetHandlerOptions;
+    requestPath: string;
 }): Record<string, string> {
   const headers: Record<string, string> = {
     "Cache-Control": resolveCacheControl(args.mode, args.requestPath, args.options),
@@ -147,8 +147,8 @@ function createBlockedResponse(options: BundlerStaticAssetHandlerOptions): Bundl
     body: Buffer.from(""),
     headers: {
       "Cache-Control": options.mode === "development"
-        ? options.devCacheControl || "no-store"
-        : "public, max-age=0, must-revalidate",
+      ? options.devCacheControl || "no-store"
+      : "public, max-age=0, must-revalidate",
       "X-Content-Type-Options": "nosniff",
     },
     status: 404,
@@ -181,7 +181,7 @@ function isHashedAsset(requestPath: string): boolean {
 }
 
 function supportsPrecompression(requestPath: string): boolean {
-  return /\.(?:css|[cm]?js)$/iu.test(requestPath);
+  return [".css", ".js", ".mjs", ".cjs"].includes(path.extname(requestPath).toLowerCase());
 }
 
 function resolveContentType(requestPath: string): string {

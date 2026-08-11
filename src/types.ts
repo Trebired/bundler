@@ -41,6 +41,7 @@ export type {
   BundlerDerivedManifestEntry,
   BundlerDerivedManifestOutput,
   BundlerDerivedManifestOutputKind,
+  BundlerFontPreloadLink,
   BundlerManifestOptions,
 } from "./types/manifest.js";
 export type {

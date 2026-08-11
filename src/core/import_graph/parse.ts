@@ -7,9 +7,10 @@ import {
   IMPORT_FROM_RE,
   IMPORT_SIDE_EFFECT_RE,
 } from "./shared.js";
+import { createTextScannerState, type TextScannerState } from "#tzyfbjqi6bpj";
 
 function stripJsonComments(source: string): string {
-  const state = createCommentStripState();
+  const state = createTextScannerState();
   let output = "";
 
   for (let index = 0; index < source.length; index += 1) {
@@ -23,18 +24,8 @@ function stripJsonComments(source: string): string {
   return output;
 }
 
-function createCommentStripState() {
-  return {
-    escaping: false,
-    inBlockComment: false,
-    inLineComment: false,
-    inString: false,
-    quote: "",
-  };
-}
-
 function advanceCommentStripState(
-  state: ReturnType<typeof createCommentStripState>,
+  state: TextScannerState,
   char: string,
   next?: string,
 ): { output: string; skip: number } {
@@ -54,7 +45,7 @@ function advanceCommentStripState(
 }
 
 function consumeLineComment(
-  state: ReturnType<typeof createCommentStripState>,
+  state: TextScannerState,
   char: string,
 ): { output: string; skip: number } {
   if (char === "\n") {
@@ -65,7 +56,7 @@ function consumeLineComment(
 }
 
 function consumeBlockComment(
-  state: ReturnType<typeof createCommentStripState>,
+  state: TextScannerState,
   char: string,
   next?: string,
 ): { output: string; skip: number } {
@@ -77,7 +68,7 @@ function consumeBlockComment(
 }
 
 function consumeStringCharacter(
-  state: ReturnType<typeof createCommentStripState>,
+  state: TextScannerState,
   char: string,
 ): { output: string; skip: number } {
   if (state.escaping) state.escaping = false;
@@ -90,7 +81,7 @@ function consumeStringCharacter(
 }
 
 function openString(
-  state: ReturnType<typeof createCommentStripState>,
+  state: TextScannerState,
   char: string,
 ): { output: string; skip: number } {
   state.inString = true;
@@ -123,10 +114,10 @@ function stripTrailingCommas(source: string): string {
       continue;
     }
     if (char === "," && nextNonWhitespace(source, index + 1).match(/[}\]]/)) continue;
-    output += char;
-  }
+output += char;
+}
 
-  return output;
+return output;
 }
 
 function parseJsonLike(text: string): any {

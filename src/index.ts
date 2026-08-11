@@ -55,7 +55,7 @@ export {
 export { precompressAssets } from "./core/precompression.js";
 export { collectRelatedEntries } from "./core/related-entries.js";
 export { deriveManifest } from "./core/derive-manifest.js";
-export { walkImportGraph } from "./core/import-graph.js";
+export { walkImportGraph } from "./core/import_graph/resolve.js";
 export { watch } from "./core/watch.js";
 export {
   BUNDLER_PROJECT_CONFIG_PATH,
@@ -71,7 +71,7 @@ export { resolveLogger } from "./logging.js";
 export { buildSourceAnnotation, injectSourceAnnotation, resolveSourceLabel } from "./plugins/source-annotations.js";
 export { createScssPlugin } from "./plugins/scss.js";
 export { createI18nPlugin } from "./plugins/i18n.js";
-export { runCli } from "./cli/run-cli.js";
+export { runCli } from "./cli/run.js";
 
 export type {
   BundlerAggregateEntryMetadata,
@@ -105,6 +105,7 @@ export type {
   BundlerEntryRecord,
   BundlerEntrySource,
   BundlerEnvironment,
+  BundlerFontPreloadLink,
   BundlerGenericLogMethod,
   BundlerImportGraph,
   BundlerImportGraphFile,

@@ -21,9 +21,9 @@ type ResolvedI18nFolder = {
 };
 
 async function resolveI18nFolder(args: {
-  callerPath: string;
-  i18n: NormalizedBundlerI18nOptions;
-  rootDir: string;
+    callerPath: string;
+    i18n: NormalizedBundlerI18nOptions;
+    rootDir: string;
 }): Promise<ResolvedI18nFolder> {
   const folderPath = path.join(path.dirname(args.callerPath), args.i18n.dirName);
   await assertValidI18nFolder(folderPath, args);
@@ -41,12 +41,12 @@ async function assertValidI18nFolder(
   },
 ): Promise<void> {
   const result = await checkColocatedI18n({
-    defaultLanguage: args.i18n.defaultLanguage,
-    dirName: args.i18n.dirName,
-    dirs: [folderPath],
-    extensions: args.i18n.extensions,
-    rootDir: args.rootDir,
-    supportedLanguages: args.i18n.supportedLanguages,
+      defaultLanguage: args.i18n.defaultLanguage,
+      dirName: args.i18n.dirName,
+      dirs: [folderPath],
+      extensions: args.i18n.extensions,
+      rootDir: args.rootDir,
+      supportedLanguages: args.i18n.supportedLanguages,
   });
   if (!result.ok) throwI18nFolderError(folderPath, args.rootDir, formatI18nCheckViolations(result.violations, result.rootDir));
 }
@@ -58,12 +58,12 @@ async function collectLanguageModules(
 ): Promise<ResolvedI18nLanguageModule[]> {
   const files = await collectLanguageFiles(folderPath, i18n);
   return resolveLanguages(files, i18n).map((language) => {
-    const filePath = files.get(language) || "";
-    return {
-      filePath,
-      language,
-      rootRel: toRootRelative(rootDir, filePath),
-    };
+      const filePath = files.get(language) || "";
+      return {
+        filePath,
+        language,
+        rootRel: toRootRelative(rootDir, filePath),
+      };
   });
 }
 
@@ -95,9 +95,9 @@ function languageFromFileName(fileName: string, i18n: NormalizedBundlerI18nOptio
 
 function throwI18nFolderError(folderPath: string, rootDir: string, formattedViolations: string): never {
   throw new Error([
-    `bundler-i18n-invalid-folder :: ${toRootRelative(rootDir, folderPath)}`,
-    formattedViolations,
-  ].join("\n"));
+      `bundler-i18n-invalid-folder :: ${toRootRelative(rootDir, folderPath)}`,
+      formattedViolations,
+    ].join("\n"));
 }
 
 export {

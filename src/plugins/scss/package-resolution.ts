@@ -1,6 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import { toObject } from "#5zpn5tshpwdi";
+
 type PackageJson = {
   exports?: Record<string, unknown> | string;
   sass?: string;
@@ -16,10 +18,6 @@ type PackageResolutionContext = {
   resolveSassFileCandidate(candidatePath: string): string;
   rootDir: string;
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value && typeof value === "object" && !Array.isArray(value));
-}
 
 function parsePackageSpecifier(specifier: string): PackageSpecifier | null {
   if (
@@ -43,7 +41,7 @@ function parsePackageSpecifier(specifier: string): PackageSpecifier | null {
   };
 }
 
-function findPackageJsonPath(rootDir: string, packageName: string): string {
+function findPackageManifestPath(rootDir: string, packageName: string): string {
   let current = path.resolve(rootDir);
 
   while (true) {
@@ -56,7 +54,7 @@ function findPackageJsonPath(rootDir: string, packageName: string): string {
   }
 }
 
-function readPackageJson(packageJsonPath: string): PackageJson {
+function readPackageManifest(packageJsonPath: string): PackageJson {
   return JSON.parse(fs.readFileSync(packageJsonPath, "utf8")) as PackageJson;
 }
 
@@ -68,9 +66,10 @@ function resolvePackageExportTarget(value: unknown): string {
       if (resolved) return resolved;
     }
   }
-  if (isRecord(value)) {
+  const record = toObject(value);
+  if (Object.keys(record).length > 0) {
     for (const condition of ["sass", "style", "import", "default"]) {
-      const resolved = resolvePackageExportTarget(value[condition]);
+      const resolved = resolvePackageExportTarget(record[condition]);
       if (resolved) return resolved;
     }
   }
@@ -84,8 +83,7 @@ function resolvePackageExport(packageJson: PackageJson, subpath: string): string
     return packageJson.sass || packageJson.style || "";
   }
 
-  if (!isRecord(packageJson.exports)) return "";
-  return resolvePackageExportTarget(packageJson.exports[subpath]);
+  return resolvePackageExportTarget(toObject(packageJson.exports)[subpath]);
 }
 
 function resolvePackageFallbackPath(
@@ -100,10 +98,10 @@ function resolvePackageFallbackPath(
 function resolvePackageFilePath(context: PackageResolutionContext, specifier: string): string {
   const parsed = parsePackageSpecifier(specifier);
   if (!parsed) return "";
-  const packageJsonPath = findPackageJsonPath(context.rootDir, parsed.packageName);
+  const packageJsonPath = findPackageManifestPath(context.rootDir, parsed.packageName);
   if (!packageJsonPath) return "";
   const packageRoot = path.dirname(packageJsonPath);
-  const packageJson = readPackageJson(packageJsonPath);
+  const packageJson = readPackageManifest(packageJsonPath);
   const exported = resolvePackageExport(packageJson, parsed.subpath);
   if (exported) {
     if (!exported.startsWith("./")) return "";

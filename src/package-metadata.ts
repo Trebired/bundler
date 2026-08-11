@@ -11,7 +11,7 @@ type PackageJson = {
   name?: string;
 };
 
-function findPackageJsonPath(): string | null {
+function findPackageMetadataPath(): string | null {
   let current = path.dirname(fileURLToPath(import.meta.url));
 
   for (let index = 0; index < 8; index += 1) {
@@ -26,8 +26,8 @@ function findPackageJsonPath(): string | null {
   return null;
 }
 
-function readPackageJson(): PackageJson {
-  const packageJsonPath = findPackageJsonPath();
+function readPackageMetadata(): PackageJson {
+  const packageJsonPath = findPackageMetadataPath();
   if (!packageJsonPath) return {};
 
   try {
@@ -35,10 +35,6 @@ function readPackageJson(): PackageJson {
   } catch {
     return {};
   }
-}
-
-function cleanSegment(value: unknown): string {
-  return typeof value === "string" ? value.trim() : "";
 }
 
 function packageScope(name: string): string {
@@ -49,18 +45,21 @@ function packageSlug(name: string): string {
   return name.replace(new RegExp("^@[^/]+/"), "").trim();
 }
 
-const packageJson = readPackageJson();
-const PACKAGE_JSON_NAME = cleanSegment(packageJson.name);
-const PACKAGE_CONFIG_ORGANIZATION_NAME = cleanSegment(packageJson.config?.organization?.name);
+const packageJson = readPackageMetadata();
+const PACKAGE_JSON_NAME = typeof packageJson.name === "string" ? packageJson.name.trim() : "";
+const PACKAGE_CONFIG_ORGANIZATION_NAME = typeof packageJson.config?.organization?.name === "string"
+? packageJson.config.organization.name.trim()
+: "";
 const PACKAGE_NAME = PACKAGE_JSON_NAME || (PACKAGE_CONFIG_ORGANIZATION_NAME ? `@${PACKAGE_CONFIG_ORGANIZATION_NAME}/bundler` : "bundler");
 const PACKAGE_ORGANIZATION_NAME = PACKAGE_CONFIG_ORGANIZATION_NAME || packageScope(PACKAGE_JSON_NAME);
 const PACKAGE_SLUG = packageSlug(PACKAGE_NAME) || "bundler";
+const PACKAGE_WORKSPACE_CONFIG_DIR = PACKAGE_ORGANIZATION_NAME ? `.${PACKAGE_ORGANIZATION_NAME}` : "";
 
 function buildPackageLogGroup(...parts: string[]): string {
   return [PACKAGE_ORGANIZATION_NAME, PACKAGE_SLUG, ...parts]
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .join(".");
+  .map((part) => part.trim())
+  .filter(Boolean)
+  .join(".");
 }
 
 export {
@@ -68,4 +67,5 @@ export {
   PACKAGE_NAME,
   PACKAGE_ORGANIZATION_NAME,
   PACKAGE_SLUG,
+  PACKAGE_WORKSPACE_CONFIG_DIR,
 };

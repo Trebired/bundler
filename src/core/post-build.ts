@@ -12,19 +12,19 @@ type PostProcessedBuildOutput = {
 };
 
 async function postProcessBuildOutput(args: {
-  normalized: NormalizedBundlerOptions;
-  result: BuildResult<any>;
+    normalized: NormalizedBundlerOptions;
+    result: BuildResult<any>;
 }): Promise<PostProcessedBuildOutput> {
   const outputLayout = await applyOutputLayout({
-    outDir: args.normalized.outDir,
-    outputLayout: args.normalized.outputLayout,
-    publicPath: args.normalized.publicPath,
-    result: args.result,
-    rootDir: args.normalized.rootDir,
+      outDir: args.normalized.outDir,
+      outputLayout: args.normalized.outputLayout,
+      publicPath: args.normalized.publicPath,
+      result: args.result,
+      rootDir: args.normalized.rootDir,
   });
   const precompressed = args.normalized.precompress.enabled
-    ? await precompressAssets({ ...args.normalized.precompress, outDir: args.normalized.outDir, outputs: outputLayout.outputs })
-    : undefined;
+  ? await precompressAssets({ ...args.normalized.precompress, outDir: args.normalized.outDir, outputs: outputLayout.outputs })
+  : undefined;
 
   return {
     outputLayout: outputLayout.stats,

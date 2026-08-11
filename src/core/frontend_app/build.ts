@@ -13,6 +13,7 @@ import { resolveConfiguredFrontendGlobalClientEntries } from "./global.js";
 import { resolveAssetManifestEntryOutputPath } from "./manifest.js";
 import { prepareSsrNodeModules } from "./node_modules.js";
 import { buildRelatedClientEntryMap } from "./related.js";
+import { pathExists } from "#47cd321d28f1";
 
 async function buildFrontendApp(
   options: BundlerFrontendBuildOptions | BundlerFrontendAppBundlerConfig,
@@ -49,7 +50,7 @@ function resolveBuildTarget(
 async function copyPublicDir(config: BundlerFrontendAppBundlerConfig): Promise<boolean> {
   if (!config.publicDir) return false;
   const sourceDir = path.resolve(config.rootDir, config.publicDir);
-  if (!await exists(sourceDir)) return false;
+  if (!await pathExists(sourceDir)) return false;
   const targetDir = path.resolve(config.rootDir, config.clientOutDir);
   await fs.mkdir(targetDir, { recursive: true });
   await fs.cp(sourceDir, targetDir, { recursive: true, force: true });
@@ -62,10 +63,10 @@ async function resolveBuildRelatedClientEntryMap(
 ): Promise<Record<string, string[]>> {
   if (!ssrResult?.assetManifest || !config.ssr) return {};
   return buildRelatedClientEntryMap({
-    manifest: ssrResult.assetManifest,
-    pageId: { collapseIndex: config.ssr.collapseIndex, sourcePrefix: `${config.frontendDir}/pages` },
-    rootDir: config.rootDir,
-    ruleKey: config.ssr.key,
+      manifest: ssrResult.assetManifest,
+      pageId: { collapseIndex: config.ssr.collapseIndex, sourcePrefix: `${config.frontendDir}/pages` },
+      rootDir: config.rootDir,
+      ruleKey: config.ssr.key,
   });
 }
 
@@ -75,15 +76,11 @@ function resolveBuildSsrEntryOutput(
 ): string | undefined {
   if (!ssrResult?.assetManifest || !config.ssr || !config.ssrOutDir) return undefined;
   return resolveAssetManifestEntryOutputPath({
-    entryId: config.ssr.key,
-    from: "ruleKey",
-    manifest: ssrResult.assetManifest,
-    outDir: path.resolve(config.rootDir, config.ssrOutDir),
+      entryId: config.ssr.key,
+      from: "ruleKey",
+      manifest: ssrResult.assetManifest,
+      outDir: path.resolve(config.rootDir, config.ssrOutDir),
   });
-}
-
-async function exists(filePath: string): Promise<boolean> {
-  return fs.access(filePath).then(() => true, () => false);
 }
 
 export {

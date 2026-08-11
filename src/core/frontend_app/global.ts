@@ -6,20 +6,20 @@ import type {
 import { matchesAnyPattern, normalizePathValue } from "#tsnh4vdfql8p";
 
 function resolveFrontendGlobalClientEntries(args: {
-  entries: BundlerFrontendGlobalClientEntries;
-  exclude?: readonly string[];
-  frontendDir: string;
-  include: readonly string[];
-  manifest?: BundlerAssetManifest;
+    entries: BundlerFrontendGlobalClientEntries;
+    exclude?: readonly string[];
+    frontendDir: string;
+    include: readonly string[];
+    manifest?: BundlerAssetManifest;
 }): string[] {
   if (Array.isArray(args.entries)) return stableEntries(args.entries);
   if (args.entries !== "auto" || !args.manifest) return [];
   const frontendDir = normalizePathValue(args.frontendDir);
   return stableEntries(Object.keys(args.manifest.sources).filter((source) => {
-    const discoverRel = toFrontendRelativeSource(source, frontendDir);
-    if (!discoverRel) return false;
-    if (!matchesAnyPattern(discoverRel, [...args.include])) return false;
-    return !matchesAnyPattern(discoverRel, [...(args.exclude || [])]);
+        const discoverRel = toFrontendRelativeSource(source, frontendDir);
+        if (!discoverRel) return false;
+        if (!matchesAnyPattern(discoverRel, [...args.include])) return false;
+        return !matchesAnyPattern(discoverRel, [...(args.exclude || [])]);
   }));
 }
 
@@ -28,11 +28,11 @@ function resolveConfiguredFrontendGlobalClientEntries(
   manifest?: BundlerAssetManifest,
 ): string[] {
   return resolveFrontendGlobalClientEntries({
-    entries: config.globalClientEntries,
-    exclude: config.globalClientEntryExclude,
-    frontendDir: config.frontendDir,
-    include: config.globalClientEntryInclude,
-    manifest,
+      entries: config.globalClientEntries,
+      exclude: config.globalClientEntryExclude,
+      frontendDir: config.frontendDir,
+      include: config.globalClientEntryInclude,
+      manifest,
   });
 }
 

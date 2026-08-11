@@ -29,13 +29,13 @@ function computeAggregateKeyRoot(includePatterns: string[], matchedFiles: Discov
 }
 
 function normalizeAggregatePathKey(args: {
-  collapseIndex: boolean;
-  file: DiscoveredFile;
-  keyRoot: string;
+    collapseIndex: boolean;
+    file: DiscoveredFile;
+    keyRoot: string;
 }): string {
   const fromRoot = args.keyRoot
-    ? normalizePathValue(path.posix.relative(args.keyRoot, args.file.discoverRel))
-    : normalizePathValue(args.file.discoverRel);
+  ? normalizePathValue(path.posix.relative(args.keyRoot, args.file.discoverRel))
+  : normalizePathValue(args.file.discoverRel);
   const ext = path.extname(fromRoot);
   let withoutExt = ext ? fromRoot.slice(0, -ext.length) : fromRoot;
   if (args.collapseIndex && withoutExt.endsWith("/index")) {
@@ -45,9 +45,9 @@ function normalizeAggregatePathKey(args: {
 }
 
 function validateAggregatePathKeys(args: {
-  collapseIndex: boolean;
-  matchedFiles: DiscoveredFile[];
-  rule: NormalizedAggregateRule;
+    collapseIndex: boolean;
+    matchedFiles: DiscoveredFile[];
+    rule: NormalizedAggregateRule;
 }): void {
   const keyRoot = computeAggregateKeyRoot(args.rule.include, args.matchedFiles);
   const seen = new Map<string, string>();
@@ -63,9 +63,9 @@ function validateAggregatePathKeys(args: {
 }
 
 function createAggregateEntryMetadata(args: {
-  matchedFiles: DiscoveredFile[];
-  rootModule?: ResolvedAggregateRootModule;
-  skippedSources?: string[];
+    matchedFiles: DiscoveredFile[];
+    rootModule?: ResolvedAggregateRootModule;
+    skippedSources?: string[];
 }): BundlerAggregateEntryMetadata {
   return {
     kind: "module-map",
@@ -76,9 +76,9 @@ function createAggregateEntryMetadata(args: {
 }
 
 function createAggregateRuleMetadata(args: {
-  rootModule?: ResolvedAggregateRootModule;
-  skippedSources?: string[];
-} = {}): BundlerAggregateRuleMetadata {
+    rootModule?: ResolvedAggregateRootModule;
+    skippedSources?: string[];
+  } = {}): BundlerAggregateRuleMetadata {
   return {
     kind: "module-map",
     rootModule: args.rootModule?.rootRel,
@@ -87,11 +87,11 @@ function createAggregateRuleMetadata(args: {
 }
 
 function buildAggregateModuleMapContents(args: {
-  aggregate: NormalizedAggregateModuleMap;
-  includePatterns: string[];
-  matchedFiles: DiscoveredFile[];
-  rootDir: string;
-  rootModule?: ResolvedAggregateRootModule;
+    aggregate: NormalizedAggregateModuleMap;
+    includePatterns: string[];
+    matchedFiles: DiscoveredFile[];
+    rootDir: string;
+    rootModule?: ResolvedAggregateRootModule;
 }): string {
   const bindings = {
     map: "__bundler_module_map",
@@ -107,9 +107,9 @@ function buildAggregateModuleMapContents(args: {
 }
 
 function resolveAggregateRootModule(args: {
-  config: NormalizedDiscoverOptions;
-  rootDir: string;
-  rule: NormalizedAggregateRule;
+    config: NormalizedDiscoverOptions;
+    rootDir: string;
+    rule: NormalizedAggregateRule;
 }): ResolvedAggregateRootModule | undefined {
   if (!args.rule.aggregate.rootModule) return undefined;
   const raw = args.rule.aggregate.rootModule;
@@ -143,7 +143,7 @@ function buildAggregatePrelude(
     lines.push(`import * as __bundler_root_namespace from ${JSON.stringify(toRootImportSpecifier(args.rootDir, args.rootModule.absPath))};`);
   }
   args.matchedFiles.forEach((file, index) => {
-    lines.push(`import * as __bundler_module_${index} from ${JSON.stringify(toRootImportSpecifier(args.rootDir, file.absPath))};`);
+      lines.push(`import * as __bundler_module_${index} from ${JSON.stringify(toRootImportSpecifier(args.rootDir, file.absPath))};`);
   });
   lines.push("");
   if (args.rootModule) {
@@ -167,11 +167,11 @@ function appendAggregateMap(
 ): void {
   lines.push(`const ${bindings.map} = {`);
   args.matchedFiles.forEach((file, index) => {
-    lines.push(`  ${JSON.stringify(normalizeAggregatePathKey({
-      collapseIndex: args.aggregate.collapseIndex,
-      file,
-      keyRoot: actualKeyRoot,
-    }))}: __bundler_module_${index}[${JSON.stringify(args.aggregate.matchedModuleExportName)}],`);
+      lines.push(`  ${JSON.stringify(normalizeAggregatePathKey({
+        collapseIndex: args.aggregate.collapseIndex,
+        file,
+        keyRoot: actualKeyRoot,
+      }))}: __bundler_module_${index}[${JSON.stringify(args.aggregate.matchedModuleExportName)}],`);
   });
   lines.push("};");
   lines.push("");

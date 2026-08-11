@@ -56,8 +56,8 @@ async function collectRelatedFrontendEntries(
   options: BundlerFrontendRelatedEntriesOptions,
 ): Promise<BundlerRelatedEntriesResult> {
   return collectRelatedEntries({
-    ...options,
-    candidatePatterns: options.candidatePatterns || DEFAULT_FRONTEND_RELATED_ENTRY_PATTERNS,
+      ...options,
+      candidatePatterns: options.candidatePatterns || DEFAULT_FRONTEND_RELATED_ENTRY_PATTERNS,
   });
 }
 

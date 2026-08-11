@@ -37,7 +37,14 @@ import {
   resolveBundleLoader,
   VIRTUAL_ENTRY_PREFIX,
 } from "./shared.js";
-import { DiscoveredFile, NormalizedAggregateRule, NormalizedBundleRule, NormalizedDiscoverOptions, ResolvedAggregateRootModule, ResolvedDiscovery } from "./shared.js";
+import type {
+  DiscoveredFile,
+  NormalizedAggregateRule,
+  NormalizedBundleRule,
+  NormalizedDiscoverOptions,
+  ResolvedAggregateRootModule,
+  ResolvedDiscovery,
+} from "./shared.js";
 
 async function resolveBundlerEntries(
   options: BundlerOptions,
@@ -46,7 +53,7 @@ async function resolveBundlerEntries(
   discoverySettings: { ignoredDirs?: string[] } = {},
 ): Promise<ResolvedDiscovery> {
   const configs = normalizeDiscoverOptions(rootDir, options.discover, {
-    ignoreDirs: discoverySettings.ignoredDirs || [],
+      ignoreDirs: discoverySettings.ignoredDirs || [],
   });
   const resolvedEntries: BundlerEntryRecord[] = [];
   const rules = new Map<string, BundlerResolvedRule>();
@@ -56,13 +63,13 @@ async function resolveBundlerEntries(
 
   for (const config of configs) {
     await resolveConfigEntries({
-      config,
-      emittedKeys,
-      emittedNames,
-      resolvedEntries,
-      rootDir,
-      rules,
-      sourceOwners,
+        config,
+        emittedKeys,
+        emittedNames,
+        resolvedEntries,
+        rootDir,
+        rules,
+        sourceOwners,
     });
   }
 
@@ -73,32 +80,32 @@ async function resolveBundlerEntries(
   return {
     ...discovery,
     signature: JSON.stringify({
-      entries: discovery.entries.map((entry) => ({
-        aggregate: entry.aggregate,
-        entrySource: entry.entrySource,
-        generated: entry.generated,
-        key: entry.key,
-        kind: entry.kind,
-        name: entry.name,
-        ownedSources: entry.ownedSources,
-        path: entry.source === "internal" ? `virtual:${entry.name}` : entry.path,
-        ruleKey: entry.ruleKey,
-        strategy: entry.strategy,
-      })),
-      rules: discovery.rules,
-      sourceOwners: discovery.sourceOwners,
+        entries: discovery.entries.map((entry) => ({
+              aggregate: entry.aggregate,
+              entrySource: entry.entrySource,
+              generated: entry.generated,
+              key: entry.key,
+              kind: entry.kind,
+              name: entry.name,
+              ownedSources: entry.ownedSources,
+              path: entry.source === "internal" ? `virtual:${entry.name}` : entry.path,
+              ruleKey: entry.ruleKey,
+              strategy: entry.strategy,
+        })),
+        rules: discovery.rules,
+        sourceOwners: discovery.sourceOwners,
     }),
   };
 }
 
 async function resolveConfigEntries(args: {
-  config: NormalizedDiscoverOptions;
-  emittedKeys: Set<string>;
-  emittedNames: Set<string>;
-  resolvedEntries: BundlerEntryRecord[];
-  rootDir: string;
-  rules: Map<string, BundlerResolvedRule>;
-  sourceOwners: Map<string, string>;
+    config: NormalizedDiscoverOptions;
+    emittedKeys: Set<string>;
+    emittedNames: Set<string>;
+    resolvedEntries: BundlerEntryRecord[];
+    rootDir: string;
+    rules: Map<string, BundlerResolvedRule>;
+    sourceOwners: Map<string, string>;
 }): Promise<void> {
   const files = await scanDiscoveredFiles(args.config, args.rootDir);
   const matchedByRule = new Map<string, DiscoveredFile[]>();
@@ -112,16 +119,16 @@ async function resolveConfigEntries(args: {
     const matchedFiles = (matchedByRule.get(rule.key) || []).sort((a, b) => a.rootRel.localeCompare(b.rootRel));
     const ruleRecord = args.rules.get(rule.key)!;
     await resolveRuleEntries({
-      aggregateRootModules,
-      config: args.config,
-      emittedKeys: args.emittedKeys,
-      emittedNames: args.emittedNames,
-      matchedFiles,
-      resolvedEntries: args.resolvedEntries,
-      rootDir: args.rootDir,
-      rule,
-      ruleRecord,
-      sourceOwners: args.sourceOwners,
+        aggregateRootModules,
+        config: args.config,
+        emittedKeys: args.emittedKeys,
+        emittedNames: args.emittedNames,
+        matchedFiles,
+        resolvedEntries: args.resolvedEntries,
+        rootDir: args.rootDir,
+        rule,
+        ruleRecord,
+        sourceOwners: args.sourceOwners,
     });
   }
 }
@@ -170,16 +177,16 @@ function matchFilesToRules(
 }
 
 async function resolveRuleEntries(args: {
-  aggregateRootModules: Map<string, ResolvedAggregateRootModule>;
-  config: NormalizedDiscoverOptions;
-  emittedKeys: Set<string>;
-  emittedNames: Set<string>;
-  matchedFiles: DiscoveredFile[];
-  resolvedEntries: BundlerEntryRecord[];
-  rootDir: string;
-  rule: NormalizedDiscoverOptions["rules"][number];
-  ruleRecord: BundlerResolvedRule;
-  sourceOwners: Map<string, string>;
+    aggregateRootModules: Map<string, ResolvedAggregateRootModule>;
+    config: NormalizedDiscoverOptions;
+    emittedKeys: Set<string>;
+    emittedNames: Set<string>;
+    matchedFiles: DiscoveredFile[];
+    resolvedEntries: BundlerEntryRecord[];
+    rootDir: string;
+    rule: NormalizedDiscoverOptions["rules"][number];
+    ruleRecord: BundlerResolvedRule;
+    sourceOwners: Map<string, string>;
 }): Promise<void> {
   if (args.rule.strategy === "ignore") {
     args.ruleRecord.ignoredSources = args.matchedFiles.map((file) => file.rootRel);
@@ -219,12 +226,12 @@ function resolveDirectEntryRecords(args: Parameters<typeof resolveRuleEntries>[0
       strategy: "entry",
     };
     emitEntryRecord({
-      emittedKeys: args.emittedKeys,
-      emittedNames: args.emittedNames,
-      record,
-      resolvedEntries: args.resolvedEntries,
-      ruleRecord: args.ruleRecord,
-      sourceOwners: args.sourceOwners,
+        emittedKeys: args.emittedKeys,
+        emittedNames: args.emittedNames,
+        record,
+        resolvedEntries: args.resolvedEntries,
+        ruleRecord: args.ruleRecord,
+        sourceOwners: args.sourceOwners,
     });
   }
 }
@@ -235,41 +242,41 @@ async function resolveBundleEntryRecords(
   const filesWithStats = await readBundleFilesWithStats(args.matchedFiles, args.rule);
   if (filesWithStats.length === 0) return;
   const stableId = createStableId(JSON.stringify({
-    dir: args.config.dir,
-    ruleKey: args.rule.key,
-    sources: filesWithStats.map((file) => file.rootRel),
+        dir: args.config.dir,
+        ruleKey: args.rule.key,
+        sources: filesWithStats.map((file) => file.rootRel),
   }));
   const chunks = splitByMaxSize({
-    files: filesWithStats.sort((a, b) => a.rootRel.localeCompare(b.rootRel)),
-    maxBundleSize: args.rule.maxBundleSize,
+      files: filesWithStats.sort((a, b) => a.rootRel.localeCompare(b.rootRel)),
+      maxBundleSize: args.rule.maxBundleSize,
   });
   const loader = resolveBundleLoader(filesWithStats[0].rootRel)!;
 
   chunks.forEach((chunk, index) => {
-    const part = index + 1;
-    const name = chunks.length === 1 ? `bundle-${stableId}` : `bundle-${stableId}-${part}`;
-    const key = buildBundleEntryKey(args.rule.key, part);
-    const ownedSources = chunk.map((file) => file.rootRel);
-    emitEntryRecord({
-      emittedKeys: args.emittedKeys,
-      emittedNames: args.emittedNames,
-      record: {
-        contents: buildBundleContents({ files: chunk, loader, rootDir: args.rootDir }),
-        generated: true,
-        key,
-        kind: "bundle",
-        name,
-        ownedSources,
-        path: `${VIRTUAL_ENTRY_PREFIX}${name}`,
-        ruleKey: args.rule.key,
-        source: "internal",
-        strategy: "bundle",
-        virtualLoader: loader,
-      },
-      resolvedEntries: args.resolvedEntries,
-      ruleRecord: args.ruleRecord,
-      sourceOwners: args.sourceOwners,
-    });
+      const part = index + 1;
+      const name = chunks.length === 1 ? `bundle-${stableId}` : `bundle-${stableId}-${part}`;
+      const key = buildBundleEntryKey(args.rule.key, part);
+      const ownedSources = chunk.map((file) => file.rootRel);
+      emitEntryRecord({
+          emittedKeys: args.emittedKeys,
+          emittedNames: args.emittedNames,
+          record: {
+            contents: buildBundleContents({ files: chunk, loader, rootDir: args.rootDir }),
+            generated: true,
+            key,
+            kind: "bundle",
+            name,
+            ownedSources,
+            path: `${VIRTUAL_ENTRY_PREFIX}${name}`,
+            ruleKey: args.rule.key,
+            source: "internal",
+            strategy: "bundle",
+            virtualLoader: loader,
+          },
+          resolvedEntries: args.resolvedEntries,
+          ruleRecord: args.ruleRecord,
+          sourceOwners: args.sourceOwners,
+      });
   });
 }
 
@@ -289,46 +296,46 @@ async function resolveAggregateEntryRecord(
   }
 
   const aggregateMetadata = createAggregateEntryMetadata({
-    matchedFiles,
-    rootModule,
-    skippedSources: filtered.skippedSources,
+      matchedFiles,
+      rootModule,
+      skippedSources: filtered.skippedSources,
   });
   const stableId = createStableId(JSON.stringify({
-    aggregate: args.rule.aggregate,
-    dir: args.config.dir,
-    rootModule: rootModule?.rootRel,
-    ruleKey: args.rule.key,
-    sources: aggregateMetadata.matchedSources,
+        aggregate: args.rule.aggregate,
+        dir: args.config.dir,
+        rootModule: rootModule?.rootRel,
+        ruleKey: args.rule.key,
+        sources: aggregateMetadata.matchedSources,
   }));
   const name = `aggregate-${stableId}`;
   const ownedSources = [...aggregateMetadata.matchedSources, ...(rootModule ? [rootModule.rootRel] : [])].sort();
 
   emitEntryRecord({
-    emittedKeys: args.emittedKeys,
-    emittedNames: args.emittedNames,
-    record: {
-      aggregate: aggregateMetadata,
-      contents: buildAggregateModuleMapContents({
-        aggregate: args.rule.aggregate,
-        includePatterns: args.rule.include,
-        matchedFiles,
-        rootDir: args.rootDir,
-        rootModule,
-      }),
-      generated: true,
-      key: buildAggregateEntryKey(args.rule.key),
-      kind: "entry",
-      name,
-      ownedSources,
-      path: `${VIRTUAL_ENTRY_PREFIX}${name}`,
-      ruleKey: args.rule.key,
-      source: "internal",
-      strategy: "aggregate",
-      virtualLoader: "ts",
-    },
-    resolvedEntries: args.resolvedEntries,
-    ruleRecord: args.ruleRecord,
-    sourceOwners: args.sourceOwners,
+      emittedKeys: args.emittedKeys,
+      emittedNames: args.emittedNames,
+      record: {
+        aggregate: aggregateMetadata,
+        contents: buildAggregateModuleMapContents({
+            aggregate: args.rule.aggregate,
+            includePatterns: args.rule.include,
+            matchedFiles,
+            rootDir: args.rootDir,
+            rootModule,
+        }),
+        generated: true,
+        key: buildAggregateEntryKey(args.rule.key),
+        kind: "entry",
+        name,
+        ownedSources,
+        path: `${VIRTUAL_ENTRY_PREFIX}${name}`,
+        ruleKey: args.rule.key,
+        source: "internal",
+        strategy: "aggregate",
+        virtualLoader: "ts",
+      },
+      resolvedEntries: args.resolvedEntries,
+      ruleRecord: args.ruleRecord,
+      sourceOwners: args.sourceOwners,
   });
 }
 

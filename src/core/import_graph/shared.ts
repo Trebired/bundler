@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { toPosixPath } from "#5kd9snhn6zft";
+import { normalizePathValue } from "#5kd9snhn6zft";
 
 const DEFAULT_IMPORT_GRAPH_EXTENSIONS = [
   ".ts",
@@ -34,12 +34,8 @@ type TsconfigPathMatcher = {
   targets: string[];
 };
 
-function normalizeKey(value: unknown): string {
-  return toPosixPath(String(value || "").trim()).replace(/^\.\/+/, "");
-}
-
 function normalizePathInRoot(rootDir: string, value: string): string {
-  return normalizeKey(path.relative(rootDir, value));
+  return normalizePathValue(path.relative(rootDir, value));
 }
 
 export {
@@ -48,7 +44,6 @@ export {
   EXPORT_FROM_RE,
   IMPORT_FROM_RE,
   IMPORT_SIDE_EFFECT_RE,
-  normalizeKey,
   normalizePathInRoot,
 };
 export type {

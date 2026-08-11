@@ -32,7 +32,7 @@ async function verifyBundlerProjectConfig(context) {
   const configPath = await context.findBundlerProjectConfig(path.join(prefixedConfig, "src", "nested"));
   assert.equal(configPath, path.join(prefixedConfig, bundlerConfigDir, "config.ts"));
   const prefixed = await context.loadBundlerProjectConfig(prefixedConfig, {
-    searchFrom: path.join(prefixedConfig, "src", "nested"),
+      searchFrom: path.join(prefixedConfig, "src", "nested"),
   });
   const namespace = context.createBundlerNamespace(prefixed.config);
   assert.deepEqual(prefixed.config, { prefix: "tbf" });

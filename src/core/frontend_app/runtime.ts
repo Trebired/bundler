@@ -132,11 +132,11 @@ async function buildRuntimeRelatedMap(
 ): Promise<Record<string, string[]>> {
   if (!config.ssr) return {};
   return buildRelatedClientEntryMap({
-    manifest: ssrManifest,
-    pageId: config.pageId || { collapseIndex: config.ssr.collapseIndex, sourcePrefix: `${config.frontendDir}/pages` },
-    rootDir: config.rootDir,
-    ruleKey: config.ssr.key,
-    tsconfig: config.tsconfig,
+      manifest: ssrManifest,
+      pageId: config.pageId || { collapseIndex: config.ssr.collapseIndex, sourcePrefix: `${config.frontendDir}/pages` },
+      rootDir: config.rootDir,
+      ruleKey: config.ssr.key,
+      tsconfig: config.tsconfig,
   });
 }
 
@@ -155,13 +155,13 @@ function buildRuntimeAssetLinksSync(
   const runtime = getEnsuredRuntime(state);
   if (!runtime.clientManifest) throw new Error("bundler-frontend-runtime-client-manifest-missing");
   return collectFrontendAssetLinks({
-    collect: { publicPath: state.config.clientOptions.publicPath },
-    globalEntryIds: runtime.globalClientEntries,
-    globalStyleRuleKey: state.config.globalStyleRuleKey,
-    manifest: runtime.clientManifest,
-    pageIds,
-    relatedEntryMap: runtime.relatedClientEntryMap,
-    renderTags: state.config.renderTags,
+      collect: { publicPath: state.config.clientOptions.publicPath },
+      globalEntryIds: runtime.globalClientEntries,
+      globalStyleRuleKey: state.config.globalStyleRuleKey,
+      manifest: runtime.clientManifest,
+      pageIds,
+      relatedEntryMap: runtime.relatedClientEntryMap,
+      renderTags: state.config.renderTags,
   });
 }
 
@@ -194,18 +194,18 @@ function resolveRuntimeSsrEntryPath(
 ): string | undefined {
   if (!config.ssr || !config.ssrOutDir) return undefined;
   return resolveAssetManifestEntryOutputPath({
-    entryId: config.ssr.key,
-    from: "ruleKey",
-    manifest,
-    outDir: path.resolve(config.rootDir, config.ssrOutDir),
+      entryId: config.ssr.key,
+      from: "ruleKey",
+      manifest,
+      outDir: path.resolve(config.rootDir, config.ssrOutDir),
   });
 }
 
 async function readRuntimeAssetManifest(filePath: string | undefined): Promise<BundlerAssetManifest | undefined> {
   if (!filePath) return undefined;
   const raw = await readBundlerManifest(filePath).catch((error: NodeJS.ErrnoException) => {
-    if (error.code === "ENOENT") return undefined;
-    throw error;
+      if (error.code === "ENOENT") return undefined;
+      throw error;
   });
   if (!raw) return undefined;
   return extractAssetManifest(raw);

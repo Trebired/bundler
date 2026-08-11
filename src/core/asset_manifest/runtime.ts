@@ -8,13 +8,11 @@ import type {
   BundlerCollectAssetLinksLookup,
   BundlerCollectAssetLinksOptions,
   BundlerEntryRecord,
+  BundlerFontPreloadLink,
 } from "#3c8d8166992a";
 import { deriveManifest } from "#c460d1e7c1c3";
-import { toPosixPath } from "#5kd9snhn6zft";
-
-function normalizeKey(value: unknown): string {
-  return toPosixPath(String(value || "").trim()).replace(/^\.\/+/, "").replace(/^\/+|\/+$/g, "");
-}
+import { VIRTUAL_ENTRY_PREFIX, normalizePathValue as normalizeKey } from "#5kd9snhn6zft";
+import { sortFontPreloadLinks } from "#cliwdvy5eown";
 
 function normalizeSourcePath(value: unknown, rootDir: string): string {
   const raw = String(value || "").trim();
@@ -56,6 +54,7 @@ function collectAssetLinks(
   const state = {
     assets: new Set<string>(),
     entryKeys: [] as string[],
+    fontPreloads: new Map<string, BundlerFontPreloadLink>(),
     missing: [] as string[],
     outputs: new Set<string>(),
     scripts: new Set<string>(),
@@ -76,6 +75,7 @@ function collectAssetLinks(
     entryKeys: state.entryKeys,
     scripts: Array.from(state.scripts),
     styles: Array.from(state.styles),
+    fontPreloads: sortFontPreloadLinks(state.fontPreloads.values()),
     assets: Array.from(state.assets),
     outputs: Array.from(state.outputs),
     missing: state.missing,
@@ -87,12 +87,13 @@ function toStableList(values: Iterable<string>): string[] {
 }
 
 function toEntryPointLookupKey(entry: BundlerEntryRecord): string {
-  return entry.source === "internal" ? `virtual:${normalizeKey(entry.name)}` : normalizeKey(entry.entrySource || "");
+  if (entry.source !== "internal") return normalizeKey(entry.entrySource || "");
+  return normalizeVirtualEntryPath(entry.path) || `virtual:${normalizeKey(entry.name)}`;
 }
 
-function collectReachableOutputs(args: {
-  entryOutput: string;
-  outputs: ReturnType<typeof deriveManifest>["allOutputs"];
+function collectManifestReachableOutputs(args: {
+    entryOutput: string;
+    outputs: ReturnType<typeof deriveManifest>["allOutputs"];
 }): string[] {
   const seen = new Set<string>();
   const stack = [args.entryOutput];
@@ -103,21 +104,21 @@ function collectReachableOutputs(args: {
     const output = args.outputs[current];
     if (!output) continue;
     output.imports.forEach((imported) => {
-      if (args.outputs[imported]) stack.push(imported);
+        if (args.outputs[imported]) stack.push(imported);
     });
     output.css.forEach((css) => {
-      if (args.outputs[css]) stack.push(css);
+        if (args.outputs[css]) stack.push(css);
     });
   }
   return Array.from(seen).sort();
 }
 
 function createEntryRecord(args: {
-  entry: BundlerEntryRecord;
-  entryOutput: string;
-  imports: string[];
-  js: string[];
-  outputs: string[];
+    entry: BundlerEntryRecord;
+    entryOutput: string;
+    imports: string[];
+    js: string[];
+    outputs: string[];
 }): BundlerAssetManifestEntry {
   const js = toStableList(args.js);
   const css = toStableList(args.outputs.filter((value) => value.endsWith(".css")));
@@ -151,14 +152,14 @@ function createEmptyManifest(resolvedDiscovery: NonNullable<BundlerBuildAssetMan
     entryOutputs: {},
     outputs: {},
     rules: Object.fromEntries(Object.entries(resolvedDiscovery.rules).map(([ruleKey, rule]) => [
-      ruleKey,
-      {
-        aggregate: rule.aggregate,
-        entryKeys: rule.entryKeys.slice().sort(),
-        ignoredSources: rule.ignoredSources.slice().sort(),
-        ruleKey: rule.ruleKey,
-        strategy: rule.strategy,
-      },
+          ruleKey,
+          {
+            aggregate: rule.aggregate,
+            entryKeys: rule.entryKeys.slice().sort(),
+            ignoredSources: rule.ignoredSources.slice().sort(),
+            ruleKey: rule.ruleKey,
+            strategy: rule.strategy,
+          },
     ])),
   };
 }
@@ -204,27 +205,27 @@ function populateManifestEntries(
     if (!derivedEntry) continue;
     const entryOutput = normalizeOutputPath(derivedEntry.entryOutput, rootDir, outDir);
     if (!entryOutput) continue;
-    const reachableOutputs = collectReachableOutputs({
-      entryOutput: derivedEntry.entryOutput,
-      outputs: derived.allOutputs,
+    const reachableOutputs = collectManifestReachableOutputs({
+        entryOutput: derivedEntry.entryOutput,
+        outputs: derived.allOutputs,
     }).map((value) => normalizeOutputPath(value, rootDir, outDir)).filter(Boolean);
 
     manifest.entries[entry.key] = createEntryRecord({
-      entry,
-      entryOutput,
-      outputs: reachableOutputs,
-      js: derivedEntry.js.map((value) => normalizeOutputPath(value, rootDir, outDir)).filter(Boolean),
-      imports: derivedEntry.imports.map((value) => normalizeOutputPath(value, rootDir, outDir)).filter(Boolean),
+        entry,
+        entryOutput,
+        outputs: reachableOutputs,
+        js: derivedEntry.js.map((value) => normalizeOutputPath(value, rootDir, outDir)).filter(Boolean),
+        imports: derivedEntry.imports.map((value) => normalizeOutputPath(value, rootDir, outDir)).filter(Boolean),
     });
     manifest.entryOutputs[entryOutput] = entry.key;
     entry.ownedSources.forEach((sourcePath) => {
-      manifest.sources[sourcePath] = {
-        source: sourcePath,
-        entryKey: entry.key,
-        ruleKey: entry.ruleKey,
-        strategy: entry.strategy,
-        outputs: reachableOutputs,
-      };
+        manifest.sources[sourcePath] = {
+          source: sourcePath,
+          entryKey: entry.key,
+          ruleKey: entry.ruleKey,
+          strategy: entry.strategy,
+          outputs: reachableOutputs,
+        };
     });
   }
 }
@@ -236,8 +237,8 @@ function findDerivedEntry(
 ) {
   const lookupKey = toEntryPointLookupKey(entry);
   return Object.values(derived.entries).find((item) => {
-    const output = derived.allOutputs[item.entryOutput];
-    return output?.entryPoint && normalizeSourcePath(output.entryPoint, rootDir) === lookupKey;
+      const output = derived.allOutputs[item.entryOutput];
+      return output?.entryPoint && normalizeSourcePath(output.entryPoint, rootDir) === lookupKey;
   });
 }
 
@@ -257,6 +258,37 @@ function toPublicPath(publicPath: string | undefined, value: string): string {
   if (!base) return normalizedValue;
   if (base === "/") return normalizedValue ? `/${normalizedValue}` : "/";
   return `${base.replace(/\/+$/g, "")}/${normalizedValue.replace(/^\/+/g, "")}`;
+}
+
+function normalizeVirtualEntryPath(value: unknown): string {
+  const normalized = normalizeKey(String(value || ""));
+  if (normalized.startsWith(VIRTUAL_ENTRY_PREFIX)) {
+    return `virtual:${normalized.slice(VIRTUAL_ENTRY_PREFIX.length)}`;
+  }
+  return normalized.startsWith("virtual:") ? normalized : "";
+}
+
+function fontPreloadType(href: string): string {
+  const normalized = href.split("?")[0].toLowerCase();
+  if (normalized.endsWith(".woff2")) return "font/woff2";
+  if (normalized.endsWith(".woff")) return "font/woff";
+  if (normalized.endsWith(".ttf")) return "font/ttf";
+  if (normalized.endsWith(".otf")) return "font/otf";
+  return "";
+}
+
+function addAssetLink(
+  state: {
+    assets: Set<string>;
+    fontPreloads: Map<string, BundlerFontPreloadLink>;
+  },
+  publicPath: string | undefined,
+  asset: string,
+): void {
+  const href = toPublicPath(publicPath, asset);
+  state.assets.add(href);
+  const type = fontPreloadType(href);
+  if (type) state.fontPreloads.set(href, { href, type });
 }
 
 function resolveEntryKeys(
@@ -286,6 +318,7 @@ function addEntryLinks(
   state: {
     assets: Set<string>;
     entryKeys: string[];
+    fontPreloads: Map<string, BundlerFontPreloadLink>;
     outputs: Set<string>;
     scripts: Set<string>;
     seenKeys: Set<string>;
@@ -300,7 +333,7 @@ function addEntryLinks(
   const entry = manifest.entries[entryKey];
   if (!entry) return;
   entry.outputs.forEach((output) => state.outputs.add(toPublicPath(publicPath, output)));
-  entry.assets.forEach((asset) => state.assets.add(toPublicPath(publicPath, asset)));
+  entry.assets.forEach((asset) => addAssetLink(state, publicPath, asset));
   entry.css.forEach((style) => state.styles.add(toPublicPath(publicPath, style)));
   if (/\.(?:[mc]?js)$/i.test(entry.file)) state.scripts.add(toPublicPath(publicPath, entry.file));
 }

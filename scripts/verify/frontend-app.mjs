@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 
 import {
   buildFrontendApp,
@@ -21,12 +21,18 @@ import {
   resolveAggregateEntryByRuleKey,
   serveStaticAsset,
 } from "../../dist/index.js";
+import {
+  importJavaScriptOutput,
+  resetTemporaryRoot,
+  toPosixPathValue,
+  writeFixtureFile,
+} from "./shared.mjs";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const tempRoot = path.join(rootDir, ".tmp", "verify-frontend-app");
 
-async function main() {
-  await resetTempRoot();
+async function verifyFrontendAppPackage() {
+  await resetTemporaryRoot(tempRoot);
   await verifyFrontendPresetDefaults();
   await verifyFrontendBuildHelpers();
   await verifyTargetSpecificBuilds();
@@ -37,10 +43,10 @@ async function main() {
 
 async function verifyFrontendPresetDefaults() {
   const options = createFrontendAppBundlerOptions({
-    clientOutDir: "dist/client",
-    rootDir: tempRoot,
-    ssrOutDir: "dist/ssr",
-    supportedI18nLanguages: ["en", "cs"],
+      clientOutDir: "dist/client",
+      rootDir: tempRoot,
+      ssrOutDir: "dist/ssr",
+      supportedI18nLanguages: ["en", "cs"],
   });
   const clientRules = options.client.discover.rules;
   const ssrRules = options.ssr.discover.rules;
@@ -70,7 +76,7 @@ async function verifyFrontendBuildHelpers() {
   const result = await buildFrontendApp(config);
 
   assert.ok(result.stats.precompressed.assets.length > 0);
-  assert.ok(toPosix(result.ssrEntryOutput).includes("dist/ssr/js/"));
+  assert.ok(toPosixPathValue(result.ssrEntryOutput).includes("dist/ssr/js/"));
   assert.ok(result.globalClientEntries.includes("src/frontend/js/global.client.ts"));
   await assertAggregateMetadata(result);
   assertRelatedMap(result.relatedClientEntryMap);
@@ -101,7 +107,7 @@ async function assertAggregateMetadata(result) {
   const entry = resolveAggregateEntryByRuleKey(result.ssr.assetManifest, "ssr-pages");
   const matched = collectAggregateMatchedSourcesByRuleKey(result.ssr.assetManifest, "ssr-pages");
   const sourceIds = createAggregateSourceIdMap(matched, { sourcePrefix: "src/frontend/pages" });
-  const ssrModule = await importFresh(result.ssrEntryOutput);
+  const ssrModule = await importJavaScriptOutput([result.ssrEntryOutput]);
 
   assert.ok(entry.aggregate.skippedSources.includes("src/frontend/pages/helper.tsx"));
   assert.ok(result.ssr.assetManifest.rules["ssr-pages"].aggregate.skippedSources.includes("src/frontend/pages/helper.tsx"));
@@ -118,9 +124,9 @@ async function assertAggregateMetadata(result) {
 
 function assertRelatedMap(map) {
   assert.deepEqual(map.home, [
-    "src/frontend/features/card.client.scss",
-    "src/frontend/pages/home.client.defer.ts",
-    "src/frontend/pages/home.client.tsx",
+      "src/frontend/features/card.client.scss",
+      "src/frontend/pages/home.client.defer.ts",
+      "src/frontend/pages/home.client.tsx",
   ]);
 }
 
@@ -143,37 +149,37 @@ async function assertRuntime(config) {
 
 async function assertAssetLinksAndStatic(result, fixture) {
   const links = collectFrontendAssetLinks({
-    collect: { publicPath: "/assets/" },
-    globalEntryIds: result.globalClientEntries,
-    globalStyleRuleKey: "global-style",
-    manifest: result.client.assetManifest,
-    pageIds: ["home"],
-    relatedEntryMap: result.relatedClientEntryMap,
-    renderTags: true,
+      collect: { publicPath: "/assets/" },
+      globalEntryIds: result.globalClientEntries,
+      globalStyleRuleKey: "global-style",
+      manifest: result.client.assetManifest,
+      pageIds: ["home"],
+      relatedEntryMap: result.relatedClientEntryMap,
+      renderTags: true,
   });
   const scriptOutput = result.client.assetManifest.entries[links.entryKeys.find((key) => result.client.assetManifest.entries[key].js.length)].file;
   const response = await serveStaticAsset({
-    headers: { "accept-encoding": "gzip, br" },
-    url: `/${scriptOutput}`,
-  }, {
-    clientOutDir: path.join(fixture, "dist/client"),
-    mode: "production",
+      headers: { "accept-encoding": "gzip, br" },
+      url: `/${scriptOutput}`,
+    }, {
+      clientOutDir: path.join(fixture, "dist/client"),
+      mode: "production",
   });
   const privateResponse = await serveStaticAsset({ url: "/bundler-manifest.json" }, {
-    clientOutDir: path.join(fixture, "dist/client"),
-    mode: "production",
+      clientOutDir: path.join(fixture, "dist/client"),
+      mode: "production",
   });
   const sourceMap = Object.keys(result.client.assetManifest.outputs).find((item) => item.endsWith(".map"));
   assert.ok(sourceMap, "expected a source map output");
   const sourceMapResponse = await serveStaticAsset({ url: `/${sourceMap}` }, {
-    clientOutDir: path.join(fixture, "dist/client"),
-    mode: "production",
+      clientOutDir: path.join(fixture, "dist/client"),
+      mode: "production",
   });
   const publicResponse = await serveStaticAsset({ url: "/robots.txt" }, {
-    clientOutDir: "dist/client",
-    mode: "development",
-    publicDir: "src/frontend/public",
-    rootDir: fixture,
+      clientOutDir: "dist/client",
+      mode: "development",
+      publicDir: "src/frontend/public",
+      rootDir: fixture,
   });
 
   assert.ok(links.styles.some((item) => item.startsWith("/assets/css/")));
@@ -249,71 +255,51 @@ async function verifyRelatedMapTsconfigResolution() {
   const fixture = path.join(tempRoot, "alias");
   await writeTsconfigRelatedFixture(fixture);
   const map = await buildRelatedClientEntryMap({
-    aggregateSources: ["src/frontend/pages/alias.tsx"],
-    pageId: { sourcePrefix: "src/frontend/pages" },
-    rootDir: fixture,
-    tsconfig: true,
+      aggregateSources: ["src/frontend/pages/alias.tsx"],
+      pageId: { sourcePrefix: "src/frontend/pages" },
+      rootDir: fixture,
+      tsconfig: true,
   });
   assert.deepEqual(map.alias, ["src/frontend/features/card.client.scss"]);
 }
 
 async function writeFrontendFixture(fixture) {
-  await writeFile(fixture, "src/frontend/layouts/root/document.tsx", "export const rootDocument = 'root';\n");
-  await writeFile(fixture, "src/frontend/pages/home.tsx", "import '../features/card';\nexport default 'home';\n");
-  await writeFile(fixture, "src/frontend/pages/about/index.tsx", "const Page = 'about';\nexport { Page as default };\n");
-  await writeFile(fixture, "src/frontend/pages/reexport.tsx", "export { default } from '../shared/reexported';\n");
-  await writeFile(fixture, "src/frontend/pages/helper.tsx", "export const helper = true;\n");
-  await writeFile(fixture, "src/frontend/pages/home.client.tsx", `export const hydrate = ${JSON.stringify("x".repeat(2048))};\n`);
-  await writeFile(fixture, "src/frontend/pages/home.client.defer.ts", "export const deferred = true;\n");
-  await writeFile(fixture, "src/frontend/features/card.ts", "export const card = true;\n");
-  await writeFile(fixture, "src/frontend/features/card.client.scss", ".card { color: red; }\n");
-  await writeFile(fixture, "src/frontend/js/global.client.ts", `export const global = ${JSON.stringify("x".repeat(2048))};\n`);
-  await writeFile(fixture, "src/frontend/shared/reexported.tsx", "export default 'reexported';\n");
-  await writeFile(fixture, "src/frontend/css/base.css", `.base { content: "${"x".repeat(2048)}"; }\n`);
-  await writeFile(fixture, "src/frontend/public/robots.txt", "User-agent: *\n");
+  await writeFixtureFile(fixture, "src/frontend/layouts/root/document.tsx", "export const rootDocument = 'root';\n");
+  await writeFixtureFile(fixture, "src/frontend/pages/home.tsx", "import '../features/card';\nexport default 'home';\n");
+  await writeFixtureFile(fixture, "src/frontend/pages/about/index.tsx", "const Page = 'about';\nexport { Page as default };\n");
+  await writeFixtureFile(fixture, "src/frontend/pages/reexport.tsx", "export { default } from '../shared/reexported';\n");
+  await writeFixtureFile(fixture, "src/frontend/pages/helper.tsx", "export const helper = true;\n");
+  await writeFixtureFile(fixture, "src/frontend/pages/home.client.tsx", `export const hydrate = ${JSON.stringify("x".repeat(2048))};\n`);
+  await writeFixtureFile(fixture, "src/frontend/pages/home.client.defer.ts", "export const deferred = true;\n");
+  await writeFixtureFile(fixture, "src/frontend/features/card.ts", "export const card = true;\n");
+  await writeFixtureFile(fixture, "src/frontend/features/card.client.scss", ".card { color: red; }\n");
+  await writeFixtureFile(fixture, "src/frontend/js/global.client.ts", `export const global = ${JSON.stringify("x".repeat(2048))};\n`);
+  await writeFixtureFile(fixture, "src/frontend/shared/reexported.tsx", "export default 'reexported';\n");
+  await writeFixtureFile(fixture, "src/frontend/css/base.css", `.base { content: "${"x".repeat(2048)}"; }\n`);
+  await writeFixtureFile(fixture, "src/frontend/public/robots.txt", "User-agent: *\n");
 }
 
 async function writeNodeModulesFixture(fixture) {
-  await writeFile(fixture, "src/frontend/layouts/root/document.tsx", "export const rootDocument = 'root';\n");
-  await writeFile(fixture, "src/frontend/pages/home.tsx", "import value from 'runtime-value';\nexport default value;\n");
-  await writeFile(fixture, "src/frontend/js/global.client.ts", "export const global = true;\n");
-  await writeFile(fixture, "runtime_node_modules/runtime-value/index.js", "export default 'runtime-value';\n");
-  await writeFile(fixture, "runtime_node_modules/runtime-value/package.json", JSON.stringify({
-    exports: "./index.js",
-    type: "module",
+  await writeFixtureFile(fixture, "src/frontend/layouts/root/document.tsx", "export const rootDocument = 'root';\n");
+  await writeFixtureFile(fixture, "src/frontend/pages/home.tsx", "import value from 'runtime-value';\nexport default value;\n");
+  await writeFixtureFile(fixture, "src/frontend/js/global.client.ts", "export const global = true;\n");
+  await writeFixtureFile(fixture, "runtime_node_modules/runtime-value/index.js", "export default 'runtime-value';\n");
+  await writeFixtureFile(fixture, "runtime_node_modules/runtime-value/package.json", JSON.stringify({
+        exports: "./index.js",
+        type: "module",
   }));
 }
 
 async function writeTsconfigRelatedFixture(fixture) {
-  await writeFile(fixture, "tsconfig.json", JSON.stringify({
-    compilerOptions: {
-      baseUrl: ".",
-      paths: { "#feature/*": ["src/frontend/features/*"] },
-    },
-  }, null, 2));
-  await writeFile(fixture, "src/frontend/pages/alias.tsx", "import '#feature/card';\nexport default 'alias';\n");
-  await writeFile(fixture, "src/frontend/features/card.ts", "export const card = true;\n");
-  await writeFile(fixture, "src/frontend/features/card.client.scss", ".card { color: blue; }\n");
+  await writeFixtureFile(fixture, "tsconfig.json", JSON.stringify({
+        compilerOptions: {
+          baseUrl: ".",
+          paths: { "#feature/*": ["src/frontend/features/*"] },
+        },
+      }, null, 2));
+  await writeFixtureFile(fixture, "src/frontend/pages/alias.tsx", "import '#feature/card';\nexport default 'alias';\n");
+  await writeFixtureFile(fixture, "src/frontend/features/card.ts", "export const card = true;\n");
+  await writeFixtureFile(fixture, "src/frontend/features/card.client.scss", ".card { color: blue; }\n");
 }
 
-async function importFresh(filePath) {
-  assert.ok(filePath, "expected an SSR entry output");
-  return import(`${pathToFileURL(filePath).href}?v=${Date.now()}-${Math.random()}`);
-}
-
-async function writeFile(root, rel, contents) {
-  const filePath = path.join(root, rel);
-  await fs.mkdir(path.dirname(filePath), { recursive: true });
-  await fs.writeFile(filePath, contents);
-}
-
-function toPosix(value) {
-  return String(value || "").replace(/\\/gu, "/");
-}
-
-async function resetTempRoot() {
-  await fs.rm(tempRoot, { force: true, recursive: true });
-  await fs.mkdir(tempRoot, { recursive: true });
-}
-
-await main();
+await verifyFrontendAppPackage();

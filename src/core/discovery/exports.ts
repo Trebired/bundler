@@ -12,8 +12,8 @@ type FilteredAggregateFiles = {
 };
 
 async function filterAggregateMatchedFiles(args: {
-  matchedFiles: DiscoveredFile[];
-  rule: NormalizedAggregateRule;
+    matchedFiles: DiscoveredFile[];
+    rule: NormalizedAggregateRule;
 }): Promise<FilteredAggregateFiles> {
   if (!args.rule.aggregate.requireMatchedModuleExport) {
     return { matchedFiles: args.matchedFiles, skippedSources: [] };
@@ -40,9 +40,9 @@ async function filterAggregateMatchedFiles(args: {
 }
 
 function hasModuleExport(args: {
-  exportName: string;
-  filePath: string;
-  source: string;
+    exportName: string;
+    filePath: string;
+    source: string;
 }): boolean {
   const sourceFile = ts.createSourceFile(
     args.filePath,
@@ -98,8 +98,8 @@ function bindingNameExportsName(name: ts.BindingName, exportName: string): boole
   if (ts.isIdentifier(name)) return name.text === exportName;
   const elements = ts.isObjectBindingPattern(name) ? name.elements : name.elements;
   return elements.some((element) => {
-    if (!ts.isBindingElement(element)) return false;
-    return bindingNameExportsName(element.name, exportName);
+      if (!ts.isBindingElement(element)) return false;
+      return bindingNameExportsName(element.name, exportName);
   });
 }
 

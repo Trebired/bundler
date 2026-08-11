@@ -9,12 +9,12 @@ import { toRootImportSpecifier } from "./shared.js";
 import type { DiscoveredFile } from "./shared.js";
 
 function emitEntryRecord(args: {
-  emittedKeys: Set<string>;
-  emittedNames: Set<string>;
-  record: BundlerEntryRecord;
-  resolvedEntries: BundlerEntryRecord[];
-  ruleRecord: BundlerResolvedRule;
-  sourceOwners: Map<string, string>;
+    emittedKeys: Set<string>;
+    emittedNames: Set<string>;
+    record: BundlerEntryRecord;
+    resolvedEntries: BundlerEntryRecord[];
+    ruleRecord: BundlerResolvedRule;
+    sourceOwners: Map<string, string>;
 }): void {
   assertUniqueEntryRecord(args.record, args.emittedKeys, args.emittedNames);
   args.emittedKeys.add(args.record.key);
@@ -36,9 +36,9 @@ function assertUniqueEntryRecord(
 }
 
 function createResolvedDiscovery(args: {
-  resolvedEntries: BundlerEntryRecord[];
-  rules: Map<string, BundlerResolvedRule>;
-  sourceOwners: Map<string, string>;
+    resolvedEntries: BundlerEntryRecord[];
+    rules: Map<string, BundlerResolvedRule>;
+    sourceOwners: Map<string, string>;
 }): BundlerResolvedDiscovery {
   return {
     entries: args.resolvedEntries.sort((a, b) => a.key.localeCompare(b.key)),
@@ -48,19 +48,19 @@ function createResolvedDiscovery(args: {
 }
 
 function buildBundleContents(args: {
-  files: DiscoveredFile[];
-  loader: BundlerVirtualEntryLoader;
-  rootDir: string;
+    files: DiscoveredFile[];
+    loader: BundlerVirtualEntryLoader;
+    rootDir: string;
 }): string {
   if (args.loader === "css") {
     return args.files
-      .map((file) => `@import ${JSON.stringify(toRootImportSpecifier(args.rootDir, file.absPath))};`)
-      .join("\n");
+    .map((file) => `@import ${JSON.stringify(toRootImportSpecifier(args.rootDir, file.absPath))};`)
+    .join("\n");
   }
 
   return args.files
-    .map((file) => `import ${JSON.stringify(toRootImportSpecifier(args.rootDir, file.absPath))};`)
-    .join("\n");
+  .map((file) => `import ${JSON.stringify(toRootImportSpecifier(args.rootDir, file.absPath))};`)
+  .join("\n");
 }
 
 export {

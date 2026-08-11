@@ -16,35 +16,35 @@ type I18nTransformResult = {
 };
 
 async function transformLocalTranslators(args: {
-  callerPath: string;
-  i18n: NormalizedBundlerI18nOptions;
-  rootDir: string;
-  source: string;
+    callerPath: string;
+    i18n: NormalizedBundlerI18nOptions;
+    rootDir: string;
+    source: string;
 }): Promise<I18nTransformResult | undefined> {
   const localNames = findLocalTranslatorBindings(args.source);
   if (localNames.length === 0 || !hasLocalTranslatorCall(args.source, localNames)) return undefined;
 
   const folder = await resolveI18nFolder(args);
   const transformed = buildTransformedSource({
-    callerPath: args.callerPath,
-    folder,
-    localNames,
-    source: args.source,
+      callerPath: args.callerPath,
+      folder,
+      localNames,
+      source: args.source,
   });
 
   return { contents: transformed, folder };
 }
 
 function buildTransformedSource(args: {
-  callerPath: string;
-  folder: ResolvedI18nFolder;
-  localNames: string[];
-  source: string;
+    callerPath: string;
+    folder: ResolvedI18nFolder;
+    localNames: string[];
+    source: string;
 }): string {
   const translatorBinding = uniqueBinding("__package_i18n_createTranslator", args.source);
   const moduleBindings = args.folder.modules.map((item) => ({
-    ...item,
-    binding: uniqueBinding(`__package_i18n_${sanitizeBindingSegment(item.language)}`, args.source),
+        ...item,
+        binding: uniqueBinding(`__package_i18n_${sanitizeBindingSegment(item.language)}`, args.source),
   }));
   const imports = buildStaticImports(args.callerPath, translatorBinding, moduleBindings);
   const bundleExpression = `{ ${moduleBindings.map((item) => `${JSON.stringify(item.language)}: ${item.binding}`).join(", ")} }`;

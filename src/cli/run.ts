@@ -63,15 +63,15 @@ async function waitForStop(session: Awaited<ReturnType<typeof watch>>, durationM
   }
 
   await new Promise<void>((resolve) => {
-    const stop = async () => {
-      process.off("SIGINT", stop);
-      process.off("SIGTERM", stop);
-      await session.dispose();
-      resolve();
-    };
+      const stop = async () => {
+        process.off("SIGINT", stop);
+        process.off("SIGTERM", stop);
+        await session.dispose();
+        resolve();
+      };
 
-    process.on("SIGINT", stop);
-    process.on("SIGTERM", stop);
+      process.on("SIGINT", stop);
+      process.on("SIGTERM", stop);
   });
 }
 
@@ -142,6 +142,7 @@ async function runWatchCommand(
 }
 
 const entryPath = process.argv[1] ? pathToFileURL(process.argv[1]).href : null;
+
 if (entryPath && import.meta.url === entryPath) {
   const result = await runCli(process.argv.slice(2));
   process.exitCode = result.exitCode;

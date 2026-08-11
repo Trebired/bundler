@@ -1,4 +1,5 @@
 import type { BundlerOptions, NormalizedBundlerI18nOptions } from "#3c8d8166992a";
+import { normalizeI18nLanguage as normalizeLanguage } from "./i18n/shared.js";
 
 const DEFAULT_I18N_DIR_NAME = "i18n";
 const DEFAULT_I18N_EXTENSION = ".ts";
@@ -43,19 +44,15 @@ function normalizeSupportedLanguages(
 
 function normalizeExtensions(value: string[] | undefined): string[] {
   const extensions = Array.from(new Set((value || [DEFAULT_I18N_EXTENSION]).map((item) => {
-    const normalized = normalizeSegment(item);
-    return normalized ? normalized.startsWith(".") ? normalized : `.${normalized}` : "";
-  }).filter(Boolean)));
+          const normalized = normalizeSegment(item);
+          return normalized ? normalized.startsWith(".") ? normalized : `.${normalized}` : "";
+      }).filter(Boolean)));
 
   return extensions.length > 0 ? extensions : [DEFAULT_I18N_EXTENSION];
 }
 
 function normalizeSegment(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
-}
-
-function normalizeLanguage(value: unknown): string {
-  return typeof value === "string" ? value.trim().toLowerCase().replace(/_/gu, "-") : "";
 }
 
 export {

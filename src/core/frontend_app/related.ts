@@ -27,9 +27,9 @@ async function resolveRelatedEntriesForSource(
 ): Promise<[string, string[]]> {
   const pageId = normalizeAggregateSourceId(source, options.pageId);
   const related = await collectRelatedFrontendEntries({
-    rootDir: options.rootDir,
-    sources: source,
-    tsconfig: options.tsconfig,
+      rootDir: options.rootDir,
+      sources: source,
+      tsconfig: options.tsconfig,
   });
   return [pageId, related.entries];
 }

@@ -63,10 +63,10 @@ type NormalizedAggregateRule = {
 };
 
 type NormalizedDiscoverRule =
-  | NormalizedEntryRule
-  | NormalizedBundleRule
-  | NormalizedIgnoreRule
-  | NormalizedAggregateRule;
+| NormalizedEntryRule
+| NormalizedBundleRule
+| NormalizedIgnoreRule
+| NormalizedAggregateRule;
 
 type NormalizedDiscoverOptions = {
   dir: string;
@@ -125,10 +125,10 @@ function matchesAnyPattern(value: string, patterns: string[]): boolean {
   const base = path.basename(normalized);
 
   return patterns.some((pattern) => {
-    const normalizedPattern = normalizePathValue(pattern);
-    if (!normalizedPattern) return false;
-    if (normalizedPattern === normalized || normalizedPattern === base) return true;
-    return globToRegExp(normalizedPattern).test(normalized);
+      const normalizedPattern = normalizePathValue(pattern);
+      if (!normalizedPattern) return false;
+      if (normalizedPattern === normalized || normalizedPattern === base) return true;
+      return globToRegExp(normalizedPattern).test(normalized);
   });
 }
 
@@ -148,12 +148,16 @@ function parseBundleMaxSize(value: BundlerDiscoverBundleRule["maxBundleSize"]): 
   return resolveBundleSizeMatch(match[1], match[2] || "b");
 }
 
-function normalizeStringList(values: string[] | undefined): string[] {
+function normalizeStringList(values: readonly string[] | undefined): string[] {
   return (values || []).map(normalizePathValue).filter(Boolean);
 }
 
 function isValidIdentifier(value: string): boolean {
   return /^[A-Za-z_$][A-Za-z0-9_$]*$/u.test(value);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
 }
 
 function createStableId(value: string): string {
@@ -171,8 +175,8 @@ function toRootImportSpecifier(rootDir: string, absPath: string): string {
 }
 
 function buildEntryKey(args: {
-  rootRel: string;
-  ruleKey: string;
+    rootRel: string;
+    ruleKey: string;
 }): string {
   const ext = path.extname(args.rootRel);
   const withoutExt = ext ? args.rootRel.slice(0, -ext.length) : args.rootRel;
@@ -265,12 +269,12 @@ function resolveBundleSizeMatch(amountRaw: string, unitRaw: string): number {
   const amount = Number(amountRaw);
   const unit = unitRaw.toLowerCase();
   const multiplier = unit === "gb"
-    ? 1024 * 1024 * 1024
-    : unit === "mb"
-      ? 1024 * 1024
-      : unit === "kb"
-        ? 1024
-        : 1;
+  ? 1024 * 1024 * 1024
+  : unit === "mb"
+  ? 1024 * 1024
+  : unit === "kb"
+  ? 1024
+  : 1;
   const resolved = Math.floor(amount * multiplier);
   if (!Number.isFinite(resolved) || resolved <= 0) {
     throw new Error("bundler-discover-bundle-invalid-max-size");
@@ -293,6 +297,7 @@ export {
   DEFAULT_AGGREGATE_ROOT_EXPORT_NAME,
   DEFAULT_DISCOVERY_BUNDLE_MAX_SIZE,
   DEFAULT_IGNORE_DIRS,
+  escapeRegExp,
   MODULE_RESOLVE_EXTENSIONS,
   normalizePathValue,
   normalizeStringList,

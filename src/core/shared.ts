@@ -16,8 +16,8 @@ import type { NormalizedManifestOptions } from "./discovery.js";
 
 export function formatEsbuildMessage(message: Partial<Message>): string {
   const location = message.location
-    ? `${message.location.file}:${message.location.line}:${message.location.column}`
-    : "";
+  ? `${message.location.file}:${message.location.line}:${message.location.column}`
+  : "";
   const pieces = [location, message.text].filter(Boolean);
   return pieces.join(" :: ");
 }
@@ -32,37 +32,41 @@ function resolveOutputs(result: BuildResult<any>, rootDir: string): string[] {
   if (!result.metafile) return [];
 
   return Object.keys(result.metafile.outputs)
-    .map((value) => path.isAbsolute(value) ? value : path.resolve(rootDir, value))
-    .sort();
+  .map((value) => path.isAbsolute(value) ? value : path.resolve(rootDir, value))
+  .sort();
+}
+
+async function pathExists(filePath: string): Promise<boolean> {
+  return fs.access(filePath).then(() => true, () => false);
 }
 
 async function toBuildResult(args: {
-  manifest: NormalizedManifestOptions;
-  outDir: string;
-  outputLayout?: BundlerOutputLayoutStats;
-  precompressed?: BundlerPrecompressStats;
-  resolvedDiscovery: BundlerResolvedDiscovery;
-  result: BuildResult<any>;
-  rootDir: string;
-  startedAt: number;
+    manifest: NormalizedManifestOptions;
+    outDir: string;
+    outputLayout?: BundlerOutputLayoutStats;
+    precompressed?: BundlerPrecompressStats;
+    resolvedDiscovery: BundlerResolvedDiscovery;
+    result: BuildResult<any>;
+    rootDir: string;
+    startedAt: number;
 }): Promise<BundlerBuildResult> {
   const outputs = resolveOutputs(args.result, args.rootDir);
   const assetManifest = args.result.metafile
-    ? buildAssetManifest({
+  ? buildAssetManifest({
       metafile: args.result.metafile,
       outDir: args.outDir,
       resolvedDiscovery: args.resolvedDiscovery,
       rootDir: args.rootDir,
-    })
-    : undefined;
+  })
+  : undefined;
   const manifestWrite = await writeBundlerManifest({
-    metafile: args.result.metafile,
-    manifest: args.manifest,
-    outDir: args.outDir,
-    outputLayout: args.outputLayout,
-    precompressed: args.precompressed,
-    resolvedDiscovery: args.resolvedDiscovery,
-    rootDir: args.rootDir,
+      metafile: args.result.metafile,
+      manifest: args.manifest,
+      outDir: args.outDir,
+      outputLayout: args.outputLayout,
+      precompressed: args.precompressed,
+      resolvedDiscovery: args.resolvedDiscovery,
+      rootDir: args.rootDir,
   });
 
   return {
@@ -77,11 +81,11 @@ async function toBuildResult(args: {
     durationMs: Date.now() - args.startedAt,
     resolvedDiscovery: args.resolvedDiscovery,
     result: result.ok("bundler-build-completed", {
-      data: {
-        durationMs: Date.now() - args.startedAt,
-        outputs,
-        warnings: args.result.warnings.length,
-      },
+        data: {
+          durationMs: Date.now() - args.startedAt,
+          outputs,
+          warnings: args.result.warnings.length,
+        },
     }),
   };
 }
@@ -99,4 +103,4 @@ export function formatFailure(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-export { logWarnings, toBuildResult };
+export { logWarnings, pathExists, resolveOutputs, toBuildResult };

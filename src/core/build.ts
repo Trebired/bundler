@@ -17,11 +17,11 @@ async function bundle(options: BundlerOptions): Promise<BundlerBuildResult> {
   const logger = resolveLogger(normalized.logger, normalized.loggerAdapter);
 
   logPackageInitialized({
-    adapter: normalized.loggerAdapter,
-    fallback: "console",
-    group: BUNDLER_LOG_GROUP,
-    logger: normalized.logger,
-    source: BUNDLER_PACKAGE_NAME,
+      adapter: normalized.loggerAdapter,
+      fallback: "console",
+      group: BUNDLER_LOG_GROUP,
+      logger: normalized.logger,
+      source: BUNDLER_PACKAGE_NAME,
   });
 
   if (normalized.clean) {
@@ -50,17 +50,17 @@ async function resolveBuildDiscovery(
   logger: ReturnType<typeof resolveLogger>,
 ) {
   const frontendStyles = await prepareFrontendConfigStyles({
-    environment: normalized.environment,
-    logger,
-    rootDir: normalized.rootDir,
+      environment: normalized.environment,
+      logger,
+      rootDir: normalized.rootDir,
   });
   const discoveredEntries = options?.discover || !frontendStyles
-    ? await resolveBundlerEntries(options || {} as BundlerOptions, normalized.rootDir, {
+  ? await resolveBundlerEntries(options || {} as BundlerOptions, normalized.rootDir, {
       allowEmpty: Boolean(frontendStyles),
     }, {
       ignoredDirs: normalized.i18n.enabled ? [normalized.i18n.dirName] : [],
-    })
-    : createEmptyResolvedDiscovery();
+  })
+  : createEmptyResolvedDiscovery();
   return appendFrontendConfigStyleEntry(discoveredEntries, frontendStyles);
 }
 
@@ -71,20 +71,20 @@ async function runBuild(
   startedAt: number,
 ): Promise<BundlerBuildResult> {
   const result = await runEsbuild(createEsbuildOptions({
-    ...normalized,
-    entryRecords: resolvedDiscovery.entries,
-  }, logger));
+        ...normalized,
+        entryRecords: resolvedDiscovery.entries,
+      }, logger));
   const postProcessed = await postProcessBuildOutput({ normalized, result });
   logWarnings(logger, result.warnings);
   return await toBuildResult({
-    manifest: normalized.manifest,
-    outDir: normalized.outDir,
-    outputLayout: postProcessed.outputLayout,
-    precompressed: postProcessed.precompressed,
-    resolvedDiscovery,
-    result,
-    rootDir: normalized.rootDir,
-    startedAt,
+      manifest: normalized.manifest,
+      outDir: normalized.outDir,
+      outputLayout: postProcessed.outputLayout,
+      precompressed: postProcessed.precompressed,
+      resolvedDiscovery,
+      result,
+      rootDir: normalized.rootDir,
+      startedAt,
   });
 }
 

@@ -135,27 +135,27 @@ function createPlugins(
 ): NonNullable<BuildOptions["plugins"]> {
   return [
     createFrontendConfigStylesPlugin({
-      annotateSources: options.annotateSources,
-      logger,
-      rootDir: options.rootDir,
-      sourcemapEnabled: Boolean(options.sourcemap),
+        annotateSources: options.annotateSources,
+        logger,
+        rootDir: options.rootDir,
+        sourcemapEnabled: Boolean(options.sourcemap),
     }),
     createVirtualEntriesPlugin({
-      entries: options.entryRecords || [],
-      logger,
-      rootDir: options.rootDir,
+        entries: options.entryRecords || [],
+        logger,
+        rootDir: options.rootDir,
     }),
     ...(options.i18n.enabled ? [createI18nPlugin({
-      annotateSources: options.annotateSources,
-      i18n: options.i18n,
-      logger,
-      rootDir: options.rootDir,
-    })] : []),
+            annotateSources: options.annotateSources,
+            i18n: options.i18n,
+            logger,
+            rootDir: options.rootDir,
+      })] : []),
     createScssPlugin({
-      annotateSources: options.annotateSources,
-      logger,
-      rootDir: options.rootDir,
-      sourcemapEnabled: Boolean(options.sourcemap),
+        annotateSources: options.annotateSources,
+        logger,
+        rootDir: options.rootDir,
+        sourcemapEnabled: Boolean(options.sourcemap),
     }),
     ...(options.annotateSources ? [createSourceAnnotationsPlugin({ logger, rootDir: options.rootDir })] : []),
   ];

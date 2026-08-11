@@ -7,7 +7,8 @@ import type {
   BundlerOutputLayoutOptions,
   BundlerOutputLayoutStats,
 } from "#3c8d8166992a";
-import { normalizePathValue, toPosixPath } from "./discovery/shared.js";
+import { resolveOutputs } from "./shared.js";
+import { escapeRegExp, normalizePathValue, toPosixPath } from "./discovery/shared.js";
 
 type NormalizedBundlerOutputLayoutOptions = {
   enabled: boolean;
@@ -36,6 +37,7 @@ const DEFAULT_OUTPUT_LAYOUT_PATTERNS = {
   js: "js/[path][ext]",
   map: "alongside" as const,
 };
+const DOT_SLASH_PREFIX = new RegExp("^\\.\\/", "u");
 
 function normalizeBundlerOutputLayoutOptions(options: BundlerOutputLayoutOptions | undefined): NormalizedBundlerOutputLayoutOptions {
   if (!options) return { enabled: false, patterns: {} };
@@ -52,13 +54,13 @@ function normalizeBundlerOutputLayoutOptions(options: BundlerOutputLayoutOptions
 }
 
 async function applyOutputLayout(args: {
-  outDir: string;
-  outputLayout: NormalizedBundlerOutputLayoutOptions;
-  publicPath?: string;
-  result: BuildResult<any>;
-  rootDir: string;
+    outDir: string;
+    outputLayout: NormalizedBundlerOutputLayoutOptions;
+    publicPath?: string;
+    result: BuildResult<any>;
+    rootDir: string;
 }): Promise<{ outputs: string[]; stats?: BundlerOutputLayoutStats }> {
-  const outputs = resolveOutputPaths(args.result, args.rootDir);
+  const outputs = resolveOutputs(args.result, args.rootDir);
   if (!args.outputLayout.enabled || !args.result.metafile) return { outputs };
 
   const plans = createOutputPlans(args);
@@ -70,30 +72,30 @@ async function applyOutputLayout(args: {
   };
 }
 
-function resolveOutputPaths(result: BuildResult<any>, rootDir: string): string[] {
-  if (!result.metafile) return [];
-  return Object.keys(result.metafile.outputs)
-    .map((value) => path.isAbsolute(value) ? value : path.resolve(rootDir, value))
-    .sort();
-}
-
 function createOutputPlans(args: {
-  outDir: string;
-  outputLayout: NormalizedBundlerOutputLayoutOptions;
-  result: BuildResult<any>;
-  rootDir: string;
+    outDir: string;
+    outputLayout: NormalizedBundlerOutputLayoutOptions;
+    result: BuildResult<any>;
+    rootDir: string;
 }): OutputPlan[] {
   const outDir = path.resolve(args.outDir);
   const records = Object.entries(args.result.metafile?.outputs || {}).map(([oldKey, info]) => ({
-    bytes: info.bytes,
-    kind: detectOutputKind(oldKey),
-    oldAbs: path.isAbsolute(oldKey) ? oldKey : path.resolve(args.rootDir, oldKey),
-    oldKey,
-    oldRel: normalizePathValue(path.relative(outDir, path.isAbsolute(oldKey) ? oldKey : path.resolve(args.rootDir, oldKey))),
+        bytes: info.bytes,
+        kind: detectOutputKind(oldKey),
+        oldAbs: path.isAbsolute(oldKey) ? oldKey : path.resolve(args.rootDir, oldKey),
+        oldKey,
+        oldRel: normalizePathValue(path.relative(
+            outDir,
+            path.isAbsolute(oldKey) ? oldKey : path.resolve(args.rootDir, oldKey),
+        )),
   }));
   const planned = planOutputTargets(records, args.outputLayout.patterns);
   validateOutputPlans(planned);
-  return planned.map((plan) => ({ ...plan, newAbs: path.resolve(outDir, plan.newRel), newKey: toMetafileKey(plan.oldKey, args.rootDir, outDir, plan.newRel) }));
+  return planned.map((plan) => ({
+        ...plan,
+        newAbs: path.resolve(outDir, plan.newRel),
+        newKey: toMetafileKey(plan.oldKey, args.rootDir, outDir, plan.newRel),
+  }));
 }
 
 function planOutputTargets(
@@ -102,14 +104,14 @@ function planOutputTargets(
 ): Array<Omit<OutputPlan, "newAbs" | "newKey">> {
   const nonMapTargets = new Map<string, string>();
   const planned = records.map((record) => {
-    const newRel = record.kind === "map" ? "" : applyOutputPattern(record.oldRel, patterns[record.kind]);
-    if (newRel) nonMapTargets.set(record.oldRel, newRel);
-    return { ...record, newRel };
+      const newRel = record.kind === "map" ? "" : applyOutputPattern(record.oldRel, patterns[record.kind]);
+      if (newRel) nonMapTargets.set(record.oldRel, newRel);
+      return { ...record, newRel };
   });
 
   return planned.map((record) => record.newRel ? record : {
-    ...record,
-    newRel: resolveMapOutputTarget(record.oldRel, nonMapTargets, patterns.map),
+      ...record,
+      newRel: resolveMapOutputTarget(record.oldRel, nonMapTargets, patterns.map),
   });
 }
 
@@ -138,8 +140,8 @@ function applyOutputPattern(oldRel: string, patternValue: string | undefined): s
 
 async function rewriteAndMoveOutputs(plans: OutputPlan[], publicPath: string | undefined): Promise<void> {
   const payloads = await Promise.all(plans.map(async (plan) => ({
-    content: await readOutputContent(plan, plans, publicPath),
-    plan,
+          content: await readOutputContent(plan, plans, publicPath),
+          plan,
   })));
   for (const payload of payloads) {
     await fs.mkdir(path.dirname(payload.plan.newAbs), { recursive: true });
@@ -194,15 +196,15 @@ function replaceOutputReference(text: string, from: string, to: string): string 
   if (!from || from === to) return text;
   const replacements: Array<[string, string]> = [[from, to]];
   if (from.startsWith("./")) {
-    replacements.push([from.slice(2), to.replace(/^\.\//u, "")]);
+    replacements.push([from.slice(2), to.replace(DOT_SLASH_PREFIX, "")]);
   }
   const pattern = new RegExp(replacements.map(([value]) => escapeRegExp(value)).join("|"), "gu");
   const byReference = new Map(replacements);
   return text.replace(pattern, (match: string, offset: number, sourceText: string) => {
-    if (match !== from && !isBareOutputReference(sourceText, offset, match.length)) {
-      return match;
-    }
-    return byReference.get(match) || match;
+      if (match !== from && !isBareOutputReference(sourceText, offset, match.length)) {
+        return match;
+      }
+      return byReference.get(match) || match;
   });
 }
 
@@ -210,10 +212,6 @@ function isBareOutputReference(text: string, start: number, length: number): boo
   const before = start > 0 ? text[start - 1] : "";
   const after = text[start + length] || "";
   return !/[./\w~-]/u.test(before) && !/[./\w~-]/u.test(after);
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[\\^$.*+?()[\]{}|]/gu, "\\$&");
 }
 
 async function removeOldOutputs(plans: OutputPlan[]): Promise<void> {
@@ -227,8 +225,8 @@ function updateMetafileOutputs(result: BuildResult<any>, plans: OutputPlan[], ro
   if (!result.metafile) return;
   const byOldRel = new Map(plans.map((plan) => [plan.oldRel, plan]));
   const outputs = Object.fromEntries(plans.map((plan) => {
-    const previous = result.metafile!.outputs[plan.oldKey];
-    return [plan.newKey, remapOutputInfo(previous, byOldRel, rootDir, outDir, plan.bytes)];
+        const previous = result.metafile!.outputs[plan.oldKey];
+        return [plan.newKey, remapOutputInfo(previous, byOldRel, rootDir, outDir, plan.bytes)];
   }));
   result.metafile.outputs = outputs;
 }

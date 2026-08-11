@@ -3,6 +3,7 @@ import path from "node:path";
 import type {
   BundlerAggregateModuleMap,
   BundlerDiscoverRule,
+  BundlerManifestOptions,
   BundlerOptions,
 } from "#3c8d8166992a";
 import {
@@ -23,6 +24,7 @@ import type {
   NormalizedAggregateModuleMap,
   NormalizedDiscoverOptions,
   NormalizedDiscoverRule,
+  NormalizedManifestOptions,
 } from "./shared.js";
 
 function normalizeAggregateModuleMap(
@@ -104,9 +106,9 @@ function normalizeDiscoverOptions(
   if (list.length === 0) throw new Error("bundler-missing-discover");
 
   const normalized = list
-    .map((item) => item && typeof item === "object" ? item : null)
-    .filter(Boolean)
-    .map((item) => normalizeDiscoverConfig(rootDir, item!, settings.ignoreDirs || []));
+  .map((item) => item && typeof item === "object" ? item : null)
+  .filter(Boolean)
+  .map((item) => normalizeDiscoverConfig(rootDir, item!, settings.ignoreDirs || []));
 
   validateRuleKeys(normalized);
   return normalized;
@@ -126,15 +128,15 @@ function normalizeDiscoverConfig(
     dir,
     dirAbs: path.resolve(rootDir, dir),
     ignoreDirs: new Set([
-      ...DEFAULT_IGNORE_DIRS,
-      ...normalizeStringList(item.ignoreDirs),
-      ...normalizeStringList(extraIgnoreDirs),
-    ].map((value) => path.basename(value))),
+        ...DEFAULT_IGNORE_DIRS,
+        ...normalizeStringList(item.ignoreDirs),
+        ...normalizeStringList(extraIgnoreDirs),
+      ].map((value) => path.basename(value))),
     rules,
   };
 }
 
-function normalizeManifestOptions(manifest: import("#3c8d8166992a").BundlerManifestOptions | undefined): import("./shared.js").NormalizedManifestOptions {
+function normalizeManifestOptions(manifest: BundlerManifestOptions | undefined): NormalizedManifestOptions {
   if (!manifest) return { enabled: false };
   if (manifest === true) return { enabled: true, file: "bundler-manifest.json" };
   return { enabled: true, file: normalizePathValue(manifest.file || "bundler-manifest.json") };

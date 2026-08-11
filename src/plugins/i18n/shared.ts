@@ -1,16 +1,12 @@
 import path from "node:path";
 import type { Loader } from "esbuild";
 
+import { escapeRegExp, toPosixPath } from "#5kd9snhn6zft";
+import { normalizeI18nLanguage as normalizeLanguage } from "#obe62qdyhg70";
+
 const ORGANIZATION_CODES = [116, 114, 101, 98, 105, 114, 101, 100];
-const I18N_PACKAGE_NAME = `@${packageOrganization()}/i18n`;
-
-function normalizeLanguage(value: unknown): string {
-  return typeof value === "string" ? value.trim().toLowerCase().replace(/_/gu, "-") : "";
-}
-
-function toPosixPath(value: string): string {
-  return value.replace(/\\/g, "/");
-}
+const I18N_ORGANIZATION_NAME = ORGANIZATION_CODES.map((code) => String.fromCharCode(code)).join("");
+const I18N_PACKAGE_NAME = `@${I18N_ORGANIZATION_NAME}/i18n`;
 
 function toRelativeImport(value: string): string {
   const normalized = toPosixPath(value);
@@ -24,10 +20,6 @@ function toRootRelative(rootDir: string, filePath: string): string {
 function isInsideDirectory(rootDir: string, filePath: string): boolean {
   const relative = path.relative(rootDir, filePath);
   return Boolean(relative) && !relative.startsWith("..") && !path.isAbsolute(relative);
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
 }
 
 function resolveCodeLoader(filePath: string): Loader {
@@ -45,10 +37,6 @@ function isCodeFile(filePath: string): boolean {
 function sanitizeBindingSegment(value: string): string {
   const normalized = value.replace(/[^A-Za-z0-9_$]/gu, "_");
   return /^[A-Za-z_$]/u.test(normalized) ? normalized : `_${normalized}`;
-}
-
-function packageOrganization(): string {
-  return ORGANIZATION_CODES.map((code) => String.fromCharCode(code)).join("");
 }
 
 export {

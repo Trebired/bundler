@@ -6,8 +6,8 @@ type DiscoveryWatcher = {
 };
 
 function createDiscoveryWatcher(args: {
-  dirs: string[];
-  onChange: () => void;
+    dirs: string[];
+    onChange: () => void;
 }): DiscoveryWatcher {
   const state = createWatcherState(args);
   state.refreshAll();
@@ -19,8 +19,8 @@ function createDiscoveryWatcher(args: {
 }
 
 function createWatcherState(args: {
-  dirs: string[];
-  onChange: () => void;
+    dirs: string[];
+    onChange: () => void;
 }) {
   const watchers = new Map<string, fs.FSWatcher>();
   const state = buildWatcherState(args, watchers);
@@ -56,17 +56,17 @@ function buildWatcherState(
 
 function startWatcherRefreshInterval(state: ReturnType<typeof buildWatcherState>) {
   return setInterval(() => {
-    if (state.refreshAll()) state.emitChange();
-  }, 250);
+      if (state.refreshAll()) state.emitChange();
+    }, 250);
 }
 
 function emitWatcherChange(state: ReturnType<typeof buildWatcherState>): void {
   if (state.closed) return;
   if (state.timer) clearTimeout(state.timer);
   state.timer = setTimeout(() => {
-    state.timer = null;
-    state.args.onChange();
-  }, 80);
+      state.timer = null;
+      state.args.onChange();
+    }, 80);
 }
 
 function ensureWatcher(state: ReturnType<typeof buildWatcherState>, dir: string): boolean {
@@ -78,11 +78,11 @@ function ensureWatcher(state: ReturnType<typeof buildWatcherState>, dir: string)
   }
 
   const watcher = fs.watch(dir, () => {
-    state.refreshAll();
-    state.emitChange();
+      state.refreshAll();
+      state.emitChange();
   });
   watcher.on("error", () => {
-    state.watchers.delete(dir);
+      state.watchers.delete(dir);
   });
   state.watchers.set(dir, watcher);
   return true;
