@@ -10,7 +10,7 @@ type BundlerPrecompressOptions = boolean | {
   minSize?: number | string;
 };
 
-type BundlerPrecompressAssetsOptions = Exclude<BundlerPrecompressOptions, boolean> & {
+type BundlerPrecompressAssetsOptions = Exclude<BundlerPrecompressOptions, boolean>& {
   outDir: string;
   outputs?: readonly string[];
 };

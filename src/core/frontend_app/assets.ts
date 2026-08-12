@@ -30,7 +30,7 @@ function collectFrontendAssetLinks(options: BundlerFrontendAssetLinksOptions): B
 }
 
 function renderAssetLinkTags(
-  links: Pick<BundlerCollectedAssetLinks, "scripts" | "styles"> &
+  links: Pick<BundlerCollectedAssetLinks, "scripts"|"styles">&
   Partial<Pick<BundlerCollectedAssetLinks, "fontPreloads">>,
 ): BundlerRenderedAssetTags {
   const fontPreloads = (links.fontPreloads || [])
@@ -112,10 +112,10 @@ function escapeHtmlAttribute(value: string): string {
   return value
   .replace(/&/gu, "&amp;")
   .replace(/"/gu, "&quot;")
-    .replace(/</gu, "&lt;");
-    }
+  .replace(/</gu, "&lt;");
+}
 
-    export {
-    collectFrontendAssetLinks,
-    renderAssetLinkTags,
-    };
+export {
+  collectFrontendAssetLinks,
+  renderAssetLinkTags,
+};

@@ -20,7 +20,7 @@ async function transformLocalTranslators(args: {
     i18n: NormalizedBundlerI18nOptions;
     rootDir: string;
     source: string;
-}): Promise<I18nTransformResult | undefined> {
+}): Promise<I18nTransformResult|undefined> {
   const localNames = findLocalTranslatorBindings(args.source);
   if (localNames.length === 0 || !hasLocalTranslatorCall(args.source, localNames)) return undefined;
 
@@ -55,7 +55,7 @@ function buildTransformedSource(args: {
 function buildStaticImports(
   callerPath: string,
   translatorBinding: string,
-  modules: Array<{ binding: string; filePath: string }>,
+  modules: Array<{binding:string;filePath:string}>,
 ): string {
   const callerDir = path.dirname(callerPath);
   const lines = [

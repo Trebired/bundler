@@ -26,69 +26,69 @@ function insertAfterShebang(contents: string, annotation: string): string {
 
 function insertAfterCharset(contents: string, annotation: string): string {
   const charsetMatch = contents.match(/^(@charset\s+(?:"[^"]*"|'[^']*');\s*)/i);
-      if (!charsetMatch) return `${annotation}\n${contents}`;
-      const prefix = charsetMatch[1];
-      return `${prefix}${annotation}\n${contents.slice(prefix.length)}`;
-      }
+  if (!charsetMatch) return `${annotation}\n${contents}`;
+  const prefix = charsetMatch[1];
+  return `${prefix}${annotation}\n${contents.slice(prefix.length)}`;
+}
 
-      function injectSourceAnnotation(args: {
-      contents: string;
-      filePath: string;
-      kind: "code" | "css";
-      rootDir: string;
-      }): string {
-      const annotation = buildSourceAnnotation(args.filePath, args.rootDir);
+function injectSourceAnnotation(args: {
+    contents: string;
+    filePath: string;
+    kind: "code" | "css";
+    rootDir: string;
+}): string {
+  const annotation = buildSourceAnnotation(args.filePath, args.rootDir);
 
-      if (args.kind === "css") {
-      return insertAfterCharset(args.contents, annotation);
-      }
+  if (args.kind === "css") {
+    return insertAfterCharset(args.contents, annotation);
+  }
 
-      if (args.contents.startsWith("#!")) {
-      return insertAfterShebang(args.contents, annotation);
-      }
+  if (args.contents.startsWith("#!")) {
+    return insertAfterShebang(args.contents, annotation);
+  }
 
-      return `${annotation}\n${args.contents}`;
-      }
+  return `${annotation}\n${args.contents}`;
+}
 
-      function resolveLoader(filePath: string): Loader {
-      const ext = path.extname(filePath).toLowerCase();
+function resolveLoader(filePath: string): Loader {
+  const ext = path.extname(filePath).toLowerCase();
 
-      if (ext === ".css") return "css";
-      if (ext === ".tsx") return "tsx";
-      if (ext === ".jsx") return "jsx";
-      if (ext === ".ts" || ext === ".mts" || ext === ".cts") return "ts";
-      return "js";
-      }
+  if (ext === ".css") return "css";
+  if (ext === ".tsx") return "tsx";
+  if (ext === ".jsx") return "jsx";
+  if (ext === ".ts" || ext === ".mts" || ext === ".cts") return "ts";
+  return "js";
+}
 
-      function createSourceAnnotationsPlugin(options: SourceAnnotationsPluginOptions): Plugin {
-      return {
-      name: "package-source-annotations",
-      setup(build) {
-      build.onLoad({ filter: /\.(?:[mc]?js|[mc]?ts|jsx|tsx|css)$/ }, async (args) => {
-      try {
-      const original = await fs.readFile(args.path, "utf8");
-      const kind = path.extname(args.path).toLowerCase() === ".css" ? "css" : "code";
-      const contents = injectSourceAnnotation({
-      contents: original,
-      filePath: args.path,
-      kind,
-      rootDir: options.rootDir,
+function createSourceAnnotationsPlugin(options: SourceAnnotationsPluginOptions): Plugin {
+  return {
+    name: "package-source-annotations",
+    setup(build) {
+      build.onLoad({ filter: /\.(?:[mc]?js|[mc]?ts|jsx|tsx|css)$/ }, async(args) => {
+          try {
+            const original = await fs.readFile(args.path, "utf8");
+            const kind = path.extname(args.path).toLowerCase() === ".css" ? "css" : "code";
+            const contents = injectSourceAnnotation({
+                contents: original,
+                filePath: args.path,
+                kind,
+                rootDir: options.rootDir,
+            });
+
+            return {
+              contents,
+              loader: resolveLoader(args.path),
+              watchFiles: [args.path],
+            };
+          } catch (error) {
+            options.logger.error("annotate", `load-failed :: ${args.path}`, {
+                error: error instanceof Error ? error.message : String(error),
+            });
+            throw error;
+          }
       });
+    },
+  };
+}
 
-      return {
-      contents,
-      loader: resolveLoader(args.path),
-      watchFiles: [args.path],
-      };
-      } catch (error) {
-      options.logger.error("annotate", `load-failed :: ${args.path}`, {
-      error: error instanceof Error ? error.message : String(error),
-      });
-      throw error;
-      }
-      });
-      },
-      };
-      }
-
-      export { buildSourceAnnotation, createSourceAnnotationsPlugin, injectSourceAnnotation, resolveSourceLabel };
+export { buildSourceAnnotation, createSourceAnnotationsPlugin, injectSourceAnnotation, resolveSourceLabel };

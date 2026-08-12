@@ -31,11 +31,11 @@ function classifyFile(args: {
 }
 
 function splitByMaxSize(args: {
-    files: Array<DiscoveredFile & { bytes: number }>;
+    files: Array<DiscoveredFile&{bytes:number}>;
     maxBundleSize: number;
-}): Array<Array<DiscoveredFile & { bytes: number }>> {
-  const chunks: Array<Array<DiscoveredFile & { bytes: number }>> = [];
-  let current: Array<DiscoveredFile & { bytes: number }> = [];
+}): Array<Array<DiscoveredFile&{bytes:number}>> {
+  const chunks: Array<Array<DiscoveredFile&{bytes:number}>> = [];
+  let current: Array<DiscoveredFile&{bytes:number}> = [];
   let currentSize = 0;
 
   for (const file of args.files) {
@@ -93,8 +93,8 @@ async function validateGroupedBootImports(args: {
 async function readBundleFilesWithStats(
   matchedFiles: DiscoveredFile[],
   rule: NormalizedBundleRule,
-): Promise<Array<DiscoveredFile & { bytes: number }>> {
-  const filesWithStats = await Promise.all(matchedFiles.map(async (file) => {
+): Promise<Array<DiscoveredFile&{bytes:number}>> {
+  const filesWithStats = await Promise.all(matchedFiles.map(async(file) => {
         const stats = await fsp.stat(file.absPath);
         const bytes = Math.max(stats.size, 1);
         if (bytes > rule.maxBundleSize) throw new Error(`bundler-discover-bundle-file-too-large :: ${file.rootRel}`);

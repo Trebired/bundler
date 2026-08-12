@@ -13,7 +13,7 @@ async function prepareDistPackage() {
   await promotePublicDistFiles();
 
   const files = await collectDistFiles(distDir);
-  await Promise.all(files.map(async (filePath) => {
+  await Promise.all(files.map(async(filePath) => {
         const kind = filePath.endsWith(".d.ts") ? "types" : "runtime";
         const original = await fs.readFile(filePath, "utf8");
         const rewritten = rewriteAliasImports(original, filePath, aliasTargets, kind);
@@ -70,48 +70,48 @@ async function collectDistFiles(startDir) {
 
 function rewriteAliasImports(source, filePath, aliasTargets, kind) {
   return source.replace(/(["'])(#[^"']+)\1/g, (match, quote, alias) => {
-        const target = aliasTargets[alias];
-        if (!target) return match;
+      const target = aliasTargets[alias];
+      if (!target) return match;
 
-        const compiledPath = resolveCompiledTarget(target, kind);
-        if (!compiledPath) return match;
+      const compiledPath = resolveCompiledTarget(target, kind);
+      if (!compiledPath) return match;
 
-        const relativePath = toCompiledRelativeImport(path.relative(path.dirname(filePath), compiledPath));
-        return `${quote}${relativePath}${quote}`;
-        });
-        }
+      const relativePath = toCompiledRelativeImport(path.relative(path.dirname(filePath), compiledPath));
+      return `${quote}${relativePath}${quote}`;
+  });
+}
 
-        function resolveCompiledTarget(target, kind) {
-        const normalized = normalizeDistPath(target);
-        if (!normalized.startsWith("src/") && !normalized.startsWith("internal/")) return undefined;
+function resolveCompiledTarget(target, kind) {
+  const normalized = normalizeDistPath(target);
+  if (!normalized.startsWith("src/") && !normalized.startsWith("internal/")) return undefined;
 
-        const baseDir = normalized.startsWith("src/") ? "dist/src" : "dist/internal";
-        const relativeTarget = normalized.replace(/^(src|internal)\//u, "");
-        const compiledRelative = relativeTarget.replace(/\.(ts|tsx|js|jsx)$/u, kind === "types" ? ".d.ts" : ".js");
-        return path.join(rootDir, baseDir, compiledRelative);
-        }
+  const baseDir = normalized.startsWith("src/") ? "dist/src" : "dist/internal";
+  const relativeTarget = normalized.replace(/^(src|internal)\//u, "");
+  const compiledRelative = relativeTarget.replace(/\.(ts|tsx|js|jsx)$/u, kind === "types" ? ".d.ts" : ".js");
+  return path.join(rootDir, baseDir, compiledRelative);
+}
 
-        function toCompiledRelativeImport(value) {
-        const normalized = normalizeDistPath(value);
-        return normalized.startsWith(".") ? normalized : `./${normalized}`;
-        }
+function toCompiledRelativeImport(value) {
+  const normalized = normalizeDistPath(value);
+  return normalized.startsWith(".") ? normalized : `./${normalized}`;
+}
 
-        function normalizeDistPath(value) {
-        return String(value || "").split(path.sep).join("/").replace(DOT_SLASH_PREFIX, "");
-        }
+function normalizeDistPath(value) {
+  return String(value || "").split(path.sep).join("/").replace(DOT_SLASH_PREFIX, "");
+}
 
-        async function promotePublicDistFiles() {
-        const publicDistDir = path.join(distDir, "src");
-        await fs.cp(publicDistDir, distDir, { force: true, recursive: true });
-        }
+async function promotePublicDistFiles() {
+  const publicDistDir = path.join(distDir, "src");
+  await fs.cp(publicDistDir, distDir, { force: true, recursive: true });
+}
 
-        async function chmodExecutableCli() {
-        try {
-        await fs.chmod(path.join(distDir, "cli.js"), 0o755);
-        }
-        catch (error) {
-        if (error?.code !== "ENOENT") throw error;
-        }
-        }
+async function chmodExecutableCli() {
+  try {
+    await fs.chmod(path.join(distDir, "cli.js"), 0o755);
+  }
+  catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+  }
+}
 
-        await prepareDistPackage();
+await prepareDistPackage();

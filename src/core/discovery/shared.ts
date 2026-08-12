@@ -63,10 +63,10 @@ type NormalizedAggregateRule = {
 };
 
 type NormalizedDiscoverRule =
-| NormalizedEntryRule
-| NormalizedBundleRule
-| NormalizedIgnoreRule
-| NormalizedAggregateRule;
+|NormalizedEntryRule
+|NormalizedBundleRule
+|NormalizedIgnoreRule
+|NormalizedAggregateRule;
 
 type NormalizedDiscoverOptions = {
   dir: string;
@@ -81,7 +81,7 @@ type DiscoveredFile = {
   rootRel: string;
 };
 
-type ResolvedDiscovery = BundlerResolvedDiscovery & {
+type ResolvedDiscovery = BundlerResolvedDiscovery& {
   signature: string;
 };
 

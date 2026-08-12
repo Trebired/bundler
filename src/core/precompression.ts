@@ -75,7 +75,7 @@ async function resolvePrecompressSources(outDir: string, outputs: readonly strin
 }
 
 async function walkOutputFiles(currentDir: string, files: string[]): Promise<void> {
-  const entries = await fs.readdir(currentDir, { withFileTypes: true }).catch(() => []);
+  const entries = await fs.readdir(currentDir, { withFileTypes: true }).catch (() => []);
   for (const entry of entries) {
     const abs = path.join(currentDir, entry.name);
     if (entry.isDirectory()) await walkOutputFiles(abs, files);
@@ -112,7 +112,7 @@ async function compressBuffer(
 ): Promise<Buffer> {
   if (format === "br") {
     return brotliCompressAsync(content, {
-        params: { [zlib.constants.BROTLI_PARAM_QUALITY]: options.brotliQuality },
+        params: {[zlib.constants.BROTLI_PARAM_QUALITY]: options.brotliQuality },
     });
   }
   return gzipAsync(content, { level: options.gzipLevel });

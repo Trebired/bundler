@@ -33,7 +33,7 @@ type BundlerSsrModuleMapRuleOptions = {
   rootModuleExportName?: string;
 };
 
-type BundlerResolvedSsrModuleMapRuleOptions = BundlerSsrModuleMapRuleOptions & {
+type BundlerResolvedSsrModuleMapRuleOptions = BundlerSsrModuleMapRuleOptions& {
   allowEmpty: boolean;
   collapseIndex: boolean;
   defaultExport: boolean;
@@ -147,11 +147,11 @@ type BundlerRenderedAssetTags = {
   styles: string;
 };
 
-type BundlerFrontendAssetLinks = BundlerCollectedAssetLinks & {
+type BundlerFrontendAssetLinks = BundlerCollectedAssetLinks& {
   tags?: BundlerRenderedAssetTags;
 };
 
-type BundlerFrontendBuildOptions = BundlerFrontendAppBundlerConfigOptions & {
+type BundlerFrontendBuildOptions = BundlerFrontendAppBundlerConfigOptions& {
   target?: BundlerFrontendBuildTarget;
 };
 
@@ -168,7 +168,7 @@ type BundlerFrontendBuildResult = {
   };
 };
 
-type BundlerFrontendRuntimeConfig = BundlerFrontendAppBundlerConfig & {
+type BundlerFrontendRuntimeConfig = BundlerFrontendAppBundlerConfig& {
   clientManifestPath?: string;
   pageId?: BundlerAggregateSourceIdOptions;
   renderTags?: boolean;
@@ -200,7 +200,7 @@ type BundlerFrontendRuntime = {
 };
 
 type BundlerStaticAssetRequest = {
-  headers?: Headers | IncomingHttpHeaders | Record<string, string | string[] | undefined>;
+  headers?: Headers | IncomingHttpHeaders | Record<string, string|string[]|undefined>;
   method?: string;
   path?: string;
   url?: string;

@@ -43,7 +43,7 @@ async function buildFrontendApp(
 function resolveBuildTarget(
   options: BundlerFrontendBuildOptions | BundlerFrontendAppBundlerConfig,
 ): BundlerFrontendBuildTarget {
-  if ("target" in options && options.target) return options.target;
+  if ("target"in options && options.target) return options.target;
   return "all";
 }
 
@@ -59,7 +59,7 @@ async function copyPublicDir(config: BundlerFrontendAppBundlerConfig): Promise<b
 
 async function resolveBuildRelatedClientEntryMap(
   config: BundlerFrontendAppBundlerConfig,
-  ssrResult: Awaited<ReturnType<typeof bundle>> | undefined,
+  ssrResult: Awaited<ReturnType<typeof bundle>>|undefined,
 ): Promise<Record<string, string[]>> {
   if (!ssrResult?.assetManifest || !config.ssr) return {};
   return buildRelatedClientEntryMap({
@@ -72,7 +72,7 @@ async function resolveBuildRelatedClientEntryMap(
 
 function resolveBuildSsrEntryOutput(
   config: BundlerFrontendAppBundlerConfig,
-  ssrResult: Awaited<ReturnType<typeof bundle>> | undefined,
+  ssrResult: Awaited<ReturnType<typeof bundle>>|undefined,
 ): string | undefined {
   if (!ssrResult?.assetManifest || !config.ssr || !config.ssrOutDir) return undefined;
   return resolveAssetManifestEntryOutputPath({

@@ -87,15 +87,15 @@ async function verifyLocalTranslatorLogging() {
 }
 
 async function verifyBuildFailures() {
-  await assertBundleFails("missing", async (fixture) => {
+  await assertBundleFails("missing", async(fixture) => {
       await createRuntimeFixture(fixture, "component.client.ts", { languages: ["en"] });
     }, "missing-language-file");
 
-  await assertBundleFails("unsupported", async (fixture) => {
+  await assertBundleFails("unsupported", async(fixture) => {
       await createRuntimeFixture(fixture, "component.client.ts", { languages: ["en", "cs", "fr"] });
     }, "unsupported-language-file");
 
-  await assertBundleFails("invalid", async (fixture) => {
+  await assertBundleFails("invalid", async(fixture) => {
       await createRuntimeFixture(fixture, "component.client.ts", { invalidCs: true });
     }, "invalid-default-export");
 }

@@ -19,7 +19,7 @@ function createScssPlugin(options: ScssPluginOptions): Plugin {
   return {
     name: "package-scss",
     setup(build) {
-      build.onLoad({ filter: /\.scss$/ }, async (args) => {
+      build.onLoad({ filter: /\.scss$/ }, async(args) => {
           try {
             const importer = createScssAliasImporter(options.rootDir);
             const result = await compileStringAsync(

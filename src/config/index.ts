@@ -94,10 +94,10 @@ function createBundlerNamespace(config: BundlerProjectConfig | NormalizedBundler
   };
 }
 
-async function findBundlerProjectConfig(startDir = process.cwd(), boundaryDir?: string): Promise<string | null> {
+async function findBundlerProjectConfig(startDir = process.cwd(), boundaryDir?: string): Promise<string|null> {
   let current = path.resolve(startDir);
   const boundary = boundaryDir ? path.resolve(boundaryDir) : "";
-  for (;;) {
+  for (;; ) {
     const candidate = path.join(current, BUNDLER_PROJECT_CONFIG_PATH);
     if (await pathExists(candidate)) return candidate;
     if (boundary && current === boundary) return null;

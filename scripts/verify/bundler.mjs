@@ -182,138 +182,138 @@ async function assertOutputLayoutFiles(result, fixture) {
   assert.ok(cssOutput, "expected CSS output");
   const css = await fs.readFile(cssOutput, "utf8");
   assert.match(css, /url\(["']?\/static\/assets\/icon-[A-Z0-9]+\.svg["']?\)/u);
-        assert.equal(css.includes("/static/assets/assets/"), false);
-        assert.equal(css.includes("/static/../assets/"), false);
-        }
+  assert.equal(css.includes("/static/assets/assets/"), false);
+  assert.equal(css.includes("/static/../assets/"), false);
+}
 
-        async function assertWrittenManifest(result, fixture) {
-        const manifest = JSON.parse(await fs.readFile(result.manifestPath, "utf8"));
-        assert.ok(manifest.outputLayout.moved.length > 0);
-        assert.ok(manifest.precompressed.assets.length > 0);
-        assert.ok(Object.keys(manifest.assetManifest.outputs).every((item) => !item.startsWith("src/")));
-        for (const compressed of result.precompressed.assets) {
-        await fs.access(path.join(fixture, "dist", compressed.output));
-        }
-        }
+async function assertWrittenManifest(result, fixture) {
+  const manifest = JSON.parse(await fs.readFile(result.manifestPath, "utf8"));
+  assert.ok(manifest.outputLayout.moved.length > 0);
+  assert.ok(manifest.precompressed.assets.length > 0);
+  assert.ok(Object.keys(manifest.assetManifest.outputs).every((item) => !item.startsWith("src/")));
+  for (const compressed of result.precompressed.assets) {
+    await fs.access(path.join(fixture, "dist", compressed.output));
+  }
+}
 
-        async function verifyScssPackageExports() {
-        const fixture = path.join(tempRoot, "scss-package-exports");
-        await writeScssPackageFixture(fixture);
+async function verifyScssPackageExports() {
+  const fixture = path.join(tempRoot, "scss-package-exports");
+  await writeScssPackageFixture(fixture);
 
-        const result = await bundle({
-        discover: {
+  const result = await bundle({
+      discover: {
         dir: "src",
         rules: [
-        { key: "style", include: ["**/*.client.scss"], strategy: "entry" },
+          { key: "style", include: ["**/*.client.scss"], strategy: "entry" },
         ],
-        },
-        format: "esm",
-        outDir: "dist",
-        rootDir: fixture,
-        });
+      },
+      format: "esm",
+      outDir: "dist",
+      rootDir: fixture,
+  });
 
-        const cssOutput = result.outputs.find((item) => item.endsWith(".css"));
-        assert.ok(cssOutput, "expected bundled SCSS CSS output");
-        const css = await fs.readFile(cssOutput, "utf8");
-        assert.equal(css.includes("--package-accent"), true);
-        assert.equal(css.includes(".package-card"), true);
-        assert.equal(css.includes(".screen"), true);
-        }
+  const cssOutput = result.outputs.find((item) => item.endsWith(".css"));
+  assert.ok(cssOutput, "expected bundled SCSS CSS output");
+  const css = await fs.readFile(cssOutput, "utf8");
+  assert.equal(css.includes("--package-accent"), true);
+  assert.equal(css.includes(".package-card"), true);
+  assert.equal(css.includes(".screen"), true);
+}
 
-        async function writeScssPackageFixture(fixture) {
-        const packageRoot = path.join(fixture, "node_modules", "@scope", "style-kit");
-        await fs.mkdir(packageRoot, { recursive: true });
-        await fs.writeFile(path.join(packageRoot, "package.json"), JSON.stringify({
+async function writeScssPackageFixture(fixture) {
+  const packageRoot = path.join(fixture, "node_modules", "@scope", "style-kit");
+  await fs.mkdir(packageRoot, { recursive: true });
+  await fs.writeFile(path.join(packageRoot, "package.json"), JSON.stringify({
         name: "@scope/style-kit",
         exports: {
-        "./card/styles": {
-        sass: "./src/card/styles/index.scss",
-        style: "./src/card/styles/index.scss",
+          "./card/styles": {
+            sass: "./src/card/styles/index.scss",
+            style: "./src/card/styles/index.scss",
+          },
+          "./tokens": {
+            sass: "./src/tokens.scss",
+          },
         },
-        "./tokens": {
-        sass: "./src/tokens.scss",
-        },
-        },
-        }, null, 2));
-        await writeFixtureFile(fixture, "node_modules/@scope/style-kit/src/tokens.scss", [
-        ":root {",
-        "  --package-accent: black;",
-        "}",
-        "",
-        ].join("\n"));
-        await writeFixtureFile(fixture, "node_modules/@scope/style-kit/src/card/styles/index.scss", [
-        "@mixin card-surface {",
-        "  border-color: var(--package-accent);",
-        "}",
-        "",
-        ".package-card {",
-        "  color: var(--package-accent);",
-        "}",
-        "",
-        ].join("\n"));
-        await writeFixtureFile(fixture, "src/screen.client.scss", [
-        '@use "@scope/style-kit/tokens";',
-        '@use "@scope/style-kit/card/styles" as card;',
-        "",
-        ".screen {",
-        "  @include card.card-surface;",
-        "}",
-        "",
-        ].join("\n"));
-        }
+      }, null, 2));
+  await writeFixtureFile(fixture, "node_modules/@scope/style-kit/src/tokens.scss", [
+      ":root {",
+      "  --package-accent: black;",
+      "}",
+      "",
+    ].join("\n"));
+  await writeFixtureFile(fixture, "node_modules/@scope/style-kit/src/card/styles/index.scss", [
+      "@mixin card-surface {",
+      "  border-color: var(--package-accent);",
+      "}",
+      "",
+      ".package-card {",
+      "  color: var(--package-accent);",
+      "}",
+      "",
+    ].join("\n"));
+  await writeFixtureFile(fixture, "src/screen.client.scss", [
+      '@use "@scope/style-kit/tokens";',
+      '@use "@scope/style-kit/card/styles" as card;',
+      "",
+      ".screen {",
+      "  @include card.card-surface;",
+      "}",
+      "",
+    ].join("\n"));
+}
 
-        async function verifyRelatedEntries() {
-        const fixture = path.join(tempRoot, "related");
-        await writeRelatedFixture(fixture);
-        const generic = await collectRelatedEntries({
-        candidatePatterns: ["[path].client.tsx", "[path].client.defer.ts", "[path].client.scss"],
-        rootDir: fixture,
-        sources: "src/pages/home.tsx",
-        tsconfig: true,
-        });
-        const frontend = await collectRelatedFrontendEntries({
-        rootDir: fixture,
-        sources: "src/pages/home.tsx",
-        tsconfig: true,
-        });
+async function verifyRelatedEntries() {
+  const fixture = path.join(tempRoot, "related");
+  await writeRelatedFixture(fixture);
+  const generic = await collectRelatedEntries({
+      candidatePatterns: ["[path].client.tsx", "[path].client.defer.ts", "[path].client.scss"],
+      rootDir: fixture,
+      sources: "src/pages/home.tsx",
+      tsconfig: true,
+  });
+  const frontend = await collectRelatedFrontendEntries({
+      rootDir: fixture,
+      sources: "src/pages/home.tsx",
+      tsconfig: true,
+  });
 
-        assert.deepEqual(generic.entries, [
-        "src/features/card.client.scss",
-        "src/pages/home.client.defer.ts",
-        "src/pages/home.client.tsx",
-        ]);
-        assert.equal(frontend.entries.includes("src/pages/home.client.defer.ts"), true);
-        }
+  assert.deepEqual(generic.entries, [
+      "src/features/card.client.scss",
+      "src/pages/home.client.defer.ts",
+      "src/pages/home.client.tsx",
+  ]);
+  assert.equal(frontend.entries.includes("src/pages/home.client.defer.ts"), true);
+}
 
-        async function writeRelatedFixture(fixture) {
-        await writeFixtureFile(fixture, "tsconfig.json", JSON.stringify({
+async function writeRelatedFixture(fixture) {
+  await writeFixtureFile(fixture, "tsconfig.json", JSON.stringify({
         compilerOptions: {
-        baseUrl: ".",
-        paths: { "#feature/*": ["src/features/*"] },
+          baseUrl: ".",
+          paths: { "#feature/*": ["src/features/*"] },
         },
-        }, null, 2));
-        await writeFixtureFile(fixture, "src/pages/home.tsx", "import '#feature/card';\nexport default 'home';\n");
-        await writeFixtureFile(fixture, "src/pages/home.client.tsx", "export const client = true;\n");
-        await writeFixtureFile(fixture, "src/pages/home.client.defer.ts", "export const deferred = true;\n");
-        await writeFixtureFile(fixture, "src/features/card.ts", "export const card = true;\n");
-        await writeFixtureFile(fixture, "src/features/card.client.scss", ".card { color: red; }\n");
-        }
+      }, null, 2));
+  await writeFixtureFile(fixture, "src/pages/home.tsx", "import '#feature/card';\nexport default 'home';\n");
+  await writeFixtureFile(fixture, "src/pages/home.client.tsx", "export const client = true;\n");
+  await writeFixtureFile(fixture, "src/pages/home.client.defer.ts", "export const deferred = true;\n");
+  await writeFixtureFile(fixture, "src/features/card.ts", "export const card = true;\n");
+  await writeFixtureFile(fixture, "src/features/card.client.scss", ".card { color: red; }\n");
+}
 
-        function verifyFrontendConventions() {
-        const rules = createFrontendEntryRules();
-        assert.deepEqual(rules[0].include, [...DEFAULT_FRONTEND_CLIENT_ENTRY_PATTERNS]);
-        assert.deepEqual(rules[1].include, [...DEFAULT_FRONTEND_DEFERRED_CLIENT_ENTRY_PATTERNS]);
-        assert.equal(DEFAULT_FRONTEND_DEFERRED_CLIENT_ENTRY_PATTERNS.includes("**/*.defer.ts"), false);
-        }
+function verifyFrontendConventions() {
+  const rules = createFrontendEntryRules();
+  assert.deepEqual(rules[0].include, [...DEFAULT_FRONTEND_CLIENT_ENTRY_PATTERNS]);
+  assert.deepEqual(rules[1].include, [...DEFAULT_FRONTEND_DEFERRED_CLIENT_ENTRY_PATTERNS]);
+  assert.equal(DEFAULT_FRONTEND_DEFERRED_CLIENT_ENTRY_PATTERNS.includes("**/*.defer.ts"), false);
+}
 
-        async function readFirstCss(outputs) {
-        const outputPath = outputs.find((item) => item.endsWith(".css"));
-        assert.ok(outputPath, "expected CSS output");
-        return await fs.readFile(outputPath, "utf8");
-        }
+async function readFirstCss(outputs) {
+  const outputPath = outputs.find((item) => item.endsWith(".css"));
+  assert.ok(outputPath, "expected CSS output");
+  return await fs.readFile(outputPath, "utf8");
+}
 
-        function toOutRel(fixture, outputPath) {
-        return outputPath.replace(path.join(fixture, "dist") + path.sep, "").replace(/\\/gu, "/");
-        }
+function toOutRel(fixture, outputPath) {
+  return outputPath.replace(path.join(fixture, "dist") + path.sep, "").replace(/\\/gu, "/");
+}
 
-        await verifyBundlerFeatures();
+await verifyBundlerFeatures();

@@ -114,10 +114,10 @@ function stripTrailingCommas(source: string): string {
       continue;
     }
     if (char === "," && nextNonWhitespace(source, index + 1).match(/[}\]]/)) continue;
-output += char;
-}
+    output += char;
+  }
 
-return output;
+  return output;
 }
 
 function parseJsonLike(text: string): any {

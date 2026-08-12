@@ -55,9 +55,9 @@ async function createWatchState(options: BundlerOptions) {
   : createEmptyResolvedDiscovery();
 
   return {
-    currentContext: null as BuildContext<any> | null,
+    currentContext: null as BuildContext<any>|null,
     currentDiscovery: appendFrontendConfigStyleEntry(discoveredEntries, frontendStyles),
-    discoveryWatcher: null as ReturnType<typeof createDiscoveryWatcher> | null,
+    discoveryWatcher: null as ReturnType<typeof createDiscoveryWatcher>|null,
     disposed: false,
     frontendStyles: frontendStyles as PreparedFrontendConfigStyles | null,
     logger,
@@ -79,7 +79,7 @@ async function startWatchState(state: Awaited<ReturnType<typeof createWatchState
 
 function createWatchSession(state: Awaited<ReturnType<typeof createWatchState>>): BundlerWatchSession {
   return {
-    rebuild: () => runExclusive(state, async () => {
+    rebuild: () => runExclusive(state, async() => {
         try {
           await refreshDiscovery(state);
           return await executeRebuild(state);
@@ -104,7 +104,7 @@ function createWatchStateWatcher(state: Awaited<ReturnType<typeof createWatchSta
   ? createDiscoveryWatcher({
       dirs: discoveryRoots,
       onChange() {
-        void runExclusive(state, async () => {
+        void runExclusive(state, async() => {
             if (state.disposed) return;
             try {
               await refreshDiscovery(state);
@@ -122,7 +122,7 @@ async function callHook(
   args: {
     hook: BundlerOptions["onEntrySetChanged"] | BundlerOptions["onRebuilt"];
     name: "onEntrySetChanged" | "onRebuilt";
-    payload: Record<string, string> | BundlerBuildResult;
+    payload: Record<string, string>|BundlerBuildResult;
   },
 ): Promise<void> {
   if (typeof args.hook !== "function") return;

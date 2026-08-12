@@ -54,10 +54,10 @@ type BundlerDiscoverAggregateRule = {
 };
 
 type BundlerDiscoverRule =
-| BundlerDiscoverEntryRule
-| BundlerDiscoverBundleRule
-| BundlerDiscoverIgnoreRule
-| BundlerDiscoverAggregateRule;
+|BundlerDiscoverEntryRule
+|BundlerDiscoverBundleRule
+|BundlerDiscoverIgnoreRule
+|BundlerDiscoverAggregateRule;
 
 type BundlerDiscoverOptions = {
   dir: string;

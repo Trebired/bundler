@@ -38,8 +38,8 @@ function buildWatcherState(
   const state = {
     args,
     closed: false,
-    interval: null as ReturnType<typeof setInterval> | null,
-    timer: null as ReturnType<typeof setTimeout> | null,
+    interval: null as ReturnType<typeof setInterval>|null,
+    timer: null as ReturnType<typeof setTimeout>|null,
     watchers,
     emitChange() {
       emitWatcherChange(state);

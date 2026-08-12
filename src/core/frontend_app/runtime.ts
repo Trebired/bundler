@@ -61,7 +61,7 @@ async function ensureDevelopmentRuntime(state: RuntimeSessionState): Promise<Bun
   return state.runtime!;
 }
 
-async function ensureDevelopmentSsr(state: RuntimeSessionState): Promise<BundlerBuildResult | undefined> {
+async function ensureDevelopmentSsr(state: RuntimeSessionState): Promise<BundlerBuildResult|undefined> {
   if (!state.config.ssrOptions) return undefined;
   if (!state.ssrWatch) state.ssrWatch = await watch(createWatchedOptions(state, "ssr"));
   return state.ssrWatch.rebuild();
@@ -106,7 +106,7 @@ function createWatchedOptions(state: RuntimeSessionState, kind: "client" | "ssr"
   const originalHook = options.onRebuilt;
   return {
     ...options,
-    onRebuilt: async (result: BundlerBuildResult) => {
+    onRebuilt: async(result: BundlerBuildResult) => {
       await originalHook?.(result);
       if (kind === "client" && state.runtime) state.runtime.client = result;
       if (kind === "ssr" && state.runtime?.client) await updateRuntimeFromBuilds(state, state.runtime.client, result);
@@ -117,7 +117,7 @@ function createWatchedOptions(state: RuntimeSessionState, kind: "client" | "ssr"
 async function importSsrModule(
   state: RuntimeSessionState,
   manifest: BundlerAssetManifest,
-): Promise<Record<string, unknown> | undefined> {
+): Promise<Record<string, unknown>|undefined> {
   const entryPath = resolveRuntimeSsrEntryPath(state.config, manifest);
   if (!entryPath) return undefined;
   const stats = await fs.stat(entryPath);
@@ -201,9 +201,9 @@ function resolveRuntimeSsrEntryPath(
   });
 }
 
-async function readRuntimeAssetManifest(filePath: string | undefined): Promise<BundlerAssetManifest | undefined> {
+async function readRuntimeAssetManifest(filePath: string | undefined): Promise<BundlerAssetManifest|undefined> {
   if (!filePath) return undefined;
-  const raw = await readBundlerManifest(filePath).catch((error: NodeJS.ErrnoException) => {
+  const raw = await readBundlerManifest(filePath).catch ((error: NodeJS.ErrnoException) => {
       if (error.code === "ENOENT") return undefined;
       throw error;
   });
@@ -219,7 +219,7 @@ async function disposeRuntime(state: RuntimeSessionState): Promise<void> {
 function normalizeRuntimeConfig(
   input: BundlerFrontendRuntimeConfig | BundlerFrontendAppBundlerConfig | BundlerFrontendAppBundlerConfigOptions,
 ): BundlerFrontendRuntimeConfig {
-  if ("clientManifestPath" in input) return input;
+  if ("clientManifestPath"in input) return input;
   return createFrontendBundlerRuntimeConfig(input);
 }
 

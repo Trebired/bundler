@@ -4,6 +4,14 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 4.6.3
+
+- Updated the Code Discipline devDependency and lockfile to public `@trebired/code-discipline@^5.5.2`.
+## 4.6.2
+
+- Adopted the shared Trebired Code Discipline preset so package configs only keep repo-specific policy.
+- Updated the Code Discipline devDependency and lockfile to public `@trebired/code-discipline@^5.5.1`.
+
 ## 4.6.1
 
 - Fixed managed frontend config CSS asset manifests so virtual config styles remain addressable by rule key and their emitted font assets are exposed as SSR font preload tags.

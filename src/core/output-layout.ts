@@ -35,7 +35,7 @@ const DEFAULT_OUTPUT_LAYOUT_PATTERNS = {
   asset: "assets/[path][ext]",
   css: "css/[path][ext]",
   js: "js/[path][ext]",
-  map: "alongside" as const,
+  map: "alongside"as const,
 };
 const DOT_SLASH_PREFIX = new RegExp("^\\.\\/", "u");
 
@@ -59,7 +59,7 @@ async function applyOutputLayout(args: {
     publicPath?: string;
     result: BuildResult<any>;
     rootDir: string;
-}): Promise<{ outputs: string[]; stats?: BundlerOutputLayoutStats }> {
+}): Promise<{outputs:string[];stats?:BundlerOutputLayoutStats}> {
   const outputs = resolveOutputs(args.result, args.rootDir);
   if (!args.outputLayout.enabled || !args.result.metafile) return { outputs };
 
@@ -99,9 +99,9 @@ function createOutputPlans(args: {
 }
 
 function planOutputTargets(
-  records: Array<Omit<OutputPlan, "newAbs" | "newKey" | "newRel">>,
+  records: Array<Omit<OutputPlan, "newAbs"|"newKey"|"newRel">>,
   patterns: NormalizedBundlerOutputLayoutOptions["patterns"],
-): Array<Omit<OutputPlan, "newAbs" | "newKey">> {
+): Array<Omit<OutputPlan, "newAbs"|"newKey">> {
   const nonMapTargets = new Map<string, string>();
   const planned = records.map((record) => {
       const newRel = record.kind === "map" ? "" : applyOutputPattern(record.oldRel, patterns[record.kind]);
@@ -139,7 +139,7 @@ function applyOutputPattern(oldRel: string, patternValue: string | undefined): s
 }
 
 async function rewriteAndMoveOutputs(plans: OutputPlan[], publicPath: string | undefined): Promise<void> {
-  const payloads = await Promise.all(plans.map(async (plan) => ({
+  const payloads = await Promise.all(plans.map(async(plan) => ({
           content: await readOutputContent(plan, plans, publicPath),
           plan,
   })));
@@ -193,7 +193,7 @@ function sourceMapFileReference(plan: OutputPlan): string {
 }
 
 function replaceOutputReference(text: string, from: string, to: string): string {
-  if (!from || from === to) return text;
+  if (!from ||from === to) return text;
   const replacements: Array<[string, string]> = [[from, to]];
   if (from.startsWith("./")) {
     replacements.push([from.slice(2), to.replace(DOT_SLASH_PREFIX, "")]);
@@ -201,7 +201,7 @@ function replaceOutputReference(text: string, from: string, to: string): string 
   const pattern = new RegExp(replacements.map(([value]) => escapeRegExp(value)).join("|"), "gu");
   const byReference = new Map(replacements);
   return text.replace(pattern, (match: string, offset: number, sourceText: string) => {
-      if (match !== from && !isBareOutputReference(sourceText, offset, match.length)) {
+      if (match !== from &&!isBareOutputReference(sourceText, offset, match.length)) {
         return match;
       }
       return byReference.get(match) || match;
@@ -282,7 +282,7 @@ function toMetafileKey(oldKey: string, rootDir: string, outDir: string, newRel: 
   return path.isAbsolute(oldKey) ? newAbs : normalizePathValue(path.relative(rootDir, newAbs));
 }
 
-function validateOutputPlans(plans: Array<Omit<OutputPlan, "newAbs" | "newKey">>): void {
+function validateOutputPlans(plans: Array<Omit<OutputPlan, "newAbs"|"newKey">>): void {
   const seen = new Map<string, string>();
   for (const plan of plans) {
     if (!plan.newRel || plan.newRel.startsWith("..")) throw new Error(`bundler-output-layout-invalid-path :: ${plan.oldRel}`);

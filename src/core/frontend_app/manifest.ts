@@ -30,7 +30,7 @@ async function readBundlerManifest(filePath: string): Promise<Record<string, unk
 }
 
 function extractAssetManifest(value: BundlerAssetManifest | BundlerBuildResult | Record<string, unknown>): BundlerAssetManifest {
-  const candidate = "assetManifest" in value ? value.assetManifest : value;
+  const candidate = "assetManifest"in value ? value.assetManifest : value;
   if (!isAssetManifest(candidate)) throw new Error("bundler-asset-manifest-missing");
   return candidate;
 }
@@ -41,7 +41,7 @@ function resolveAssetManifestEntryOutputPath(args: {
     manifest: BundlerAssetManifest | BundlerBuildResult | Record<string, unknown>;
     outDir: string;
 }): string | undefined {
-  const entry = resolveAssetManifestEntry(args.manifest, args.entryId, args.from || "auto");
+  const entry = resolveAssetManifestEntry(args.manifest, args.entryId, args.from ||"auto");
   return entry ? path.resolve(args.outDir, entry.file) : undefined;
 }
 

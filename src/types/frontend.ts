@@ -13,7 +13,7 @@ type BundlerFrontendEntryRulesOptions = {
 type BundlerFrontendRelatedEntriesOptions = Omit<
 BundlerRelatedEntriesOptions,
 "candidateExtensions" | "candidatePatterns" | "candidateSuffixes"
-> & {
+>& {
   candidatePatterns?: readonly string[];
 };
 

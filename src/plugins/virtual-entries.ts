@@ -17,7 +17,7 @@ function createVirtualEntriesPlugin(options: VirtualEntriesPluginOptions): Plugi
     .filter((entry) => entry.source === "internal")
     .map((entry) => [entry.name, {
           contents: entry.contents || "",
-          loader: entry.virtualLoader || "ts" as BundlerVirtualEntryLoader,
+          loader: entry.virtualLoader || "ts"as BundlerVirtualEntryLoader,
     }]),
   );
 
@@ -38,10 +38,10 @@ function createVirtualEntriesPlugin(options: VirtualEntriesPluginOptions): Plugi
           };
       });
 
-      build.onLoad({ filter: /.*/, namespace: VIRTUAL_ENTRY_NAMESPACE }, async (args) => {
+      build.onLoad({ filter: /.*/, namespace: VIRTUAL_ENTRY_NAMESPACE }, async(args) => {
           const entry = byName.get(args.path) || {
             contents: "",
-            loader: "ts" as BundlerVirtualEntryLoader,
+            loader: "ts"as BundlerVirtualEntryLoader,
           };
 
           return {

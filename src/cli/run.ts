@@ -63,7 +63,7 @@ async function waitForStop(session: Awaited<ReturnType<typeof watch>>, durationM
   }
 
   await new Promise<void>((resolve) => {
-      const stop = async () => {
+      const stop = async() => {
         process.off("SIGINT", stop);
         process.off("SIGTERM", stop);
         await session.dispose();

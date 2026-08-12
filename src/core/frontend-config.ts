@@ -20,7 +20,7 @@ type LoadedFrontendConfig = {
 };
 
 type FrontendConfigApi = {
-  findFrontendConfig?: (startDir?: string, boundaryDir?: string) => Promise<string | null>;
+  findFrontendConfig?: (startDir?: string, boundaryDir?: string) => Promise<string|null>;
   loadFrontendConfig?: (projectRoot?: string, options?: Record<string, unknown>) => Promise<LoadedFrontendConfig>;
   generateFrontendScss?: (config: unknown) => string;
 };
@@ -44,9 +44,9 @@ const FRONTEND_CONFIG_ENTRY_NAME = "frontend";
 const FRONTEND_CONFIG_VIRTUAL_ENTRY_NAME = "frontend-config-styles";
 const FRONTEND_CONFIG_VIRTUAL_ENTRY_PATH = `${VIRTUAL_ENTRY_PREFIX}${FRONTEND_CONFIG_VIRTUAL_ENTRY_NAME}`;
 
-async function findFrontendConfigFile(startDir: string): Promise<string | null> {
+async function findFrontendConfigFile(startDir: string): Promise<string|null> {
   let current = path.resolve(startDir);
-  for (;;) {
+  for (;; ) {
     const candidate = path.join(current, FRONTEND_CONFIG_PATH);
     if (await pathExists(candidate)) return candidate;
     const parent = path.dirname(current);
@@ -58,7 +58,7 @@ async function findFrontendConfigFile(startDir: string): Promise<string | null> 
 function resolvePackageRoot(startDir: string, packageName: string): string | null {
   const segments = packageName.split("/");
   let current = path.resolve(startDir);
-  for (;;) {
+  for (;; ) {
     const candidate = path.join(current, "node_modules", ...segments);
     if (fsSync.existsSync(path.join(candidate, "package.json"))) return candidate;
     const parent = path.dirname(current);
@@ -67,7 +67,7 @@ function resolvePackageRoot(startDir: string, packageName: string): string | nul
   }
 }
 
-function readJsonFileSync(filePath: string): Record<string, unknown> | null {
+function readJsonFileSync(filePath: string): Record<string, unknown>|null {
   try {
     const parsed = JSON.parse(fsSync.readFileSync(filePath, "utf8"));
     return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed as Record<string, unknown> : null;
@@ -83,7 +83,7 @@ function resolveFrontendPackageExportTarget(packageRoot: string, packageJson: Re
   const target = typeof entry === "string"
   ? entry
   : entry && typeof entry === "object" && !Array.isArray(entry)
-  ? (entry as Record<string, unknown>).import || (entry as Record<string, unknown>).default
+  ? (entry as Record<string, unknown>).import ||(entry as Record<string, unknown>).default
   : null;
   if (typeof target !== "string") return null;
   return path.resolve(packageRoot, target);
@@ -98,7 +98,7 @@ function resolveFrontendConfigEntrypoint(rootDir: string): string | null {
   return resolveFrontendPackageExportTarget(packageRoot, packageJson, "./config");
 }
 
-async function loadFrontendConfigApi(rootDir: string): Promise<FrontendConfigApi | null> {
+async function loadFrontendConfigApi(rootDir: string): Promise<FrontendConfigApi|null> {
   const entrypoint = resolveFrontendConfigEntrypoint(rootDir);
   if (!entrypoint) return null;
   const url = pathToFileURL(entrypoint);
@@ -162,7 +162,7 @@ async function prepareFrontendConfigStyles(args: {
     environment?: string;
     logger: NormalizedBundlerLogger;
     rootDir: string;
-}): Promise<PreparedFrontendConfigStyles | null> {
+}): Promise<PreparedFrontendConfigStyles|null> {
   if (args.environment === "node") return null;
   const configPath = await findFrontendConfigFile(args.rootDir);
   const api = await loadFrontendConfigApi(args.rootDir);

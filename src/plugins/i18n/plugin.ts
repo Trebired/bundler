@@ -60,7 +60,7 @@ function createI18nPlugin(options: I18nPluginOptions): Plugin {
     setup(build) {
       build.onEnd(() => logState.flush());
 
-      build.onLoad({ filter: /\.(?:[cm]?[jt]sx?)$/, namespace: "file" }, async (args) => {
+      build.onLoad({ filter: /\.(?:[cm]?[jt]sx?)$/, namespace: "file" }, async(args) => {
           if (!isCodeFile(args.path) || !isInsideDirectory(options.rootDir, args.path)) return undefined;
 
           const source = await fs.readFile(args.path, "utf8");

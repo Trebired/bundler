@@ -4,7 +4,7 @@ import path from "node:path";
 import { toObject } from "#5zpn5tshpwdi";
 
 type PackageJson = {
-  exports?: Record<string, unknown> | string;
+  exports?: Record<string, unknown>|string;
   sass?: string;
   style?: string;
 };
@@ -22,10 +22,10 @@ type PackageResolutionContext = {
 function parsePackageSpecifier(specifier: string): PackageSpecifier | null {
   if (
     !specifier
-    || specifier.startsWith(".")
-    || specifier.startsWith("/")
-    || specifier.startsWith("#")
-    || /^[a-z][a-z0-9+.-]*:/iu.test(specifier)
+    ||specifier.startsWith(".")
+    ||specifier.startsWith("/")
+    ||specifier.startsWith("#")
+    ||/^[a-z][a-z0-9+.-]*:/iu.test(specifier)
   ) {
     return null;
   }

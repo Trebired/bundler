@@ -51,7 +51,7 @@ async function validatePackedBins(packageJson, tarballPath, tarballEntries) {
     assertTarEntryExists(tarballEntries, target, `Missing packed bin target: ${target}`);
     const localPath = path.join(rootDir, target.replace(DOT_SLASH_PREFIX, ""));
     const localStats = await fs.stat(localPath);
-    assert.notEqual(localStats.mode & 0o111, 0, `Built bin is not executable: ${target}`);
+    assert.notEqual(localStats.mode&0o111, 0, `Built bin is not executable: ${target}`);
     assertTarEntryExecutable(tarballPath, target);
   }
 }

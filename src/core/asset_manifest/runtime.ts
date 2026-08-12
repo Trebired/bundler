@@ -63,7 +63,7 @@ function collectAssetLinks(
   };
 
   for (const entryId of entryIds || []) {
-    const entryKeysForId = resolveEntryKeys(manifest, entryId, options.from || "auto");
+    const entryKeysForId = resolveEntryKeys(manifest, entryId, options.from ||"auto");
     if (entryKeysForId.length === 0) {
       pushMissingEntryId(state.missing, entryId);
       continue;

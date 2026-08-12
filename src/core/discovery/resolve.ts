@@ -237,7 +237,7 @@ function resolveDirectEntryRecords(args: Parameters<typeof resolveRuleEntries>[0
 }
 
 async function resolveBundleEntryRecords(
-  args: Parameters<typeof resolveRuleEntries>[0] & { rule: NormalizedBundleRule },
+  args: Parameters<typeof resolveRuleEntries>[0]& { rule: NormalizedBundleRule },
 ): Promise<void> {
   const filesWithStats = await readBundleFilesWithStats(args.matchedFiles, args.rule);
   if (filesWithStats.length === 0) return;
@@ -281,7 +281,7 @@ async function resolveBundleEntryRecords(
 }
 
 async function resolveAggregateEntryRecord(
-  args: Parameters<typeof resolveRuleEntries>[0] & { rule: NormalizedAggregateRule },
+  args: Parameters<typeof resolveRuleEntries>[0]& { rule: NormalizedAggregateRule },
   rootModule?: ResolvedAggregateRootModule,
 ): Promise<void> {
   const filtered = await filterAggregateMatchedFiles({ matchedFiles: args.matchedFiles, rule: args.rule });

@@ -90,5 +90,6 @@
   "#uutmr3kbt43m": "./src/types/discovery.ts",
   "#ymbmz1vdz4oa": "./src/core/discovery/public.ts",
   "#z1hxysbp7ydt": "./src/config/index.ts",
-  "#ze7c8hijtyk0": "./src/core/discovery/scan.ts"
+  "#ze7c8hijtyk0": "./src/core/discovery/scan.ts",
+  "#zjbdgm10truc": "./src/plugins/scss/syntax.ts"
 }

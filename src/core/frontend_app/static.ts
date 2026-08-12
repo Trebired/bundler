@@ -20,7 +20,7 @@ type StaticFileMatch = {
 async function serveStaticAsset(
   request: BundlerStaticAssetRequest,
   options: BundlerStaticAssetHandlerOptions,
-): Promise<BundlerStaticAssetResponse | undefined> {
+): Promise<BundlerStaticAssetResponse|undefined> {
   const requestPath = normalizeRequestPath(request.path || request.url || "");
   if (!requestPath) return undefined;
   if (isBlockedRequest(requestPath, options)) return createBlockedResponse(options);
@@ -42,7 +42,7 @@ async function serveStaticAsset(
 }
 
 function createStaticAssetMiddleware(options: BundlerStaticAssetHandlerOptions) {
-  return async (
+  return async(
     request: BundlerExpressLikeRequest,
     response: BundlerExpressLikeResponse,
     next: BundlerExpressLikeNext,
@@ -65,7 +65,7 @@ function createStaticAssetMiddleware(options: BundlerStaticAssetHandlerOptions) 
 async function resolveStaticFile(
   requestPath: string,
   options: BundlerStaticAssetHandlerOptions,
-): Promise<StaticFileMatch | undefined> {
+): Promise<StaticFileMatch|undefined> {
   for (const dir of resolveStaticDirs(options)) {
     const mountedPath = toMountedRequestPath(requestPath, dir.mountPath);
     if (!mountedPath) continue;
@@ -79,7 +79,7 @@ async function resolveStaticFile(
 async function selectPrecompressedFile(
   match: StaticFileMatch,
   request: BundlerStaticAssetRequest,
-): Promise<{ absPath: string; encoding?: "br" | "gzip" }> {
+): Promise<{absPath:string;encoding?:"br"|"gzip"}> {
   if (!supportsPrecompression(match.requestPath)) return { absPath: match.absPath };
   const acceptEncoding = getHeader(request.headers, "accept-encoding");
   if (/\bbr\b/iu.test(acceptEncoding) && await isFile(`${match.absPath}.br`)) {
@@ -107,8 +107,8 @@ function createAssetHeaders(args: {
   return headers;
 }
 
-function resolveStaticDirs(options: BundlerStaticAssetHandlerOptions): Array<{ dir: string; mountPath: string }> {
-  const dirs: Array<{ dir: string; mountPath: string }> = [];
+function resolveStaticDirs(options: BundlerStaticAssetHandlerOptions): Array<{dir:string;mountPath:string}> {
+  const dirs: Array<{dir:string;mountPath:string}> = [];
   const rootDir = path.resolve(options.rootDir || "");
   if (options.mode === "development" && options.publicDir) {
     dirs.push({ dir: resolveStaticPath(rootDir, options.publicDir), mountPath: "" });

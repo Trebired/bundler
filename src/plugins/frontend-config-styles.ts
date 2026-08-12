@@ -35,7 +35,7 @@ function createFrontendConfigStylesPlugin(options: FrontendConfigStylesPluginOpt
           };
       });
 
-      build.onLoad({ filter: /.*/, namespace: FRONTEND_CONFIG_STYLES_NAMESPACE }, async () => {
+      build.onLoad({ filter: /.*/, namespace: FRONTEND_CONFIG_STYLES_NAMESPACE }, async() => {
           return loadFrontendConfigStyle(options);
       });
     },
@@ -90,7 +90,7 @@ function frontendVirtualScssPath(rootDir: string): string {
   return path.join(rootDir, path.dirname(FRONTEND_CONFIG_PATH), "config.virtual.scss");
 }
 
-async function existingWatchDirs(rootDir: string): Promise<string[] | undefined> {
+async function existingWatchDirs(rootDir: string): Promise<string[]|undefined> {
   const frontendDir = path.dirname(path.resolve(rootDir, FRONTEND_CONFIG_PATH));
   try {
     const stats = await fs.stat(frontendDir);

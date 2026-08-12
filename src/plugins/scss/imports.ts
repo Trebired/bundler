@@ -1,8 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import type { Importer, Syntax } from "sass-embedded";
+import type { Importer } from "sass-embedded";
 import { resolvePackageFilePath } from "./package-resolution.js";
+import { inferSyntax } from "./syntax.js";
 import { toObject } from "#5zpn5tshpwdi";
 import { toPosixPath } from "#tsnh4vdfql8p";
 import { createTextScannerState, type TextScannerState } from "#tzyfbjqi6bpj";
@@ -308,10 +309,6 @@ function rewriteScssAliasDirectives(text: string): string {
     nextText = `${nextText.slice(0, replacement.start)}${toAliasUrl(replacement.specifier)}${nextText.slice(replacement.end)}`;
   }
   return nextText;
-}
-
-function inferSyntax(filePath: string): Syntax {
-  return path.extname(filePath).toLowerCase() === ".sass" ? "indented" : "scss";
 }
 
 function resolveCanonicalFilePath(url: string, context: ScssImportContext): string {

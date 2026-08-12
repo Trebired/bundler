@@ -52,7 +52,7 @@ function normalizeAggregateModuleMap(
     allowEmpty: Boolean(aggregate.allowEmpty),
     collapseIndex: Boolean(aggregate.collapseIndex),
     exports: {
-      default: aggregate.exports?.default ?? DEFAULT_AGGREGATE_EXPORT_DEFAULT,
+      default: aggregate.exports?.default ??DEFAULT_AGGREGATE_EXPORT_DEFAULT,
       map: mapExport,
       resolver: resolverExport,
       root: rootModule ? rootExport : undefined,
@@ -142,7 +142,7 @@ function normalizeManifestOptions(manifest: BundlerManifestOptions | undefined):
   return { enabled: true, file: normalizePathValue(manifest.file || "bundler-manifest.json") };
 }
 
-function validateAggregateExports(ruleKey: string, entries: Array<readonly [string, string]>): void {
+function validateAggregateExports(ruleKey: string, entries: Array<readonly[string, string]>): void {
   for (const [label, value] of entries) {
     if (!isValidIdentifier(value)) {
       throw new Error(`bundler-discover-aggregate-invalid-export-name :: ${ruleKey} :: ${label}`);

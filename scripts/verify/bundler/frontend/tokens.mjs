@@ -21,7 +21,7 @@ async function readCssOutput(outDir) {
 async function waitForCss(outDir, expected) {
   const deadline = Date.now() + WATCH_TIMEOUT_MS;
   let last = "";
-  for (;;) {
+  for (;; ) {
     try {
       last = await readCssOutput(outDir);
       if (last.includes(expected)) return last;

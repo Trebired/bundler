@@ -31,8 +31,8 @@ type BundlerOptions = {
   annotateSources?: boolean;
   i18n?: boolean | BundlerI18nOptions;
   manifest?: BundlerManifestOptions;
-  onRebuilt?: (result: BundlerBuildResult) => void | Promise<void>;
-  onEntrySetChanged?: (entries: Record<string, string>) => void | Promise<void>;
+  onRebuilt?: (result: BundlerBuildResult) => void |Promise<void>;
+  onEntrySetChanged?: (entries: Record<string, string>) => void |Promise<void>;
   logger?: BundlerLogger;
   loggerAdapter?: BundlerLoggerAdapter;
 };

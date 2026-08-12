@@ -80,7 +80,7 @@ function applyTsconfigMatcher(specifier: string, matcher: TsconfigPathMatcher): 
 
 function loadInlineTsconfig(
   rootDir: string,
-  tsconfig: Exclude<BundlerImportGraphTsconfigOptions, boolean | string | undefined>,
+  tsconfig: Exclude<BundlerImportGraphTsconfigOptions, boolean|string|undefined>,
 ): LoadedTsconfig {
   const fileConfig = tsconfig.file
   ? loadTsconfigFromFile(path.resolve(rootDir, tsconfig.file))

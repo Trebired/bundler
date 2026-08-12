@@ -42,7 +42,7 @@ function defineFrontendBundlerConfig(options: BundlerFrontendAppBundlerConfigOpt
 function createFrontendAppBundlerOptions(
   options: BundlerFrontendAppBundlerConfigOptions | BundlerFrontendAppBundlerConfig,
 ): BundlerFrontendAppBundlerOptions {
-  const config = "clientOptions" in options ? options : defineFrontendBundlerConfig(options);
+  const config = "clientOptions"in options ? options : defineFrontendBundlerConfig(options);
   return {
     client: config.clientOptions,
     config,
@@ -123,7 +123,7 @@ function createCommonBuildOptions(
   base: ReturnType<typeof normalizeFrontendConfigBase>,
   overrides: Partial<BundlerOptions>,
   precompressDefault: boolean,
-): Omit<BundlerOptions, "discover" | "outDir"> {
+): Omit<BundlerOptions, "discover"|"outDir"> {
   return {
     clean: overrides.clean,
     define: { ...(options.define || {}), ...(overrides.define || {}) },
@@ -242,7 +242,7 @@ function createCatchAllIgnoreRule(key: string): BundlerDiscoverRule {
   return { key, include: ["**/*"], strategy: "ignore" };
 }
 
-function mergeLists(...values: Array<readonly string[] | undefined>): string[] {
+function mergeLists(...values: Array<readonly string[]|undefined>): string[] {
   return Array.from(new Set(values.flatMap((items) => items || []))).filter(Boolean);
 }
 
