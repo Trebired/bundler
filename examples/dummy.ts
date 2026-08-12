@@ -7,12 +7,13 @@ import { bundle } from "#sof0gxa0cxhk";
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "@package-bundler-example-"));
 const srcDir = path.join(root, "src");
 const outDir = path.join(root, "dist");
+const styleImport = JSON.stringify("./css/site.scss");
 
 fs.mkdirSync(path.join(srcDir, "css"), { recursive: true });
 fs.mkdirSync(path.join(srcDir, "shared"), { recursive: true });
 
 fs.writeFileSync(path.join(srcDir, "app.client.tsx"), `
-  import "./css/site.scss";
+  import ${styleImport};
 
   export function App() {
   return <main className="app">hello</main>;

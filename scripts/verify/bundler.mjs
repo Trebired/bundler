@@ -142,11 +142,12 @@ async function verifyOutputLayoutAndPrecompression() {
 }
 
 async function writeLayoutFixture(fixture) {
+  const lazyImport = JSON.stringify("./lazy.client");
   await writeFixtureFile(fixture, "src/app.client.ts", [
       "import './style.client.css';",
       "export const answer = 42;",
       "export async function loadValue() {",
-      "  return import('./lazy.client').then((mod) => mod.value);",
+      `  return import(${lazyImport}).then((mod) => mod.value);`,
       "}",
       "",
     ].join("\n"));
