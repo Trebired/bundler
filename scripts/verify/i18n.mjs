@@ -76,14 +76,16 @@ async function verifyLocalTranslatorLogging() {
   });
 
   assert.equal(capture.events.some((event) => event.message.includes("local-translator ::")), false);
-  const batches = capture.events.filter((event) => event.message === "local translators transformed");
-  assert.equal(batches.length, 1);
-  assert.equal(batches[0].metadata?.transformed_files, 10);
+  assert.equal(capture.events.some((event) => event.message === "local translators transformed"), false);
+  assert.equal(capture.events.some((event) => event.message === "local translators complete"), false);
 
-  const complete = capture.events.find((event) => event.message === "local translators complete");
-  assert.ok(complete);
-  assert.equal(complete.metadata?.transformed_files, 12);
-  assert.equal(complete.metadata?.transformed_folders, 12);
+  const summaries = capture.events.filter((event) => event.message === "local translators summary");
+  assert.equal(summaries.length, 1);
+  assert.equal(summaries[0].metadata?.transformed_files, 12);
+  assert.equal(summaries[0].metadata?.transformed_folders, 12);
+  assert.equal(summaries[0].metadata?.language_files, 24);
+  assert.deepEqual(summaries[0].metadata?.languages, ["cs", "en"]);
+  assert.equal(typeof summaries[0].metadata?.took_ms, "number");
 }
 
 async function verifyBuildFailures() {

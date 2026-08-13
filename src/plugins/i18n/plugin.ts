@@ -4,6 +4,7 @@ import type { Plugin } from "esbuild";
 import type { NormalizedBundlerI18nOptions, NormalizedBundlerLogger } from "#3c8d8166992a";
 import { injectSourceAnnotation } from "#ulrbecj1la7z";
 import { transformLocalTranslators } from "./transform.js";
+import type { ResolvedI18nFolder } from "./validate.js";
 import {
   isCodeFile,
   isInsideDirectory,
@@ -19,35 +20,37 @@ type I18nPluginOptions = {
 
 function createI18nPluginLogState(logger: NormalizedBundlerLogger) {
   let transformedFiles = 0;
-  let loggedFiles = 0;
+  let startedAt = 0;
   const transformedFolders = new Set<string>();
-
-  function logBatch(): void {
-    if (transformedFiles - loggedFiles < 10) return;
-    loggedFiles = transformedFiles;
-    logger.info("i18n", "local translators transformed", {
-        transformed_files: transformedFiles,
-        transformed_folders: transformedFolders.size,
-    });
-  }
+  const languageFiles = new Set<string>();
+  const languages = new Set<string>();
 
   return {
     flush() {
       if (transformedFiles > 0) {
-        logger.info("i18n", "local translators complete", {
+        logger.info("i18n", "local translators summary", {
             transformed_files: transformedFiles,
             transformed_folders: transformedFolders.size,
+            language_files: languageFiles.size,
+            languages: Array.from(languages).sort(),
+            took_ms: Math.round(performance.now() - startedAt),
         });
       }
 
       transformedFiles = 0;
-      loggedFiles = 0;
+      startedAt = 0;
       transformedFolders.clear();
+      languageFiles.clear();
+      languages.clear();
     },
-    register(folderPath: string) {
+    register(folder: ResolvedI18nFolder) {
+      if (transformedFiles === 0) startedAt = performance.now();
       transformedFiles += 1;
-      transformedFolders.add(folderPath);
-      logBatch();
+      transformedFolders.add(folder.folderPath);
+      for (const item of folder.modules) {
+        languageFiles.add(item.filePath);
+        languages.add(item.language);
+      }
     },
   };
 }
@@ -72,7 +75,7 @@ function createI18nPlugin(options: I18nPluginOptions): Plugin {
           });
           if (!transformed) return undefined;
 
-          logState.register(transformed.folder.folderPath);
+          logState.register(transformed.folder);
 
           const contents = options.annotateSources
           ? injectSourceAnnotation({
