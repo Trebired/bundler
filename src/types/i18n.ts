@@ -3,6 +3,7 @@ type BundlerI18nOptions = {
   dirName?: string;
   enabled?: boolean;
   extensions?: string[];
+  logLabel?: string;
   supportedLanguages?: readonly string[];
 };
 
@@ -11,6 +12,7 @@ type NormalizedBundlerI18nOptions = {
   dirName: string;
   enabled: boolean;
   extensions: string[];
+  logLabel: string;
   supportedLanguages?: string[];
 };
 

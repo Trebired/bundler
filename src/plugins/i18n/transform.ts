@@ -15,16 +15,23 @@ type I18nTransformResult = {
   folder: ResolvedI18nFolder;
 };
 
+type I18nFolderResolver = (args: {
+    callerPath: string;
+    i18n: NormalizedBundlerI18nOptions;
+    rootDir: string;
+}) => Promise<ResolvedI18nFolder>;
+
 async function transformLocalTranslators(args: {
     callerPath: string;
     i18n: NormalizedBundlerI18nOptions;
+    resolveFolder?: I18nFolderResolver;
     rootDir: string;
     source: string;
 }): Promise<I18nTransformResult|undefined> {
   const localNames = findLocalTranslatorBindings(args.source);
   if (localNames.length === 0 || !hasLocalTranslatorCall(args.source, localNames)) return undefined;
 
-  const folder = await resolveI18nFolder(args);
+  const folder = await (args.resolveFolder || resolveI18nFolder)(args);
   const transformed = buildTransformedSource({
       callerPath: args.callerPath,
       folder,

@@ -20,15 +20,16 @@ import {
   normalizeAggregateSourceId,
   resolveAggregateEntryByRuleKey,
   serveStaticAsset,
-} from "../../dist/index.js";
+} from "../../../dist/index.js";
 import {
   importJavaScriptOutput,
   resetTemporaryRoot,
   toPosixPathValue,
   writeFixtureFile,
-} from "./shared.mjs";
+} from "#0ss24zzupv8u";
+import { verifyDevelopmentRuntimeReusesInitialWatchBuild } from "./app-i18n.mjs";
 
-const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const tempRoot = path.join(rootDir, ".tmp", "verify-frontend-app");
 
 async function verifyFrontendAppPackage() {
@@ -37,6 +38,7 @@ async function verifyFrontendAppPackage() {
   await verifyFrontendBuildHelpers();
   await verifyTargetSpecificBuilds();
   await verifyRuntimeNodeModules();
+  await verifyDevelopmentRuntimeReusesInitialWatchBuild(tempRoot);
   await verifyRelatedMapTsconfigResolution();
   console.log("Frontend app verification succeeded.");
 }

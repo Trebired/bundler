@@ -34,7 +34,7 @@ async function createWatchState(options: BundlerOptions) {
   logPackageInitialized({
       adapter: normalized.loggerAdapter,
       fallback: "console",
-      group: BUNDLER_LOG_GROUP,
+      groupPrefix: BUNDLER_LOG_GROUP,
       logger: normalized.logger,
       source: BUNDLER_PACKAGE_NAME,
   });

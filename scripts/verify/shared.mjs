@@ -26,11 +26,29 @@ function organizationName() {
   return ORGANIZATION_CODES.map((code) => String.fromCharCode(code)).join("");
 }
 
+function createCaptureLogger() {
+  const events = [];
+  const record = (level) => (group, message, metadata) => {
+    events.push({ group, level, message, metadata });
+  };
+
+  return {
+    events,
+    logger: {
+      error: record("error"),
+      fail: record("fail"),
+      info: record("info"),
+      warn: record("warn"),
+    },
+  };
+}
+
 function toPosixPathValue(value) {
   return String(value || "").split(path.sep).join("/");
 }
 
 export {
+  createCaptureLogger,
   importJavaScriptOutput,
   organizationName,
   resetTemporaryRoot,

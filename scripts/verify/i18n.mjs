@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { bundle } from "../../dist/index.js";
 import {
+  createCaptureLogger,
   importJavaScriptOutput,
   organizationName,
   resetTemporaryRoot,
@@ -235,23 +236,6 @@ async function writeLanguageFile(folder, language, messages, invalid = false) {
     "",
   ].join("\n");
   await fs.writeFile(filePath, contents);
-}
-
-function createCaptureLogger() {
-  const events = [];
-  const record = (level) => (group, message, metadata) => {
-    events.push({ group, level, message, metadata });
-  };
-
-  return {
-    events,
-    logger: {
-      error: record("error"),
-      fail: record("fail"),
-      info: record("info"),
-      warn: record("warn"),
-    },
-  };
 }
 
 function formatMessages(messages) {

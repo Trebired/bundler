@@ -147,6 +147,7 @@ function createPlugins(
     }),
     ...(options.i18n.enabled ? [createI18nPlugin({
             annotateSources: options.annotateSources,
+            environment: options.environment,
             i18n: options.i18n,
             logger,
             rootDir: options.rootDir,

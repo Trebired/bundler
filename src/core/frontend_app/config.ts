@@ -69,7 +69,7 @@ function createClientOptions(
 ): BundlerOptions {
   const overrides = options.browser || {};
   return {
-    ...createCommonBuildOptions(options, base, overrides, base.mode === "production"),
+    ...createCommonBuildOptions(options, base, overrides, base.mode === "production", "client"),
     discover: { dir: base.frontendDir, rules: createClientDiscoverRules(options, base) },
     environment: "browser",
     format: "esm",
@@ -87,7 +87,7 @@ function createSsrOptions(
 ): BundlerOptions {
   const overrides = options.node || {};
   return {
-    ...createCommonBuildOptions(options, base, overrides, false),
+    ...createCommonBuildOptions(options, base, overrides, false, "ssr"),
     discover: { dir: base.frontendDir, rules: createSsrDiscoverRules(options, ssr) },
     environment: "node",
     format: "esm",
@@ -123,12 +123,13 @@ function createCommonBuildOptions(
   base: ReturnType<typeof normalizeFrontendConfigBase>,
   overrides: Partial<BundlerOptions>,
   precompressDefault: boolean,
+  i18nLogLabel: string,
 ): Omit<BundlerOptions, "discover"|"outDir"> {
   return {
     clean: overrides.clean,
     define: { ...(options.define || {}), ...(overrides.define || {}) },
     external: overrides.external,
-    i18n: options.supportedI18nLanguages?.length ? { supportedLanguages: options.supportedI18nLanguages } : overrides.i18n,
+    i18n: createCommonI18nOptions(options, overrides, i18nLogLabel),
     loader: overrides.loader,
     logger: options.logger || overrides.logger,
     loggerAdapter: overrides.loggerAdapter,
@@ -141,6 +142,19 @@ function createCommonBuildOptions(
     sourcemap: overrides.sourcemap ?? options.sourcemap ?? base.mode === "development",
     stripComments: overrides.stripComments ?? options.stripComments ?? base.mode === "production",
   };
+}
+
+function createCommonI18nOptions(
+  options: BundlerFrontendAppBundlerConfigOptions,
+  overrides: Partial<BundlerOptions>,
+  logLabel: string,
+): BundlerOptions["i18n"] {
+  if (options.supportedI18nLanguages?.length) {
+    return { logLabel, supportedLanguages: options.supportedI18nLanguages };
+  }
+
+  if (!overrides.i18n || typeof overrides.i18n !== "object") return overrides.i18n;
+  return { logLabel, ...overrides.i18n };
 }
 
 function createClientDiscoverRules(

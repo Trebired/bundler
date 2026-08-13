@@ -27,7 +27,6 @@
   "#a222003f1819": "./src/core/manifest.ts",
   "#a3a0h9pz7l2r": "./src/core/frontend_app/related.ts",
   "#acbrbahcvk89": "./src/core/frontend_app/global.ts",
-  "#amy0448zzy9v": "./scripts/verify/frontend-app.mjs",
   "#avq6h4k1qk5z": "./src/core/precompression.ts",
   "#axis79i54k87": "./src/core/discovery/normalize.ts",
   "#b144bhz25e6y": "./src/core/frontend.ts",
@@ -76,6 +75,7 @@
   "#obe62qdyhg70": "./src/core/i18n/shared.ts",
   "#ohy99nrb7lqv": "./src/core/import_graph/resolve.ts",
   "#omrw7gbfx3rk": "./src/core/frontend_app/build.ts",
+  "#pr26lw0tfv6e": "./scripts/verify/frontend/app-i18n.mjs",
   "#qtumhoozbdq4": "./src/core/discovery/aggregate.ts",
   "#sof0gxa0cxhk": "./src/index.ts",
   "#t2refevky8d1": "./src/core/asset_manifest/runtime.ts",
@@ -89,6 +89,7 @@
   "#uo5sa4lisay5": "./src/types/manifest.ts",
   "#uutmr3kbt43m": "./src/types/discovery.ts",
   "#ymbmz1vdz4oa": "./src/core/discovery/public.ts",
+  "#yxnf8p9y0waa": "./scripts/verify/frontend/app.mjs",
   "#z1hxysbp7ydt": "./src/config/index.ts",
   "#ze7c8hijtyk0": "./src/core/discovery/scan.ts",
   "#zjbdgm10truc": "./src/plugins/scss/syntax.ts"

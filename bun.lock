@@ -6,7 +6,7 @@
       "name": "@trebired/bundler",
       "dependencies": {
         "@package/i18n": "npm:@trebired/i18n@^0.4.1",
-        "@package/logger-adapter": "npm:@trebired/logger-adapter@^0.2.12",
+        "@package/logger-adapter": "npm:@trebired/logger-adapter@^0.4.5",
         "@package/result": "npm:@trebired/result@^1.1.6",
         "esbuild": "^0.28.1",
         "sass-embedded": "^1.100.0",
@@ -79,7 +79,7 @@
 
     "@package/logger": ["@trebired/logger@2.5.13", "", { "dependencies": { "@package/result": "npm:@trebired/result@^1.1.4", "fflate": "^0.8.3", "tar-stream": "^3.2.0" }, "peerDependencies": { "react": ">=18" }, "optionalPeers": ["react"] }, "sha512-nXATeIVIWTJLOtSqfBQchZm74F34p36jeD8h/0NsvmZSaQxRed7Ty4jfjmvPehMGnvj5j4mcDpVLaTL38ZC5ig=="],
 
-    "@package/logger-adapter": ["@trebired/logger-adapter@0.2.12", "", {}, "sha512-QW0DpI2Etscx5amJBs2H4qiFKTbZn+bzkUAdQsEL/dDmZVH9lO7uF0s27eXIiwP49lEAroPMAdla8B2tuOJTVA=="],
+    "@package/logger-adapter": ["@trebired/logger-adapter@0.4.5", "", { "dependencies": { "@package/logger": "npm:@trebired/logger@^2.5.19" }, "peerDependencies": { "@trebired/logger": ">=2.5" }, "optionalPeers": ["@trebired/logger"], "bin": { "logger-adapter-bridge": "dist/bridge/server.js" } }, "sha512-e2VTIx2Z+NPf+8nEoodD/WNviF3jp4IRSUk4YYQp+1OXKO2GCI/dYQyUpfCT0mTGjsu5WxWv7aQgmjvkGw42QQ=="],
 
     "@package/result": ["@trebired/result@1.1.6", "", { "dependencies": { "@package/logger-adapter": "npm:@trebired/logger-adapter@^0.2.11" } }, "sha512-qRXp1K7q1VhdIXlFEuNSvBMAoHbZljIeCSP5EBVPh0daF7LQ8f6G3+OVkItm5x/xK/L9Xj9dk6XxA5NpsL2saw=="],
 
@@ -226,6 +226,10 @@
     "undici-types": ["undici-types@7.18.2", "", {}, "sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w=="],
 
     "varint": ["varint@6.0.0", "", {}, "sha512-cXEIW6cfr15lFv563k4GuVuW/fiwjknytD37jIOLSdSWuOI6WnO/oKwmP2FQTU2l01LP8/M5TSAJpzUaGe3uWg=="],
+
+    "@package/logger-adapter/@package/logger": ["@trebired/logger@2.5.19", "", { "dependencies": { "@package/result": "npm:@trebired/result@^1.1.6", "fflate": "^0.8.3", "tar-stream": "^3.2.0" }, "peerDependencies": { "react": ">=18" }, "optionalPeers": ["react"] }, "sha512-pnYr/eL2sdxe+l4NTmSDPpsZJiKIMeWKnAxnW1IPpvi+ixg/Ed2ZaobrK6u3tOUvgbdlfbfuIuJ/EhSNxpJGaQ=="],
+
+    "@package/result/@package/logger-adapter": ["@trebired/logger-adapter@0.2.12", "", {}, "sha512-QW0DpI2Etscx5amJBs2H4qiFKTbZn+bzkUAdQsEL/dDmZVH9lO7uF0s27eXIiwP49lEAroPMAdla8B2tuOJTVA=="],
 
     "bun-types/@types/node": ["@types/node@24.12.4", "", { "dependencies": { "undici-types": "~7.16.0" } }, "sha512-GUUEShf+PBCGW2KaXwcIt3Yk+e3pkKwWKb9GSyM9WQVE+ep2jzmHdGsHzu4wgcZy5fN9FBdVzjpBQsYlpfpgLA=="],
 

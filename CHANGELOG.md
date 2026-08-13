@@ -4,6 +4,12 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 4.6.6
+
+- Updated bundler logging to use `@trebired/logger-adapter` group prefixes instead of manually prefixing every log group.
+- Fixed frontend-app development runtime so `ensure()` reuses the initial watch rebuild result instead of immediately rebuilding client and SSR watchers again.
+- Added i18n summary target and environment metadata for frontend-app client and SSR builds.
+
 ## 4.6.5
 
 - Changed colocated i18n local-translator logging to emit one build summary per build/rebuild, including transformed source files, unique i18n folders, language files, languages, and elapsed time.

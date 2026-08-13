@@ -20,6 +20,7 @@ function normalizeBundlerI18nOptions(
     dirName: normalizeSegment(input.dirName) || DEFAULT_I18N_DIR_NAME,
     enabled: input.enabled !== false,
     extensions: normalizeExtensions(input.extensions),
+    logLabel: normalizeSegment(input.logLabel),
     supportedLanguages: normalizeSupportedLanguages(input.supportedLanguages, defaultLanguage),
   };
 }
@@ -30,6 +31,7 @@ function disabledI18nOptions(): NormalizedBundlerI18nOptions {
     dirName: DEFAULT_I18N_DIR_NAME,
     enabled: false,
     extensions: [DEFAULT_I18N_EXTENSION],
+    logLabel: "",
   };
 }
 

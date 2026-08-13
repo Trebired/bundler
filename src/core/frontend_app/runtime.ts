@@ -25,9 +25,11 @@ import { prepareSsrNodeModules } from "./node_modules.js";
 import { buildRelatedClientEntryMap } from "./related.js";
 
 type RuntimeSessionState = {
+  clientBuild?: BundlerBuildResult;
   clientWatch?: BundlerWatchSession;
   config: BundlerFrontendRuntimeConfig;
   runtime?: BundlerFrontendRuntimeState;
+  ssrBuild?: BundlerBuildResult;
   ssrEntryMtime?: number;
   ssrWatch?: BundlerWatchSession;
 };
@@ -55,7 +57,7 @@ async function ensureRuntime(state: RuntimeSessionState): Promise<BundlerFronten
 
 async function ensureDevelopmentRuntime(state: RuntimeSessionState): Promise<BundlerFrontendRuntimeState> {
   if (!state.clientWatch) state.clientWatch = await watch(createWatchedOptions(state, "client"));
-  const client = await state.clientWatch.rebuild();
+  const client = state.clientBuild ?? await state.clientWatch.rebuild();
   const ssr = state.config.ssrOptions ? await ensureDevelopmentSsr(state) : undefined;
   await updateRuntimeFromBuilds(state, client, ssr);
   return state.runtime!;
@@ -64,7 +66,7 @@ async function ensureDevelopmentRuntime(state: RuntimeSessionState): Promise<Bun
 async function ensureDevelopmentSsr(state: RuntimeSessionState): Promise<BundlerBuildResult|undefined> {
   if (!state.config.ssrOptions) return undefined;
   if (!state.ssrWatch) state.ssrWatch = await watch(createWatchedOptions(state, "ssr"));
-  return state.ssrWatch.rebuild();
+  return state.ssrBuild ?? state.ssrWatch.rebuild();
 }
 
 async function ensureProductionRuntime(state: RuntimeSessionState): Promise<BundlerFrontendRuntimeState> {
@@ -108,8 +110,18 @@ function createWatchedOptions(state: RuntimeSessionState, kind: "client" | "ssr"
     ...options,
     onRebuilt: async(result: BundlerBuildResult) => {
       await originalHook?.(result);
-      if (kind === "client" && state.runtime) state.runtime.client = result;
-      if (kind === "ssr" && state.runtime?.client) await updateRuntimeFromBuilds(state, state.runtime.client, result);
+      if (kind === "client") state.clientBuild = result;
+      else state.ssrBuild = result;
+
+      if (!state.runtime) return;
+
+      const client = kind === "client" ? result : state.clientBuild ?? state.runtime.client;
+      if (!client) return;
+
+      const ssr = state.config.ssrOptions
+      ? kind === "ssr" ? result : state.ssrBuild ?? state.runtime.ssr
+      : undefined;
+      await updateRuntimeFromBuilds(state, client, ssr);
     },
   };
 }
@@ -214,6 +226,8 @@ async function readRuntimeAssetManifest(filePath: string | undefined): Promise<B
 async function disposeRuntime(state: RuntimeSessionState): Promise<void> {
   await state.clientWatch?.dispose();
   await state.ssrWatch?.dispose();
+  state.clientBuild = undefined;
+  state.ssrBuild = undefined;
 }
 
 function normalizeRuntimeConfig(
