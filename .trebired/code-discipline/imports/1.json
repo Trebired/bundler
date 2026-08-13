@@ -47,6 +47,7 @@
   "#eur6lfnnsefs": "./src/cli/run.ts",
   "#exf04w6hswui": "./src/core/frontend_app/node_modules.ts",
   "#f4htfd7ivemk": "./src/types/precompression.ts",
+  "#fkji354nzsb9": "./.trebired/logger/config.ts",
   "#foddrrx8eyvb": "./src/core/frontend_app/hygiene.ts",
   "#g0ufxebf3477": "./scripts/prepare-dist.mjs",
   "#g4ahcnf1grw5": "./src/core/import_graph/shared.ts",
