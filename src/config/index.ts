@@ -4,7 +4,10 @@ import { pathToFileURL } from "node:url";
 import type {
   BundlerNamespace,
   BundlerOptions,
+  BundlerProjectBuildConfig,
   BundlerProjectConfig,
+  BundlerProjectFrontendConfig,
+  BundlerProjectStaticAssetsConfig,
   LoadedBundlerConfig,
   LoadedBundlerProjectConfig,
   NormalizedBundlerProjectConfig,
@@ -65,8 +68,65 @@ function normalizeBundlerProjectConfig(config: unknown = {}): NormalizedBundlerP
   }
   const source = config as BundlerProjectConfig;
   return {
+    build: normalizeBuildConfig(source.build),
+    frontend: normalizeFrontendConfig(source.frontend),
+    i18n: normalizeI18nConfig(source.i18n),
     prefix: normalizeBundlerPrefix(source.prefix),
+    staticAssets: normalizeStaticAssetsConfig(source.staticAssets),
   };
+}
+
+function normalizeBuildConfig(input: BundlerProjectBuildConfig | undefined): BundlerProjectBuildConfig {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return {};
+  return pickDefined({
+      annotateSources: input.annotateSources,
+      loader: cloneRecord(input.loader),
+      minify: input.minify,
+      outputLayout: input.outputLayout,
+      precompress: input.precompress,
+      publicPath: normalizeOptionalString(input.publicPath),
+      sourcemap: input.sourcemap,
+      stripComments: input.stripComments,
+  });
+}
+
+function normalizeFrontendConfig(input: BundlerProjectFrontendConfig | undefined): BundlerProjectFrontendConfig {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return {};
+  return pickDefined({
+      deferredClientEntryKey: normalizeOptionalString(input.deferredClientEntryKey),
+      frontendDir: normalizeOptionalString(input.frontendDir),
+      globalClientEntryExclude: normalizeStringList(input.globalClientEntryExclude),
+      globalClientEntryInclude: normalizeStringList(input.globalClientEntryInclude),
+      globalStyleExclude: normalizeStringList(input.globalStyleExclude),
+      globalStyleInclude: normalizeStringList(input.globalStyleInclude),
+      globalStyleRuleKey: normalizeOptionalString(input.globalStyleRuleKey),
+      ignoredSourceInclude: normalizeStringList(input.ignoredSourceInclude),
+      publicDir: input.publicDir === false ? false : normalizeOptionalString(input.publicDir),
+  });
+}
+
+function normalizeI18nConfig(input: BundlerProjectConfig["i18n"]): BundlerProjectConfig["i18n"] {
+  if (typeof input === "boolean" || input === undefined) return input;
+  if (!input || typeof input !== "object" || Array.isArray(input)) return undefined;
+  return pickDefined({
+      defaultLanguage: normalizeOptionalString(input.defaultLanguage),
+      dirName: normalizeOptionalString(input.dirName),
+      enabled: input.enabled,
+      extensions: normalizeStringList(input.extensions),
+      supportedLanguages: normalizeStringList(input.supportedLanguages),
+  });
+}
+
+function normalizeStaticAssetsConfig(
+  input: BundlerProjectStaticAssetsConfig | undefined,
+): BundlerProjectStaticAssetsConfig {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return {};
+  return pickDefined({
+      blockPrivate: input.blockPrivate,
+      blockSourceMaps: input.blockSourceMaps,
+      devCacheControl: normalizeOptionalString(input.devCacheControl),
+      immutableCacheControl: normalizeOptionalString(input.immutableCacheControl),
+  });
 }
 
 function prefixedName(prefix: string, name: string): string {
@@ -92,6 +152,26 @@ function createBundlerNamespace(config: BundlerProjectConfig | NormalizedBundler
     },
     prefix,
   };
+}
+
+function cloneRecord<TValue>(value: Record<string, TValue>|undefined): Record<string, TValue>|undefined {
+  return value ? { ...value } : undefined;
+}
+
+function normalizeStringList(value: readonly string[] | undefined): string[] | undefined {
+  const list = Array.from(new Set((value || []).map(normalizeOptionalString).filter(Boolean)));
+  return list.length > 0 ? list : undefined;
+}
+
+function normalizeOptionalString(value: unknown): string | undefined {
+  const normalized = typeof value === "string" ? value.trim() : "";
+  return normalized || undefined;
+}
+
+function pickDefined<TValue extends Record<string, unknown>>(input: TValue): Partial<TValue> {
+  return Object.fromEntries(
+    Object.entries(input).filter(([, value]) => value !== undefined),
+  ) as Partial<TValue>;
 }
 
 async function findBundlerProjectConfig(startDir = process.cwd(), boundaryDir?: string): Promise<string|null> {
@@ -142,5 +222,6 @@ export {
   loadBundlerProjectConfig,
   normalizeBundlerPrefix,
   normalizeBundlerProjectConfig,
+  pickDefined,
 };
 export type { LoadBundlerProjectConfigOptions };

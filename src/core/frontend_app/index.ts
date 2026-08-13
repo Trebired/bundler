@@ -7,10 +7,15 @@ export {
   copyPublicDir,
 } from "./build.js";
 export {
+  applyProjectConfigToFrontendBundlerOptions,
   createFrontendAppBundlerOptions,
   createFrontendBundlerRuntimeConfig,
   defineFrontendBundlerConfig,
 } from "./config.js";
+export {
+  applyProjectConfigsToFrontendBundlerOptions,
+  loadFrontendProjectConfig,
+} from "./project-config.js";
 export {
   DEFAULT_FRONTEND_CLIENT_ENTRY_KEY,
   DEFAULT_FRONTEND_DEFERRED_CLIENT_ENTRY_KEY,
@@ -61,6 +66,7 @@ export {
   resolveSsrModuleMapRuleOptions,
 } from "./ssr.js";
 export {
+  applyProjectConfigToStaticAssetOptions,
   createStaticAssetMiddleware,
   serveStaticAsset,
 } from "./static.js";

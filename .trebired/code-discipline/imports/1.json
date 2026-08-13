@@ -76,6 +76,7 @@
   "#ohy99nrb7lqv": "./src/core/import_graph/resolve.ts",
   "#omrw7gbfx3rk": "./src/core/frontend_app/build.ts",
   "#pr26lw0tfv6e": "./scripts/verify/frontend/app-i18n.mjs",
+  "#q8c0qk6kt8h7": "./src/core/frontend_app/project-config.ts",
   "#qtumhoozbdq4": "./src/core/discovery/aggregate.ts",
   "#sof0gxa0cxhk": "./src/index.ts",
   "#t2refevky8d1": "./src/core/asset_manifest/runtime.ts",

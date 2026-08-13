@@ -7,6 +7,7 @@ import type {
   BundlerFrontendAppBundlerOptions,
   BundlerFrontendRuntimeConfig,
   BundlerOptions,
+  BundlerProjectConfig,
   BundlerResolvedSsrModuleMapRuleOptions,
 } from "#3c8d8166992a";
 import {
@@ -27,6 +28,7 @@ import {
   DEFAULT_FRONTEND_SOURCE_DIR,
 } from "./defaults.js";
 import { createSsrModuleMapRule, resolveSsrModuleMapRuleOptions } from "./ssr.js";
+import { normalizeBundlerProjectConfig, pickDefined } from "#z1hxysbp7ydt";
 
 function defineFrontendBundlerConfig(options: BundlerFrontendAppBundlerConfigOptions): BundlerFrontendAppBundlerConfig {
   const base = normalizeFrontendConfigBase(options);
@@ -47,6 +49,40 @@ function createFrontendAppBundlerOptions(
     client: config.clientOptions,
     config,
     ssr: config.ssrOptions,
+  };
+}
+
+function applyProjectConfigToFrontendBundlerOptions(
+  options: BundlerFrontendAppBundlerConfigOptions,
+  projectConfig: BundlerProjectConfig = {},
+): BundlerFrontendAppBundlerConfigOptions {
+  const config = normalizeBundlerProjectConfig(projectConfig);
+  const buildDefaults = projectBuildDefaults(config);
+  const i18nBuildDefaults = projectI18nDefaults(config.i18n, buildDefaults);
+  const frontendDefaults = pickDefined({
+      deferredClientEntryKey: config.frontend.deferredClientEntryKey,
+      frontendDir: config.frontend.frontendDir,
+      globalClientEntryExclude: config.frontend.globalClientEntryExclude,
+      globalClientEntryInclude: config.frontend.globalClientEntryInclude,
+      globalStyleExclude: config.frontend.globalStyleExclude,
+      globalStyleInclude: config.frontend.globalStyleInclude,
+      globalStyleRuleKey: config.frontend.globalStyleRuleKey,
+      ignoredSourceInclude: config.frontend.ignoredSourceInclude,
+      minify: config.build.minify,
+      outputLayout: config.build.outputLayout,
+      precompress: config.build.precompress,
+      publicDir: config.frontend.publicDir,
+      publicPath: config.build.publicPath,
+      sourcemap: config.build.sourcemap,
+      stripComments: config.build.stripComments,
+      supportedI18nLanguages: typeof config.i18n === "object" ? config.i18n.supportedLanguages : undefined,
+  });
+
+  return {
+    ...frontendDefaults,
+    ...options,
+    browser: mergeBundlerOptionDefaults(i18nBuildDefaults, options.browser),
+    node: mergeBundlerOptionDefaults(i18nBuildDefaults, options.node),
   };
 }
 
@@ -155,6 +191,41 @@ function createCommonI18nOptions(
 
   if (!overrides.i18n || typeof overrides.i18n !== "object") return overrides.i18n;
   return { logLabel, ...overrides.i18n };
+}
+
+function projectBuildDefaults(
+  config: ReturnType<typeof normalizeBundlerProjectConfig>,
+): Partial<BundlerOptions> {
+  return pickDefined({
+      annotateSources: config.build.annotateSources,
+      loader: config.build.loader,
+      minify: config.build.minify,
+      outputLayout: config.build.outputLayout,
+      precompress: config.build.precompress,
+      publicPath: config.build.publicPath,
+      sourcemap: config.build.sourcemap,
+      stripComments: config.build.stripComments,
+  });
+}
+
+function projectI18nDefaults(
+  i18n: ReturnType<typeof normalizeBundlerProjectConfig>["i18n"],
+  buildDefaults: Partial<BundlerOptions>,
+): Partial<BundlerOptions> {
+  return i18n === undefined ? buildDefaults : { ...buildDefaults, i18n };
+}
+
+function mergeBundlerOptionDefaults(
+  defaults: Partial<BundlerOptions>,
+  overrides: Partial<BundlerOptions>|undefined,
+): Partial<BundlerOptions>|undefined {
+  if (!overrides) return Object.keys(defaults).length ? defaults : undefined;
+  return {
+    ...defaults,
+    ...overrides,
+    define: { ...(defaults.define || {}), ...(overrides.define || {}) },
+    loader: { ...(defaults.loader || {}), ...(overrides.loader || {}) },
+  };
 }
 
 function createClientDiscoverRules(
@@ -266,6 +337,7 @@ function normalizeRootRelative(rootDir: string, value: string): string {
 }
 
 export {
+  applyProjectConfigToFrontendBundlerOptions,
   createFrontendAppBundlerOptions,
   createFrontendBundlerRuntimeConfig,
   defineFrontendBundlerConfig,

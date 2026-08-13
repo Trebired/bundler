@@ -4,6 +4,11 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 4.6.7
+
+- Expanded `.trebired/bundler/config.ts` to cover frontend-app build defaults, static asset defaults, and i18n options.
+- Added frontend-app helpers that merge bundler project config and `.trebired/i18n/config.ts` into build options without app code owning those defaults.
+
 ## 4.6.6
 
 - Updated bundler logging to use `@trebired/logger-adapter` group prefixes instead of manually prefixing every log group.

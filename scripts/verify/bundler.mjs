@@ -4,6 +4,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
+  applyProjectConfigToFrontendBundlerOptions,
+  applyProjectConfigToStaticAssetOptions,
+  applyProjectConfigsToFrontendBundlerOptions,
   bundle,
   createBundlerNamespace,
   collectAssetLinks,
@@ -41,6 +44,9 @@ async function verifyBundlerFeatures() {
   await verifyScssPackageExports();
   await verifyBundlerProjectConfig({
       createBundlerNamespace,
+      applyProjectConfigToFrontendBundlerOptions,
+      applyProjectConfigToStaticAssetOptions,
+      applyProjectConfigsToFrontendBundlerOptions,
       findBundlerProjectConfig,
       loadBundlerProjectConfig,
       normalizeBundlerPrefix,

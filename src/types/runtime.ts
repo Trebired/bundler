@@ -65,12 +65,50 @@ type LoadedBundlerConfig = {
   configPath: string;
 };
 
+type BundlerProjectBuildConfig = {
+  annotateSources?: boolean;
+  loader?: Record<string, Loader>;
+  minify?: boolean;
+  outputLayout?: BundlerOutputLayoutOptions;
+  precompress?: BundlerPrecompressOptions;
+  publicPath?: string;
+  sourcemap?: BundlerOptions["sourcemap"];
+  stripComments?: boolean;
+};
+
+type BundlerProjectFrontendConfig = {
+  deferredClientEntryKey?: string;
+  frontendDir?: string;
+  globalClientEntryExclude?: string[];
+  globalClientEntryInclude?: string[];
+  globalStyleExclude?: string[];
+  globalStyleInclude?: string[];
+  globalStyleRuleKey?: string;
+  ignoredSourceInclude?: string[];
+  publicDir?: string | false;
+};
+
+type BundlerProjectStaticAssetsConfig = {
+  blockPrivate?: boolean;
+  blockSourceMaps?: boolean;
+  devCacheControl?: string;
+  immutableCacheControl?: string;
+};
+
 type BundlerProjectConfig = {
+  build?: BundlerProjectBuildConfig;
+  frontend?: BundlerProjectFrontendConfig;
+  i18n?: boolean | BundlerI18nOptions;
   prefix?: string | false;
+  staticAssets?: BundlerProjectStaticAssetsConfig;
 };
 
 type NormalizedBundlerProjectConfig = {
+  build: BundlerProjectBuildConfig;
+  frontend: BundlerProjectFrontendConfig;
+  i18n?: boolean | BundlerI18nOptions;
   prefix: string;
+  staticAssets: BundlerProjectStaticAssetsConfig;
 };
 
 type LoadedBundlerProjectConfig = {
@@ -92,7 +130,10 @@ export type {
   BundlerEnvironment,
   BundlerOptions,
   BundlerNamespace,
+  BundlerProjectBuildConfig,
   BundlerProjectConfig,
+  BundlerProjectFrontendConfig,
+  BundlerProjectStaticAssetsConfig,
   BundlerWatchSession,
   LoadedBundlerConfig,
   LoadedBundlerProjectConfig,

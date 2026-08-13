@@ -5,12 +5,14 @@ import type {
   BundlerExpressLikeNext,
   BundlerExpressLikeRequest,
   BundlerExpressLikeResponse,
+  BundlerProjectConfig,
   BundlerStaticAssetDir,
   BundlerStaticAssetHandlerOptions,
   BundlerStaticAssetRequest,
   BundlerStaticAssetResponse,
 } from "#3c8d8166992a";
 import { normalizePathValue } from "#tsnh4vdfql8p";
+import { normalizeBundlerProjectConfig } from "#z1hxysbp7ydt";
 
 type StaticFileMatch = {
   absPath: string;
@@ -59,6 +61,17 @@ function createStaticAssetMiddleware(options: BundlerStaticAssetHandlerOptions) 
     } catch (error) {
       next(error);
     }
+  };
+}
+
+function applyProjectConfigToStaticAssetOptions(
+  options: BundlerStaticAssetHandlerOptions,
+  projectConfig: BundlerProjectConfig = {},
+): BundlerStaticAssetHandlerOptions {
+  const config = normalizeBundlerProjectConfig(projectConfig);
+  return {
+    ...config.staticAssets,
+    ...options,
   };
 }
 
@@ -207,6 +220,7 @@ function resolveStaticPath(rootDir: string, value: string): string {
 }
 
 export {
+  applyProjectConfigToStaticAssetOptions,
   createStaticAssetMiddleware,
   serveStaticAsset,
 };

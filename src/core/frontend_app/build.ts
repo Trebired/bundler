@@ -12,6 +12,7 @@ import { createFrontendAppBundlerOptions } from "./config.js";
 import { resolveConfiguredFrontendGlobalClientEntries } from "./global.js";
 import { resolveAssetManifestEntryOutputPath } from "./manifest.js";
 import { prepareSsrNodeModules } from "./node_modules.js";
+import { applyProjectConfigsToFrontendBundlerOptions } from "./project-config.js";
 import { buildRelatedClientEntryMap } from "./related.js";
 import { pathExists } from "#47cd321d28f1";
 
@@ -19,7 +20,10 @@ async function buildFrontendApp(
   options: BundlerFrontendBuildOptions | BundlerFrontendAppBundlerConfig,
 ): Promise<BundlerFrontendBuildResult> {
   const target = resolveBuildTarget(options);
-  const { client, config, ssr } = createFrontendAppBundlerOptions(options);
+  const resolvedOptions = "clientOptions"in options
+  ? options
+  : await applyProjectConfigsToFrontendBundlerOptions(options);
+  const { client, config, ssr } = createFrontendAppBundlerOptions(resolvedOptions);
   const clientResult = target !== "ssr" ? await bundle(client) : undefined;
   const publicDirCopied = clientResult ? await copyPublicDir(config) : false;
   const ssrResult = target !== "client" && ssr ? await bundle(ssr) : undefined;
