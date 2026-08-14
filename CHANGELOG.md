@@ -4,6 +4,10 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.1.2
+
+- Shared in-flight i18n folder resolution between concurrent client and SSR frontend-app builds without keeping stale cache after resolution completes.
+
 ## 5.1.1
 
 - Built frontend-app related client entry maps from one shared import graph per runtime session instead of walking the graph once per SSR page source.

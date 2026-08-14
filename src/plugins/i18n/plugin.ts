@@ -30,6 +30,8 @@ type I18nPluginBuildState = {
   transformedFolders: Set<string>;
 };
 
+const sharedFolderCache = new Map<string, Promise<ResolvedI18nFolder>>();
+
 function createI18nPluginBuildState(options: I18nPluginOptions) {
   const state = createEmptyI18nPluginBuildState();
   return {
@@ -104,15 +106,35 @@ function resolveCachedI18nFolder(
   },
 ) {
   const folderPath = path.join(path.dirname(args.callerPath), args.i18n.dirName);
-  const cached = state.folderCache.get(folderPath);
+  const key = createI18nFolderCacheKey(args.rootDir, folderPath, args.i18n);
+  const cached = state.folderCache.get(key) || sharedFolderCache.get(key);
   if (cached) return cached;
 
   const next = resolveI18nFolder(args).catch ((error) => {
-      state.folderCache.delete(folderPath);
+      state.folderCache.delete(key);
+      sharedFolderCache.delete(key);
       throw error;
+  }).finally(() => {
+      sharedFolderCache.delete(key);
   });
-  state.folderCache.set(folderPath, next);
+  state.folderCache.set(key, next);
+  sharedFolderCache.set(key, next);
   return next;
+}
+
+function createI18nFolderCacheKey(
+  rootDir: string,
+  folderPath: string,
+  i18n: NormalizedBundlerI18nOptions,
+): string {
+  return JSON.stringify({
+      defaultLanguage: i18n.defaultLanguage,
+      dirName: i18n.dirName,
+      extensions: i18n.extensions,
+      folderPath,
+      rootDir,
+      supportedLanguages: i18n.supportedLanguages,
+  });
 }
 
 function createSummaryMetadata(args: {
