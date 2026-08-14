@@ -4,6 +4,11 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.1.1
+
+- Built frontend-app related client entry maps from one shared import graph per runtime session instead of walking the graph once per SSR page source.
+- Added verification that unrelated SSR pages do not inherit another page's related client entries.
+
 ## 5.1.0
 
 - Started frontend-app client and SSR development runtime setup concurrently.

@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import type {
+  BundlerImportGraph,
   BundlerRelatedEntriesOptions,
   BundlerRelatedEntriesResult,
   BundlerRelatedEntryMatch,
@@ -25,6 +26,70 @@ async function collectRelatedEntries(options: BundlerRelatedEntriesOptions): Pro
     graph,
     matches,
   };
+}
+
+async function collectRelatedEntryMap(options: BundlerRelatedEntriesOptions): Promise<Record<string, string[]>> {
+  const rootDir = path.resolve(String(options.rootDir || "").trim() || process.cwd());
+  const graph = await walkImportGraph({
+      entries: options.sources,
+      extensions: options.extensions,
+      rootDir,
+      tsconfig: options.tsconfig,
+  });
+  const patterns = normalizeCandidatePatterns(options);
+  const candidateCache = new Map<string, string[]>();
+  const entries = graph.entries.map((source) => [
+      source,
+      collectRelatedEntriesForSource(graph, source, patterns, rootDir, candidateCache),
+    ] as const);
+
+  return Object.fromEntries(entries.sort(([a], [b]) => a.localeCompare(b)));
+}
+
+function collectRelatedEntriesForSource(
+  graph: BundlerImportGraph,
+  source: string,
+  patterns: string[],
+  rootDir: string,
+  candidateCache: Map<string, string[]>,
+): string[] {
+  const related = new Set<string>();
+  for (const graphPath of collectReachableGraphPaths(graph, source)) {
+    for (const entry of resolveCandidateEntries(graphPath, patterns, rootDir, candidateCache)) related.add(entry);
+  }
+  return Array.from(related).sort();
+}
+
+function collectReachableGraphPaths(graph: BundlerImportGraph, source: string): string[] {
+  const seen = new Set<string>();
+  const pending = [source];
+
+  while (pending.length) {
+    const current = pending.pop()!;
+    if (seen.has(current)) continue;
+    seen.add(current);
+
+    const file = graph.files[current];
+    if (!file) continue;
+    for (const item of file.imports) {
+      if (item.resolved && !seen.has(item.resolved)) pending.push(item.resolved);
+    }
+  }
+
+  return Array.from(seen).sort();
+}
+
+function resolveCandidateEntries(
+  source: string,
+  patterns: string[],
+  rootDir: string,
+  candidateCache: Map<string, string[]>,
+): string[] {
+  const cached = candidateCache.get(source);
+  if (cached) return cached;
+  const entries = collectCandidateMatches([source], patterns, rootDir).map((item) => item.entry);
+  candidateCache.set(source, entries);
+  return entries;
 }
 
 function normalizeCandidatePatterns(options: BundlerRelatedEntriesOptions): string[] {
@@ -92,3 +157,4 @@ function normalizeExtension(value: string): string {
 }
 
 export { collectRelatedEntries };
+export { collectRelatedEntryMap };

@@ -4,7 +4,10 @@ import type {
   BundlerFrontendRelatedEntriesOptions,
   BundlerRelatedEntriesResult,
 } from "#3c8d8166992a";
-import { collectRelatedEntries } from "./related-entries.js";
+import {
+  collectRelatedEntries,
+  collectRelatedEntryMap,
+} from "./related-entries.js";
 
 const DEFAULT_FRONTEND_CLIENT_ENTRY_PATTERNS = [
   "**/*.client.ts",
@@ -61,8 +64,18 @@ async function collectRelatedFrontendEntries(
   });
 }
 
+async function collectRelatedFrontendEntryMap(
+  options: BundlerFrontendRelatedEntriesOptions,
+): Promise<Record<string, string[]>> {
+  return collectRelatedEntryMap({
+      ...options,
+      candidatePatterns: options.candidatePatterns || DEFAULT_FRONTEND_RELATED_ENTRY_PATTERNS,
+  });
+}
+
 export {
   collectRelatedFrontendEntries,
+  collectRelatedFrontendEntryMap,
   createFrontendEntryRules,
   DEFAULT_FRONTEND_CLIENT_ENTRY_PATTERNS,
   DEFAULT_FRONTEND_DEFERRED_CLIENT_ENTRY_PATTERNS,

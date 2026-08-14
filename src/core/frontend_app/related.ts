@@ -1,7 +1,10 @@
+import path from "node:path";
+
 import type {
   BundlerRelatedClientEntryMapOptions,
 } from "#3c8d8166992a";
-import { collectRelatedFrontendEntries } from "#b144bhz25e6y";
+import { normalizePathValue } from "#5kd9snhn6zft";
+import { collectRelatedFrontendEntryMap } from "#b144bhz25e6y";
 import {
   collectAggregateMatchedSourcesByRuleKey,
   normalizeAggregateSourceId,
@@ -11,7 +14,12 @@ async function buildRelatedClientEntryMap(
   options: BundlerRelatedClientEntryMapOptions,
 ): Promise<Record<string, string[]>> {
   const sources = resolveRelatedMapSources(options);
-  const entries = await Promise.all(sources.map((source) => resolveRelatedEntriesForSource(options, source)));
+  const relatedEntryMap = await collectRelatedFrontendEntryMap({
+      rootDir: options.rootDir,
+      sources,
+      tsconfig: options.tsconfig,
+  });
+  const entries = sources.map((source) => resolveRelatedEntriesForSource(options, source, relatedEntryMap));
   return Object.fromEntries(entries.sort(([a], [b]) => a.localeCompare(b)));
 }
 
@@ -21,17 +29,21 @@ function resolveRelatedMapSources(options: BundlerRelatedClientEntryMapOptions):
   return collectAggregateMatchedSourcesByRuleKey(options.manifest, options.ruleKey);
 }
 
-async function resolveRelatedEntriesForSource(
+function resolveRelatedEntriesForSource(
   options: BundlerRelatedClientEntryMapOptions,
   source: string,
-): Promise<[string, string[]]> {
+  relatedEntryMap: Record<string, string[]>,
+): [string, string[]] {
   const pageId = normalizeAggregateSourceId(source, options.pageId);
-  const related = await collectRelatedFrontendEntries({
-      rootDir: options.rootDir,
-      sources: source,
-      tsconfig: options.tsconfig,
-  });
-  return [pageId, related.entries];
+  return [pageId, relatedEntryMap[resolveRelatedMapSourceKey(options.rootDir, source)] || []];
+}
+
+function resolveRelatedMapSourceKey(rootDir: string | undefined, source: string): string {
+  const root = path.resolve(String(rootDir || "").trim() || process.cwd());
+  const normalized = String(source || "").trim();
+  if (!normalized) return "";
+  const sourceAbs = path.isAbsolute(normalized) ? path.resolve(normalized) : path.resolve(root, normalized);
+  return normalizePathValue(path.relative(root, sourceAbs));
 }
 
 export {

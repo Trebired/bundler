@@ -130,6 +130,7 @@ function assertRelatedMap(map) {
       "src/frontend/pages/home.client.defer.ts",
       "src/frontend/pages/home.client.tsx",
   ]);
+  assert.deepEqual(map.about, []);
 }
 
 async function assertRuntime(config) {

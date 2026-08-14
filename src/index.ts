@@ -3,6 +3,7 @@ export { bundle } from "./core/build.js";
 export { buildAssetManifest, collectAssetLinks } from "./core/asset-manifest.js";
 export {
   collectRelatedFrontendEntries,
+  collectRelatedFrontendEntryMap,
   createFrontendEntryRules,
   DEFAULT_FRONTEND_CLIENT_ENTRY_PATTERNS,
   DEFAULT_FRONTEND_DEFERRED_CLIENT_ENTRY_PATTERNS,
