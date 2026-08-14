@@ -72,7 +72,7 @@ async function startWatchState(state: Awaited<ReturnType<typeof createWatchState
   state.logger.info("watch", "start");
   state.logger.info("watch", `entries :: count=${state.currentDiscovery.entries.length}`);
   if (state.currentDiscovery.entries.length > 0) {
-    state.currentContext = await createWatchedContext(state, state.currentDiscovery.entries);
+    state.currentContext = await timeWatchStep(state, "context setup", () => createWatchedContext(state, state.currentDiscovery.entries));
     await executeRebuild(state);
   }
 }
@@ -154,7 +154,7 @@ async function executeRebuild(state: Awaited<ReturnType<typeof createWatchState>
   }
 
   const startedAt = Date.now();
-  const result = await state.currentContext.rebuild();
+  const result = await timeWatchStep(state, "esbuild rebuild", () => state.currentContext!.rebuild());
   const postProcessed = await postProcessBuildOutput({ normalized: state.normalized, result });
   logWarnings(state.logger, result.warnings);
   const summary = await toBuildResult({
@@ -167,7 +167,9 @@ async function executeRebuild(state: Awaited<ReturnType<typeof createWatchState>
       rootDir: state.normalized.rootDir,
       startedAt,
   });
-  state.logger.info("watch", `rebuilt :: outputs=${summary.outputs.length} warnings=${summary.warnings}`);
+  state.logger.info("watch", `rebuilt :: outputs=${summary.outputs.length} warnings=${summary.warnings}`, {
+      duration_ms: summary.durationMs,
+  });
   await callHook(state, { hook: state.normalized.onRebuilt, name: "onRebuilt", payload: summary });
   return summary;
 }
@@ -206,7 +208,7 @@ async function refreshDiscovery(state: Awaited<ReturnType<typeof createWatchStat
     return;
   }
 
-  state.currentContext = await createWatchedContext(state, state.currentDiscovery.entries);
+  state.currentContext = await timeWatchStep(state, "context setup", () => createWatchedContext(state, state.currentDiscovery.entries));
   await executeRebuild(state);
 }
 
@@ -239,6 +241,29 @@ function createEmptyBuildResult(): BundlerBuildResult {
       sourceOwners: {},
     },
   };
+}
+
+async function timeWatchStep<T>(
+  state: Awaited<ReturnType<typeof createWatchState>>,
+  label: string,
+  run: () => Promise<T>,
+): Promise<T> {
+  const startedAt = performance.now();
+  try {
+    const value = await run();
+    state.logger.info("watch", `${label} complete`, { took_ms: elapsedMs(startedAt) });
+    return value;
+  } catch (error) {
+    state.logger.fail("watch", `${label} failed`, {
+        error: error instanceof Error ? error.message : String(error),
+        took_ms: elapsedMs(startedAt),
+    });
+    throw error;
+  }
+}
+
+function elapsedMs(startedAt: number): number {
+  return Math.round(performance.now() - startedAt);
 }
 
 export { watch };

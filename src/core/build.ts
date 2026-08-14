@@ -33,10 +33,12 @@ async function bundle(options: BundlerOptions): Promise<BundlerBuildResult> {
   const startedAt = Date.now();
 
   try {
-    const resolvedDiscovery = await resolveBuildDiscovery(options, normalized, logger);
+    const resolvedDiscovery = await timeBuildStep(logger, "discovery", () => resolveBuildDiscovery(options, normalized, logger));
     logger.info("build", `entries :: count=${resolvedDiscovery.entries.length}`);
-    const summary = await runBuild(normalized, logger, resolvedDiscovery, startedAt);
-    logger.info("build", `complete :: outputs=${summary.outputs.length} warnings=${summary.warnings}`);
+    const summary = await timeBuildStep(logger, "esbuild", () => runBuild(normalized, logger, resolvedDiscovery, startedAt));
+    logger.info("build", `complete :: outputs=${summary.outputs.length} warnings=${summary.warnings}`, {
+        duration_ms: summary.durationMs,
+    });
     return summary;
   } catch (error) {
     logger.fail("build", `failed :: ${formatFailure(error)}`);
@@ -86,6 +88,29 @@ async function runBuild(
       rootDir: normalized.rootDir,
       startedAt,
   });
+}
+
+async function timeBuildStep<T>(
+  logger: ReturnType<typeof resolveLogger>,
+  label: string,
+  run: () => Promise<T>,
+): Promise<T> {
+  const startedAt = performance.now();
+  try {
+    const value = await run();
+    logger.info("build", `${label} complete`, { took_ms: elapsedMs(startedAt) });
+    return value;
+  } catch (error) {
+    logger.fail("build", `${label} failed`, {
+        error: error instanceof Error ? error.message : String(error),
+        took_ms: elapsedMs(startedAt),
+    });
+    throw error;
+  }
+}
+
+function elapsedMs(startedAt: number): number {
+  return Math.round(performance.now() - startedAt);
 }
 
 export { bundle };

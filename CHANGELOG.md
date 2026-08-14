@@ -4,6 +4,13 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.1.0
+
+- Started frontend-app client and SSR development runtime setup concurrently.
+- Added frontend runtime, watch, and build timing logs for context setup, rebuilds, related-client map work, SSR node_modules preparation, SSR module imports, and runtime assembly.
+- Cached frontend runtime related-client maps and safe SSR node_modules preparation within a runtime session.
+- Updated Code Discipline tooling to `@trebired/code-discipline@^6.1.0` and the shared config package to `@trebired/configs@^0.1.5`.
+
 ## 5.0.1
 
 - Updated the shared Trebired config dependency to `@trebired/configs@^0.1.2`.

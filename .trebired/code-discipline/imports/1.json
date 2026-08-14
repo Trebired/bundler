@@ -24,6 +24,7 @@
   "#7411257gf9xf": "./src/backend/utils/time.ts",
   "#751yrciipoz0": "./src/plugins/scss.ts",
   "#9b50ca986572": "./src/core/build.ts",
+  "#9jbp99vtlsp2": "./src/core/frontend_app/runtime-logging.ts",
   "#a222003f1819": "./src/core/manifest.ts",
   "#a3a0h9pz7l2r": "./src/core/frontend_app/related.ts",
   "#acbrbahcvk89": "./src/core/frontend_app/global.ts",
