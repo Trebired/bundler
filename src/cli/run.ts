@@ -2,7 +2,7 @@
 
 import { pathToFileURL } from "node:url";
 
-import { loadBundlerConfigModule } from "#z1hxysbp7ydt";
+import { loadConfigModule } from "#rk4f8tlkdhh7";
 import { bundle } from "#9b50ca986572";
 import { watch } from "#644f3e1f42a8";
 
@@ -110,7 +110,7 @@ async function runCliCommand(
   if (parsed.extra.length > 0) throw new Error(`Unexpected arguments: ${parsed.extra.join(" ")}`);
   if (!parsed.configPath) throw new Error("Missing required --config <path> option");
 
-  const { config } = await loadBundlerConfigModule(io.cwd, parsed.configPath);
+  const { config } = await loadConfigModule(io.cwd, parsed.configPath);
   if (command === "build") return runBuildCommand(config, io.cwd, io.stdout);
   if (command === "watch") return runWatchCommand(config, io.cwd, io.stdout, options.watchDurationMs);
 
@@ -120,7 +120,7 @@ async function runCliCommand(
 }
 
 async function runBuildCommand(
-  config: Awaited<ReturnType<typeof loadBundlerConfigModule>>["config"],
+  config: Awaited<ReturnType<typeof loadConfigModule>>["config"],
   cwd: string,
   stdout: (text: string) => void,
 ): Promise<CliRunResult> {
@@ -130,7 +130,7 @@ async function runBuildCommand(
 }
 
 async function runWatchCommand(
-  config: Awaited<ReturnType<typeof loadBundlerConfigModule>>["config"],
+  config: Awaited<ReturnType<typeof loadConfigModule>>["config"],
   cwd: string,
   stdout: (text: string) => void,
   watchDurationMs?: number,

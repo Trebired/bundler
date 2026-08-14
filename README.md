@@ -278,10 +278,10 @@ import {
   buildFrontendApp,
   createStaticAssetMiddleware,
   createFrontendBundlerRuntime,
-  defineFrontendBundlerConfig,
-} from "@trebired/bundler";
+  defineConfig,
+} from "@trebired/bundler/frontend-app";
 
-const bundlerConfig = defineFrontendBundlerConfig({
+const bundlerConfig = defineConfig({
   clientOutDir: "dist/client",
   ssrOutDir: "dist/ssr",
   supportedI18nLanguages: ["en", "cs"],
@@ -330,7 +330,7 @@ await buildFrontendApp({ ...bundlerConfig, target: "all" });
 Use `nodeModules` when SSR output needs a runtime `node_modules` directory next to the built entry:
 
 ```ts
-const bundlerConfig = defineFrontendBundlerConfig({
+const bundlerConfig = defineConfig({
   clientOutDir: "dist/client",
   ssrOutDir: "dist/ssr",
   nodeModules: {
@@ -815,9 +815,9 @@ type BundlerOptions = {
 Create a config module:
 
 ```ts
-import { defineBundlerConfig } from "@trebired/bundler";
+import { defineConfig } from "@trebired/bundler";
 
-export default defineBundlerConfig({
+export default defineConfig({
   discover: {
     dir: "./src/frontend",
     rules: [

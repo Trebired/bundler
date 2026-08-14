@@ -15,7 +15,7 @@ async function verifyBundlerProjectConfig(context) {
 async function verifyMissingAndEmptyConfig(context) {
   const noConfig = path.join(context.tempRoot, "bundler-project-no-config");
   await fs.mkdir(noConfig, { recursive: true });
-  const missing = await context.loadBundlerProjectConfig(noConfig);
+  const missing = await context.loadConfig(noConfig);
   assert.deepEqual(missing.config, emptyProjectConfig());
   assert.equal(missing.configPath, null);
   assert.deepEqual(missing.dependencies, []);
@@ -23,13 +23,13 @@ async function verifyMissingAndEmptyConfig(context) {
   assert.equal(context.createBundlerNamespace(missing.config).cssVar("button-color"), "--button-color");
   assert.equal(context.createBundlerNamespace(missing.config).dataAttr("popover"), "data-popover");
   await assert.rejects(
-    () => context.loadBundlerProjectConfig(noConfig, { defaultIfMissing: false }),
+    () => context.loadConfig(noConfig, { defaultIfMissing: false }),
     /not found/u,
   );
 
   const emptyConfig = path.join(context.tempRoot, "bundler-project-empty-config");
   await context.writeFile(emptyConfig, `${bundlerConfigDir}/config.ts`, "export default {};\n");
-  const empty = await context.loadBundlerProjectConfig(emptyConfig);
+  const empty = await context.loadConfig(emptyConfig);
   assert.deepEqual(empty.config, emptyProjectConfig());
   assert.equal(empty.dependencies.length, 1);
 }
@@ -38,9 +38,9 @@ async function verifyPrefixedProjectConfig(context) {
   const prefixedConfig = path.join(context.tempRoot, "bundler-project-prefixed-config");
   await writePrefixedConfig(context, prefixedConfig);
   await context.writeFile(prefixedConfig, "src/nested/file.ts", "export const marker = true;\n");
-  const configPath = await context.findBundlerProjectConfig(path.join(prefixedConfig, "src", "nested"));
+  const configPath = await context.findConfig(path.join(prefixedConfig, "src", "nested"));
   assert.equal(configPath, path.join(prefixedConfig, bundlerConfigDir, "config.ts"));
-  const prefixed = await context.loadBundlerProjectConfig(prefixedConfig, {
+  const prefixed = await context.loadConfig(prefixedConfig, {
       searchFrom: path.join(prefixedConfig, "src", "nested"),
   });
   const namespace = context.createBundlerNamespace(prefixed.config);

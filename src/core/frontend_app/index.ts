@@ -10,7 +10,7 @@ export {
   applyProjectConfigToFrontendBundlerOptions,
   createFrontendAppBundlerOptions,
   createFrontendBundlerRuntimeConfig,
-  defineFrontendBundlerConfig,
+  defineConfig,
 } from "./config.js";
 export {
   applyProjectConfigsToFrontendBundlerOptions,

@@ -41,7 +41,6 @@ export {
   DEFAULT_FRONTEND_SSR_ROOT_EXPORT,
   DEFAULT_FRONTEND_SSR_ROOT_MODULE_EXPORT,
   DEFAULT_FRONTEND_SSR_RULE_KEY,
-  defineFrontendBundlerConfig,
   extractAssetManifest,
   normalizeAggregateSourceId,
   prepareSsrNodeModules,
@@ -62,12 +61,12 @@ export { deriveManifest } from "./core/derive-manifest.js";
 export { walkImportGraph } from "./core/import_graph/resolve.js";
 export { watch } from "./core/watch.js";
 export {
+  defineConfig,
+  loadConfigModule,
+} from "./config/module.js";
+export {
   BUNDLER_PROJECT_CONFIG_PATH,
   createBundlerNamespace,
-  defineBundlerConfig,
-  defineBundlerProjectConfig,
-  findBundlerProjectConfig,
-  loadBundlerProjectConfig,
   normalizeBundlerPrefix,
   normalizeBundlerProjectConfig,
 } from "./config/index.js";

@@ -79,6 +79,7 @@
   "#pr26lw0tfv6e": "./scripts/verify/frontend/app-i18n.mjs",
   "#q8c0qk6kt8h7": "./src/core/frontend_app/project-config.ts",
   "#qtumhoozbdq4": "./src/core/discovery/aggregate.ts",
+  "#rk4f8tlkdhh7": "./src/config/module.ts",
   "#sof0gxa0cxhk": "./src/index.ts",
   "#t2refevky8d1": "./src/core/asset_manifest/runtime.ts",
   "#tjhgcgqdt4ba": "./src/core/frontend_app/config.ts",

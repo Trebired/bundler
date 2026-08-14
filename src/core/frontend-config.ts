@@ -20,8 +20,8 @@ type LoadedFrontendConfig = {
 };
 
 type FrontendConfigApi = {
-  findFrontendConfig?: (startDir?: string, boundaryDir?: string) => Promise<string|null>;
-  loadFrontendConfig?: (projectRoot?: string, options?: Record<string, unknown>) => Promise<LoadedFrontendConfig>;
+  findConfig?: (startDir?: string, boundaryDir?: string) => Promise<string|null>;
+  loadConfig?: (projectRoot?: string, options?: Record<string, unknown>) => Promise<LoadedFrontendConfig>;
   generateFrontendScss?: (config: unknown) => string;
 };
 
@@ -138,10 +138,10 @@ async function resolveFrontendConfigStyles(
   preloadedApi?: FrontendConfigApi | null,
 ): Promise<ResolvedFrontendConfigStyles> {
   const api = preloadedApi || await loadFrontendConfigApi(rootDir);
-  if (typeof api?.loadFrontendConfig !== "function") {
+  if (typeof api?.loadConfig !== "function") {
     throw new Error("bundler-frontend-config-api-missing");
   }
-  const loaded = await api.loadFrontendConfig(rootDir, {
+  const loaded = await api.loadConfig(rootDir, {
       defaultIfMissing: true,
       searchFrom: rootDir,
   });

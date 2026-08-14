@@ -62,7 +62,7 @@ function fixtureModulePreamble() {
     "  return `@include meta.load-css(\"${stylePath(rel)}\");`;",
     "}",
     "",
-    "export function defineFrontendConfig(config) {",
+    "export function defineConfig(config) {",
     "  return config;",
     "}",
     "",
@@ -92,7 +92,7 @@ function fixtureModulePreamble() {
 
 function fixtureModuleLoader() {
   return [
-    "export async function loadFrontendConfig(rootDir = process.cwd()) {",
+    "export async function loadConfig(rootDir = process.cwd()) {",
     "  const configPath = path.join(rootDir, configRel);",
     "  const tokensPath = path.join(rootDir, tokensRel);",
     "  const found = await exists(configPath);",
@@ -140,9 +140,9 @@ function fixtureModuleGenerator() {
 async function writeFrontendConfig(configPath, options) {
   await fs.mkdir(path.dirname(configPath), { recursive: true });
   await fs.writeFile(configPath, [
-      `import { defineFrontendConfig } from "@${organizationName()}/frontend/config";`,
+      `import { defineConfig } from "@${organizationName()}/frontend/config";`,
       "",
-      "export default defineFrontendConfig({",
+      "export default defineConfig({",
       `  prefix: "${options.prefix}",`,
       "  icons: { packs: [\"remixicon\", \"simple-icons\"], endpoint: \"/icons/svg\" },",
       "  systems: {",

@@ -8,7 +8,7 @@ import type {
   BundlerProjectConfig,
 } from "#3c8d8166992a";
 import { applyProjectConfigToFrontendBundlerOptions } from "./config.js";
-import { loadBundlerProjectConfig } from "#z1hxysbp7ydt";
+import { loadConfig } from "#z1hxysbp7ydt";
 
 type ExternalI18nConfig = {
   defaultLanguage?: string;
@@ -41,7 +41,7 @@ async function applyProjectConfigsToFrontendBundlerOptions(
 }
 
 async function loadFrontendProjectConfig(rootDir = process.cwd()): Promise<BundlerProjectConfig> {
-  const loadedBundler = await loadBundlerProjectConfig(rootDir);
+  const loadedBundler = await loadConfig(rootDir);
   const i18n = loadedBundler.config.i18n === undefined
   ? await loadI18nBundlerOptions(rootDir)
   : loadedBundler.config.i18n;

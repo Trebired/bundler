@@ -3,12 +3,10 @@ import { pathToFileURL } from "node:url";
 
 import type {
   BundlerNamespace,
-  BundlerOptions,
   BundlerProjectBuildConfig,
   BundlerProjectConfig,
   BundlerProjectFrontendConfig,
   BundlerProjectStaticAssetsConfig,
-  LoadedBundlerConfig,
   LoadedBundlerProjectConfig,
   NormalizedBundlerProjectConfig,
 } from "#3c8d8166992a";
@@ -27,28 +25,7 @@ function createConfigDefiner<T>(): (config: T) => T {
   return (config) => config;
 }
 
-const defineBundlerConfig = createConfigDefiner<BundlerOptions>();
-const defineBundlerProjectConfig = createConfigDefiner<BundlerProjectConfig>();
-
-async function loadBundlerConfigModule(projectRoot: string, configPath: string): Promise<LoadedBundlerConfig> {
-  const resolvedPath = path.resolve(projectRoot, configPath);
-
-  if (!await pathExists(resolvedPath)) {
-    throw new Error(`Config module was not found: ${resolvedPath}`);
-  }
-
-  const imported = await import(pathToFileURL(resolvedPath).href);
-  const config = imported.default as unknown;
-
-  if (!config || typeof config !== "object" || Array.isArray(config)) {
-    throw new Error("Config module must default-export a config object");
-  }
-
-  return {
-    config: config as BundlerOptions,
-    configPath: resolvedPath,
-  };
-}
+const defineConfig = createConfigDefiner<BundlerProjectConfig>();
 
 function normalizeBundlerPrefix(value: unknown, label = "prefix"): string {
   if (value === false || value === undefined || value === null || value === "") return "";
@@ -174,7 +151,7 @@ function pickDefined<TValue extends Record<string, unknown>>(input: TValue): Par
   ) as Partial<TValue>;
 }
 
-async function findBundlerProjectConfig(startDir = process.cwd(), boundaryDir?: string): Promise<string|null> {
+async function findConfig(startDir = process.cwd(), boundaryDir?: string): Promise<string|null> {
   let current = path.resolve(startDir);
   const boundary = boundaryDir ? path.resolve(boundaryDir) : "";
   for (;; ) {
@@ -192,14 +169,14 @@ async function importBundlerProjectConfig(filePath: string): Promise<unknown> {
   return imported.default;
 }
 
-async function loadBundlerProjectConfig(
+async function loadConfig(
   projectRoot = process.cwd(),
   options: LoadBundlerProjectConfigOptions = {},
 ): Promise<LoadedBundlerProjectConfig> {
   const root = path.resolve(projectRoot);
   const configPath = options.configPath
   ? path.resolve(root, options.configPath)
-  : await findBundlerProjectConfig(options.searchFrom || root, root);
+  : await findConfig(options.searchFrom || root, root);
   if (!configPath) {
     if (options.defaultIfMissing === false) throw new Error("Bundler project config was not found");
     return { config: normalizeBundlerProjectConfig({}), configPath: null, dependencies: [] };
@@ -215,11 +192,9 @@ async function loadBundlerProjectConfig(
 export {
   BUNDLER_PROJECT_CONFIG_PATH,
   createBundlerNamespace,
-  defineBundlerConfig,
-  defineBundlerProjectConfig,
-  findBundlerProjectConfig,
-  loadBundlerConfigModule,
-  loadBundlerProjectConfig,
+  defineConfig,
+  findConfig,
+  loadConfig,
   normalizeBundlerPrefix,
   normalizeBundlerProjectConfig,
   pickDefined,

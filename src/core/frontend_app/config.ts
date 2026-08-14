@@ -30,7 +30,7 @@ import {
 import { createSsrModuleMapRule, resolveSsrModuleMapRuleOptions } from "./ssr.js";
 import { normalizeBundlerProjectConfig, pickDefined } from "#z1hxysbp7ydt";
 
-function defineFrontendBundlerConfig(options: BundlerFrontendAppBundlerConfigOptions): BundlerFrontendAppBundlerConfig {
+function defineConfig(options: BundlerFrontendAppBundlerConfigOptions): BundlerFrontendAppBundlerConfig {
   const base = normalizeFrontendConfigBase(options);
   const ssr = normalizeSsrRuleOptions(options, base.ssrOutDir);
   return {
@@ -44,7 +44,7 @@ function defineFrontendBundlerConfig(options: BundlerFrontendAppBundlerConfigOpt
 function createFrontendAppBundlerOptions(
   options: BundlerFrontendAppBundlerConfigOptions | BundlerFrontendAppBundlerConfig,
 ): BundlerFrontendAppBundlerOptions {
-  const config = "clientOptions"in options ? options : defineFrontendBundlerConfig(options);
+  const config = "clientOptions"in options ? options : defineConfig(options);
   return {
     client: config.clientOptions,
     config,
@@ -340,5 +340,5 @@ export {
   applyProjectConfigToFrontendBundlerOptions,
   createFrontendAppBundlerOptions,
   createFrontendBundlerRuntimeConfig,
-  defineFrontendBundlerConfig,
+  defineConfig,
 };

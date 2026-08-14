@@ -4,6 +4,13 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.0.0
+
+- Renamed public config definers to `defineConfig()` on each config entrypoint.
+- Added `@trebired/bundler/config` for `.trebired/bundler/config.ts` project config helpers.
+- Added `@trebired/bundler/frontend-app` for frontend-app preset helpers.
+- Replaced the Code Discipline preset dependency with `@trebired/configs`.
+
 ## 4.6.7
 
 - Expanded `.trebired/bundler/config.ts` to cover frontend-app build defaults, static asset defaults, and i18n options.
