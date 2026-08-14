@@ -4,6 +4,10 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.0.1
+
+- Updated the shared Trebired config dependency to `@trebired/configs@^0.1.2`.
+
 ## 5.0.0
 
 - Renamed public config definers to `defineConfig()` on each config entrypoint.
@@ -29,7 +33,7 @@ This project follows semantic versioning once published.
 
 ## 4.6.4
 
-- Adopted the external `@trebired/code-discipline-config` preset and updated Code Discipline tooling to `@trebired/code-discipline@^6.0.9`.
+- Adopted the external `@trebired/configs` preset and updated Code Discipline tooling to `@trebired/code-discipline@^6.0.9`.
 - Adjusted verification fixtures so generated source imports do not look like unresolved imports from the verifier files themselves.
 
 ## 4.6.3
