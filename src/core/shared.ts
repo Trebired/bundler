@@ -60,6 +60,7 @@ async function toBuildResult(args: {
   })
   : undefined;
   const manifestWrite = await writeBundlerManifest({
+      assetManifest,
       metafile: args.result.metafile,
       manifest: args.manifest,
       outDir: args.outDir,

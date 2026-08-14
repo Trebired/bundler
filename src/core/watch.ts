@@ -155,18 +155,21 @@ async function executeRebuild(state: Awaited<ReturnType<typeof createWatchState>
 
   const startedAt = Date.now();
   const result = await timeWatchStep(state, "esbuild rebuild", () => state.currentContext!.rebuild());
-  const postProcessed = await postProcessBuildOutput({ normalized: state.normalized, result });
+  const postProcessed = await timeWatchStep(state, "post-process", () => postProcessBuildOutput({
+        normalized: state.normalized,
+        result,
+  }));
   logWarnings(state.logger, result.warnings);
-  const summary = await toBuildResult({
-      manifest: state.normalized.manifest,
-      outDir: state.normalized.outDir,
-      outputLayout: postProcessed.outputLayout,
-      precompressed: postProcessed.precompressed,
-      resolvedDiscovery: state.currentDiscovery,
-      result,
-      rootDir: state.normalized.rootDir,
-      startedAt,
-  });
+  const summary = await timeWatchStep(state, "build result", () => toBuildResult({
+        manifest: state.normalized.manifest,
+        outDir: state.normalized.outDir,
+        outputLayout: postProcessed.outputLayout,
+        precompressed: postProcessed.precompressed,
+        resolvedDiscovery: state.currentDiscovery,
+        result,
+        rootDir: state.normalized.rootDir,
+        startedAt,
+  }));
   state.logger.info("watch", `rebuilt :: outputs=${summary.outputs.length} warnings=${summary.warnings}`, {
       duration_ms: summary.durationMs,
   });

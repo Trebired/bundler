@@ -35,7 +35,7 @@ async function bundle(options: BundlerOptions): Promise<BundlerBuildResult> {
   try {
     const resolvedDiscovery = await timeBuildStep(logger, "discovery", () => resolveBuildDiscovery(options, normalized, logger));
     logger.info("build", `entries :: count=${resolvedDiscovery.entries.length}`);
-    const summary = await timeBuildStep(logger, "esbuild", () => runBuild(normalized, logger, resolvedDiscovery, startedAt));
+    const summary = await runBuild(normalized, logger, resolvedDiscovery, startedAt);
     logger.info("build", `complete :: outputs=${summary.outputs.length} warnings=${summary.warnings}`, {
         duration_ms: summary.durationMs,
     });
@@ -72,22 +72,22 @@ async function runBuild(
   resolvedDiscovery: Awaited<ReturnType<typeof resolveBuildDiscovery>>,
   startedAt: number,
 ): Promise<BundlerBuildResult> {
-  const result = await runEsbuild(createEsbuildOptions({
-        ...normalized,
-        entryRecords: resolvedDiscovery.entries,
-      }, logger));
-  const postProcessed = await postProcessBuildOutput({ normalized, result });
+  const result = await timeBuildStep(logger, "esbuild", () => runEsbuild(createEsbuildOptions({
+          ...normalized,
+          entryRecords: resolvedDiscovery.entries,
+        }, logger)));
+  const postProcessed = await timeBuildStep(logger, "post-process", () => postProcessBuildOutput({ normalized, result }));
   logWarnings(logger, result.warnings);
-  return await toBuildResult({
-      manifest: normalized.manifest,
-      outDir: normalized.outDir,
-      outputLayout: postProcessed.outputLayout,
-      precompressed: postProcessed.precompressed,
-      resolvedDiscovery,
-      result,
-      rootDir: normalized.rootDir,
-      startedAt,
-  });
+  return await timeBuildStep(logger, "build result", () => toBuildResult({
+        manifest: normalized.manifest,
+        outDir: normalized.outDir,
+        outputLayout: postProcessed.outputLayout,
+        precompressed: postProcessed.precompressed,
+        resolvedDiscovery,
+        result,
+        rootDir: normalized.rootDir,
+        startedAt,
+  }));
 }
 
 async function timeBuildStep<T>(

@@ -2,7 +2,12 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { Metafile } from "esbuild";
 
-import type { BundlerOutputLayoutStats, BundlerPrecompressStats, BundlerResolvedDiscovery } from "#3c8d8166992a";
+import type {
+  BundlerAssetManifest,
+  BundlerOutputLayoutStats,
+  BundlerPrecompressStats,
+  BundlerResolvedDiscovery,
+} from "#3c8d8166992a";
 import { buildAssetManifest } from "./asset-manifest.js";
 import type { NormalizedManifestOptions } from "./discovery.js";
 import { deriveManifest } from "./derive-manifest.js";
@@ -12,6 +17,7 @@ type ManifestWriteResult = {
 };
 
 async function writeBundlerManifest(args: {
+    assetManifest?: BundlerAssetManifest;
     metafile?: Metafile;
     manifest: NormalizedManifestOptions;
     outDir: string;
@@ -30,7 +36,7 @@ async function writeBundlerManifest(args: {
   const body = {
     generatedAt: new Date().toISOString(),
     resolvedDiscovery: args.resolvedDiscovery,
-    assetManifest: buildAssetManifest({
+    assetManifest: args.assetManifest || buildAssetManifest({
         metafile: args.metafile,
         outDir: args.outDir,
         resolvedDiscovery: args.resolvedDiscovery,

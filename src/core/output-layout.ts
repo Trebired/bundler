@@ -139,16 +139,40 @@ function applyOutputPattern(oldRel: string, patternValue: string | undefined): s
 }
 
 async function rewriteAndMoveOutputs(plans: OutputPlan[], publicPath: string | undefined): Promise<void> {
-  const payloads = await Promise.all(plans.map(async(plan) => ({
+  await createOutputParents(plans);
+  await Promise.all(plans.filter((plan) => !needsContentRewrite(plan)).map(moveOutputFile));
+  const payloads = await Promise.all(plans.filter(needsContentRewrite).map(async(plan) => ({
           content: await readOutputContent(plan, plans, publicPath),
           plan,
   })));
-  for (const payload of payloads) {
-    await fs.mkdir(path.dirname(payload.plan.newAbs), { recursive: true });
-    await fs.writeFile(payload.plan.newAbs, payload.content);
-    payload.plan.bytes = payload.content.byteLength;
-  }
+  await Promise.all(payloads.map(async(payload) => {
+        await fs.writeFile(payload.plan.newAbs, payload.content);
+        payload.plan.bytes = payload.content.byteLength;
+  }));
   await removeOldOutputs(plans);
+}
+
+async function createOutputParents(plans: OutputPlan[]): Promise<void> {
+  const dirs = Array.from(new Set(plans.map((plan) => path.dirname(plan.newAbs))));
+  await Promise.all(dirs.map((dir) => fs.mkdir(dir, { recursive: true })));
+}
+
+function needsContentRewrite(plan: OutputPlan): boolean {
+  return plan.kind === "js" || plan.kind === "css" || plan.kind === "map";
+}
+
+async function moveOutputFile(plan: OutputPlan): Promise<void> {
+  if (plan.oldAbs === plan.newAbs) return;
+  try {
+    await fs.rename(plan.oldAbs, plan.newAbs);
+  } catch (error) {
+    if (!isCrossDeviceRenameError(error)) throw error;
+    await fs.copyFile(plan.oldAbs, plan.newAbs);
+  }
+}
+
+function isCrossDeviceRenameError(error: unknown): boolean {
+  return Boolean(error && typeof error === "object" && (error as { code?: unknown }).code === "EXDEV");
 }
 
 async function readOutputContent(plan: OutputPlan, plans: OutputPlan[], publicPath: string | undefined): Promise<Buffer> {
@@ -198,6 +222,7 @@ function replaceOutputReference(text: string, from: string, to: string): string 
   if (from.startsWith("./")) {
     replacements.push([from.slice(2), to.replace(DOT_SLASH_PREFIX, "")]);
   }
+  if (!replacements.some(([value]) => text.includes(value))) return text;
   const pattern = new RegExp(replacements.map(([value]) => escapeRegExp(value)).join("|"), "gu");
   const byReference = new Map(replacements);
   return text.replace(pattern, (match: string, offset: number, sourceText: string) => {

@@ -4,6 +4,13 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.1.3
+
+- Split esbuild, output post-processing, and build-result assembly timing logs for build and watch runs.
+- Reduced frontend output-layout startup work by renaming static assets instead of reading and rewriting them.
+- Avoided duplicate asset-manifest derivation while writing bundler manifests.
+- Skipped output reference rewrite scans when the generated text does not contain a candidate reference.
+
 ## 5.1.2
 
 - Shared in-flight i18n folder resolution between concurrent client and SSR frontend-app builds without keeping stale cache after resolution completes.
