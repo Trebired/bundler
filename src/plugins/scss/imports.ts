@@ -4,7 +4,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import type { Importer } from "sass-embedded";
 import { resolvePackageFilePath } from "./package-resolution.js";
 import { inferSyntax } from "./syntax.js";
-import { toObject } from "#5zpn5tshpwdi";
+import { toObject } from "@trebired/utils";
 import { toPosixPath } from "#tsnh4vdfql8p";
 import { createTextScannerState, type TextScannerState } from "#tzyfbjqi6bpj";
 import { PACKAGE_WORKSPACE_CONFIG_DIR } from "#m7884285ke1w";

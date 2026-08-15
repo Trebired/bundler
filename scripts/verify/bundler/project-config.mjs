@@ -4,6 +4,7 @@ import path from "node:path";
 
 const workspaceConfigDir = `.${String.fromCharCode(116, 114, 101, 98, 105, 114, 101, 100)}`;
 const bundlerConfigDir = `${workspaceConfigDir}/bundler`;
+const i18nForVersion = "0.4.0";
 
 async function verifyBundlerProjectConfig(context) {
   await verifyMissingAndEmptyConfig(context);
@@ -16,7 +17,7 @@ async function verifyMissingAndEmptyConfig(context) {
   const noConfig = path.join(context.tempRoot, "bundler-project-no-config");
   await fs.mkdir(noConfig, { recursive: true });
   const missing = await context.loadConfig(noConfig);
-  assert.deepEqual(missing.config, emptyProjectConfig());
+  assert.deepEqual(missing.config, emptyProjectConfig(context));
   assert.equal(missing.configPath, null);
   assert.deepEqual(missing.dependencies, []);
   assert.equal(context.createBundlerNamespace(missing.config).className("button"), "button");
@@ -28,9 +29,13 @@ async function verifyMissingAndEmptyConfig(context) {
   );
 
   const emptyConfig = path.join(context.tempRoot, "bundler-project-empty-config");
-  await context.writeFile(emptyConfig, `${bundlerConfigDir}/config.ts`, "export default {};\n");
+  await context.writeFile(
+    emptyConfig,
+    `${bundlerConfigDir}/config.ts`,
+    `export default { forVersion: '${context.packageVersion}' };\n`,
+  );
   const empty = await context.loadConfig(emptyConfig);
-  assert.deepEqual(empty.config, emptyProjectConfig());
+  assert.deepEqual(empty.config, emptyProjectConfig(context));
   assert.equal(empty.dependencies.length, 1);
 }
 
@@ -44,7 +49,7 @@ async function verifyPrefixedProjectConfig(context) {
       searchFrom: path.join(prefixedConfig, "src", "nested"),
   });
   const namespace = context.createBundlerNamespace(prefixed.config);
-  assertPrefixedConfig(prefixed.config);
+  assertPrefixedConfig(prefixed.config, context);
   assert.equal(namespace.className("button"), "tbf-button");
   assert.equal(namespace.cssVar("button-color"), "--tbf-button-color");
   assert.equal(namespace.dataAttr("popover"), "data-tbf-popover");
@@ -56,6 +61,7 @@ async function verifyPrefixedProjectConfig(context) {
 async function writePrefixedConfig(context, prefixedConfig) {
   await context.writeFile(prefixedConfig, `${bundlerConfigDir}/config.ts`, [
       "export default {",
+      `  forVersion: '${context.packageVersion}',`,
       "  build: { minify: false, publicPath: '/assets/' },",
       "  frontend: { frontendDir: 'ui', globalStyleRuleKey: 'styles' },",
       "  i18n: { supportedLanguages: ['en', 'cs'], dirName: 'messages' },",
@@ -66,9 +72,10 @@ async function writePrefixedConfig(context, prefixedConfig) {
     ].join("\n"));
 }
 
-function assertPrefixedConfig(config) {
+function assertPrefixedConfig(config, context) {
   assert.deepEqual(config, {
       build: { minify: false, publicPath: "/assets/" },
+      forVersion: context.packageVersion,
       frontend: { frontendDir: "ui", globalStyleRuleKey: "styles" },
       i18n: {
         dirName: "messages",
@@ -104,9 +111,14 @@ function verifyProjectMergeHelpers(context, { prefixed, prefixedConfig }) {
 
 async function verifyI18nProjectConfigMerge(context) {
   const i18nProject = path.join(context.tempRoot, "bundler-project-i18n-config");
-  await context.writeFile(i18nProject, `${bundlerConfigDir}/config.ts`, "export default { build: { publicPath: '/project/' } };\n");
+  await context.writeFile(
+    i18nProject,
+    `${bundlerConfigDir}/config.ts`,
+    `export default { forVersion: '${context.packageVersion}', build: { publicPath: '/project/' } };\n`,
+  );
   await context.writeFile(i18nProject, `${workspaceConfigDir}/i18n/config.ts`, [
       "export default {",
+      `  forVersion: '${i18nForVersion}',`,
       "  defaultLanguage: 'en',",
       "  supportedLanguages: ['en', 'cs'],",
       "  local: { dirName: 'messages', extensions: ['ts'] },",
@@ -123,9 +135,10 @@ async function verifyI18nProjectConfigMerge(context) {
   assert.equal(mergedFromProjectFiles.browser.i18n.dirName, "messages");
 }
 
-function emptyProjectConfig() {
+function emptyProjectConfig(context) {
   return {
     build: {},
+    forVersion: context.packageVersion,
     frontend: {},
     i18n: undefined,
     prefix: "",

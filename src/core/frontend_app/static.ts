@@ -68,7 +68,7 @@ function applyProjectConfigToStaticAssetOptions(
   options: BundlerStaticAssetHandlerOptions,
   projectConfig: BundlerProjectConfig = {},
 ): BundlerStaticAssetHandlerOptions {
-  const config = normalizeBundlerProjectConfig(projectConfig);
+  const config = normalizeBundlerProjectConfig(projectConfig, { requireForVersion: false });
   return {
     ...config.staticAssets,
     ...options,

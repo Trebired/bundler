@@ -38,6 +38,7 @@ import {
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const tempRoot = path.join(rootDir, ".tmp", "verify-bundler");
+const packageVersion = JSON.parse(await fs.readFile(path.join(rootDir, "package.json"), "utf8")).version;
 
 async function verifyBundlerFeatures() {
   await resetTemporaryRoot(tempRoot);
@@ -52,6 +53,7 @@ async function verifyBundlerFeatures() {
       findConfig,
       loadConfig,
       normalizeBundlerPrefix,
+      packageVersion,
       tempRoot,
       writeFile: writeFixtureFile,
   });

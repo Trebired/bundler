@@ -97,6 +97,7 @@ type BundlerProjectStaticAssetsConfig = {
 
 type BundlerProjectConfig = {
   build?: BundlerProjectBuildConfig;
+  forVersion?: string;
   frontend?: BundlerProjectFrontendConfig;
   i18n?: boolean | BundlerI18nOptions;
   prefix?: string | false;
@@ -105,6 +106,7 @@ type BundlerProjectConfig = {
 
 type NormalizedBundlerProjectConfig = {
   build: BundlerProjectBuildConfig;
+  forVersion: string;
   frontend: BundlerProjectFrontendConfig;
   i18n?: boolean | BundlerI18nOptions;
   prefix: string;

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { toObject } from "#5zpn5tshpwdi";
+import { toObject } from "@trebired/utils";
 
 type PackageJson = {
   exports?: Record<string, unknown>|string;

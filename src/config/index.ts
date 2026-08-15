@@ -10,13 +10,27 @@ import type {
   LoadedBundlerProjectConfig,
   NormalizedBundlerProjectConfig,
 } from "#3c8d8166992a";
-import { PACKAGE_WORKSPACE_CONFIG_DIR } from "#m7884285ke1w";
+import {
+  PACKAGE_VERSION,
+  PACKAGE_WORKSPACE_CONFIG_DIR,
+} from "#m7884285ke1w";
 import { pathExists } from "#47cd321d28f1";
+import {
+  isRecord,
+  toTrimmedString,
+  uniqueStrings,
+} from "@trebired/utils";
+import { resolveForVersion } from "@trebired/utils";
 
 type LoadBundlerProjectConfigOptions = {
   configPath?: string;
   defaultIfMissing?: boolean;
   searchFrom?: string;
+};
+
+type NormalizeOptions = {
+  configPath?: string;
+  requireForVersion?: boolean;
 };
 
 const BUNDLER_PROJECT_CONFIG_PATH = `${PACKAGE_WORKSPACE_CONFIG_DIR}/bundler/config.ts`;
@@ -39,13 +53,17 @@ function normalizeBundlerPrefix(value: unknown, label = "prefix"): string {
   return normalized;
 }
 
-function normalizeBundlerProjectConfig(config: unknown = {}): NormalizedBundlerProjectConfig {
-  if (!config || typeof config !== "object" || Array.isArray(config)) {
+function normalizeBundlerProjectConfig(
+  config: unknown = {},
+  options: NormalizeOptions = {},
+): NormalizedBundlerProjectConfig {
+  if (!isRecord(config)) {
     throw new Error("Bundler project config must be an object");
   }
   const source = config as BundlerProjectConfig;
   return {
     build: normalizeBuildConfig(source.build),
+    forVersion: normalizeForVersion(source, options),
     frontend: normalizeFrontendConfig(source.frontend),
     i18n: normalizeI18nConfig(source.i18n),
     prefix: normalizeBundlerPrefix(source.prefix),
@@ -54,7 +72,7 @@ function normalizeBundlerProjectConfig(config: unknown = {}): NormalizedBundlerP
 }
 
 function normalizeBuildConfig(input: BundlerProjectBuildConfig | undefined): BundlerProjectBuildConfig {
-  if (!input || typeof input !== "object" || Array.isArray(input)) return {};
+  if (!isRecord(input)) return {};
   return pickDefined({
       annotateSources: input.annotateSources,
       loader: cloneRecord(input.loader),
@@ -68,7 +86,7 @@ function normalizeBuildConfig(input: BundlerProjectBuildConfig | undefined): Bun
 }
 
 function normalizeFrontendConfig(input: BundlerProjectFrontendConfig | undefined): BundlerProjectFrontendConfig {
-  if (!input || typeof input !== "object" || Array.isArray(input)) return {};
+  if (!isRecord(input)) return {};
   return pickDefined({
       deferredClientEntryKey: normalizeOptionalString(input.deferredClientEntryKey),
       frontendDir: normalizeOptionalString(input.frontendDir),
@@ -84,7 +102,7 @@ function normalizeFrontendConfig(input: BundlerProjectFrontendConfig | undefined
 
 function normalizeI18nConfig(input: BundlerProjectConfig["i18n"]): BundlerProjectConfig["i18n"] {
   if (typeof input === "boolean" || input === undefined) return input;
-  if (!input || typeof input !== "object" || Array.isArray(input)) return undefined;
+  if (!isRecord(input)) return undefined;
   return pickDefined({
       defaultLanguage: normalizeOptionalString(input.defaultLanguage),
       dirName: normalizeOptionalString(input.dirName),
@@ -97,7 +115,7 @@ function normalizeI18nConfig(input: BundlerProjectConfig["i18n"]): BundlerProjec
 function normalizeStaticAssetsConfig(
   input: BundlerProjectStaticAssetsConfig | undefined,
 ): BundlerProjectStaticAssetsConfig {
-  if (!input || typeof input !== "object" || Array.isArray(input)) return {};
+  if (!isRecord(input)) return {};
   return pickDefined({
       blockPrivate: input.blockPrivate,
       blockSourceMaps: input.blockSourceMaps,
@@ -136,13 +154,26 @@ function cloneRecord<TValue>(value: Record<string, TValue>|undefined): Record<st
 }
 
 function normalizeStringList(value: readonly string[] | undefined): string[] | undefined {
-  const list = Array.from(new Set((value || []).map(normalizeOptionalString).filter(Boolean)));
+  const list = uniqueStrings(value || []);
   return list.length > 0 ? list : undefined;
 }
 
 function normalizeOptionalString(value: unknown): string | undefined {
-  const normalized = typeof value === "string" ? value.trim() : "";
+  const normalized = toTrimmedString(value);
   return normalized || undefined;
+}
+
+function normalizeForVersion(
+  config: BundlerProjectConfig,
+  options: NormalizeOptions,
+): string {
+  return resolveForVersion({
+      configPath: options.configPath,
+      forVersion: config.forVersion,
+      label: "bundler",
+      packageVersion: PACKAGE_VERSION,
+      requireForVersion: options.requireForVersion,
+  });
 }
 
 function pickDefined<TValue extends Record<string, unknown>>(input: TValue): Partial<TValue> {
@@ -179,11 +210,21 @@ async function loadConfig(
   : await findConfig(options.searchFrom || root, root);
   if (!configPath) {
     if (options.defaultIfMissing === false) throw new Error("Bundler project config was not found");
-    return { config: normalizeBundlerProjectConfig({}), configPath: null, dependencies: [] };
+    return {
+      config: normalizeBundlerProjectConfig(
+        { forVersion: PACKAGE_VERSION },
+        { requireForVersion: false },
+      ),
+      configPath: null,
+      dependencies: [],
+    };
   }
   if (!await pathExists(configPath)) throw new Error(`Bundler project config was not found: ${configPath}`);
   return {
-    config: normalizeBundlerProjectConfig(await importBundlerProjectConfig(configPath)),
+    config: normalizeBundlerProjectConfig(
+      await importBundlerProjectConfig(configPath),
+      { configPath, requireForVersion: true },
+    ),
     configPath,
     dependencies: [configPath],
   };

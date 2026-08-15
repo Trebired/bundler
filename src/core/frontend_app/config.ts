@@ -56,7 +56,7 @@ function applyProjectConfigToFrontendBundlerOptions(
   options: BundlerFrontendAppBundlerConfigOptions,
   projectConfig: BundlerProjectConfig = {},
 ): BundlerFrontendAppBundlerConfigOptions {
-  const config = normalizeBundlerProjectConfig(projectConfig);
+  const config = normalizeBundlerProjectConfig(projectConfig, { requireForVersion: false });
   const buildDefaults = projectBuildDefaults(config);
   const i18nBuildDefaults = projectI18nDefaults(config.i18n, buildDefaults);
   const frontendDefaults = pickDefined({

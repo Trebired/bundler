@@ -4,6 +4,11 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.1.4
+
+- Updated shared utilities to `@trebired/utils@^0.4.3`.
+- Replaced local config, object, time, and package metadata helpers with shared utilities.
+
 ## 5.1.3
 
 - Split esbuild, output post-processing, and build-result assembly timing logs for build and watch runs.
