@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.2.0
+
+- Added `createFrontendBundlerRuntimeSession()` so apps can reuse package-owned frontend runtime assembly.
+- Added a build-once development runtime strategy for apps that do not want dev watchers.
+
 ## 5.1.5
 
 - Updated shared utilities to `@trebired/utils@^0.4.4`.

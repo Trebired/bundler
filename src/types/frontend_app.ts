@@ -199,6 +199,22 @@ type BundlerFrontendRuntime = {
   resolveRootDocumentSync(): unknown;
 };
 
+type BundlerFrontendRuntimeDevelopmentStrategy = "build" | "watch";
+
+type BundlerFrontendRuntimeSessionOptions = {
+  developmentStrategy?: BundlerFrontendRuntimeDevelopmentStrategy;
+  ensure?: boolean;
+};
+
+type BundlerFrontendRuntimeSession = {
+  buildResult?: BundlerFrontendBuildResult;
+  clientDistAbs: string;
+  config: BundlerFrontendAppBundlerConfig;
+  mode: BundlerFrontendMode;
+  publicDirAbs: string;
+  runtime: BundlerFrontendRuntime;
+};
+
 type BundlerStaticAssetRequest = {
   headers?: Headers | IncomingHttpHeaders | Record<string, string|string[]|undefined>;
   method?: string;
@@ -264,6 +280,9 @@ export type {
   BundlerFrontendMode,
   BundlerFrontendRuntime,
   BundlerFrontendRuntimeConfig,
+  BundlerFrontendRuntimeDevelopmentStrategy,
+  BundlerFrontendRuntimeSession,
+  BundlerFrontendRuntimeSessionOptions,
   BundlerFrontendRuntimeState,
   BundlerQuarantineResult,
   BundlerRelatedClientEntryMapOptions,

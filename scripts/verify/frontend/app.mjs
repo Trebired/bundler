@@ -12,6 +12,7 @@ import {
   createFrontendAppBundlerOptions,
   createFrontendBundlerRuntime,
   createFrontendBundlerRuntimeConfig,
+  createFrontendBundlerRuntimeSession,
   DEFAULT_FRONTEND_CLIENT_ENTRY_PATTERNS,
   DEFAULT_FRONTEND_DEFERRED_CLIENT_ENTRY_PATTERNS,
   DEFAULT_FRONTEND_GLOBAL_CLIENT_ENTRY_PATTERNS,
@@ -38,6 +39,7 @@ async function verifyFrontendAppPackage() {
   await verifyFrontendBuildHelpers();
   await verifyTargetSpecificBuilds();
   await verifyRuntimeNodeModules();
+  await verifyBuildOnceRuntimeSession();
   await verifyDevelopmentRuntimeReusesInitialWatchBuild(tempRoot);
   await verifyRelatedMapTsconfigResolution();
   console.log("Frontend app verification succeeded.");
@@ -252,6 +254,27 @@ async function verifyRuntimeNodeModules() {
   } finally {
     await developmentRuntime.dispose();
   }
+}
+
+async function verifyBuildOnceRuntimeSession() {
+  const fixture = path.join(tempRoot, "runtime-session");
+  await writeFrontendFixture(fixture);
+  const session = await createFrontendBundlerRuntimeSession({
+      ...createBuildConfig(fixture),
+      clientOutDir: "dev/client",
+      mode: "development",
+      ssrOutDir: "dev/ssr",
+    }, {
+      developmentStrategy: "build",
+  });
+
+  assert.equal(session.mode, "development");
+  assert.ok(session.buildResult.client);
+  assert.equal(session.runtime.resolveRootDocumentSync(), "root");
+  assert.equal(session.runtime.resolvePageComponentSync("about"), "about");
+  assert.ok(session.clientDistAbs.endsWith("dev/client"));
+  await fs.access(path.join(fixture, "dev/client/bundler-manifest.json"));
+  await session.runtime.dispose();
 }
 
 async function verifyRelatedMapTsconfigResolution() {

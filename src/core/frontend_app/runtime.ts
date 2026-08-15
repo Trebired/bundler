@@ -25,7 +25,7 @@ import {
 } from "./manifest.js";
 import { prepareSsrNodeModules } from "./node_modules.js";
 import { buildRelatedClientEntryMap } from "./related.js";
-import { resolveRuntimeLogger, timeRuntimeStep } from "./runtime-logging.js";
+import { resolveRuntimeLogger, timeRuntimeStep } from "./runtime/logging.js";
 
 type RuntimeSessionState = {
   clientBuild?: BundlerBuildResult;

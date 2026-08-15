@@ -61,6 +61,9 @@ export {
   createFrontendBundlerRuntime,
 } from "./runtime.js";
 export {
+  createFrontendBundlerRuntimeSession,
+} from "./runtime/session.js";
+export {
   createReactSsrModuleMapRule,
   createSsrModuleMapRule,
   resolveSsrModuleMapRuleOptions,
