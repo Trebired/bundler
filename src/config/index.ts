@@ -2,7 +2,6 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 import type {
-  BundlerNamespace,
   BundlerProjectBuildConfig,
   BundlerProjectConfig,
   BundlerProjectFrontendConfig,
@@ -21,6 +20,10 @@ import {
   uniqueStrings,
 } from "@trebired/utils";
 import { resolveForVersion } from "@trebired/utils";
+import {
+  createBundlerNamespace,
+  normalizeBundlerPrefix,
+} from "./namespace.js";
 
 type LoadBundlerProjectConfigOptions = {
   configPath?: string;
@@ -40,18 +43,6 @@ function createConfigDefiner<T>(): (config: T) => T {
 }
 
 const defineConfig = createConfigDefiner<BundlerProjectConfig>();
-
-function normalizeBundlerPrefix(value: unknown, label = "prefix"): string {
-  if (value === false || value === undefined || value === null || value === "") return "";
-  if (typeof value !== "string") throw new Error(`${label} must be a string or false`);
-  const trimmed = value.trim();
-  if (!trimmed) return "";
-  const normalized = trimmed.startsWith(".") ? trimmed.slice(1) : trimmed;
-  if (!/^[a-z][a-z0-9_-]*$/iu.test(normalized)) {
-    throw new Error(`${label} must start with a letter and contain only letters, numbers, underscores, or hyphens`);
-  }
-  return normalized;
-}
 
 function normalizeBundlerProjectConfig(
   config: unknown = {},
@@ -122,31 +113,6 @@ function normalizeStaticAssetsConfig(
       devCacheControl: normalizeOptionalString(input.devCacheControl),
       immutableCacheControl: normalizeOptionalString(input.immutableCacheControl),
   });
-}
-
-function prefixedName(prefix: string, name: string): string {
-  const normalizedName = String(name || "").trim();
-  if (!normalizedName) throw new Error("namespace name must be a non-empty string");
-  return prefix ? `${prefix}-${normalizedName}` : normalizedName;
-}
-
-function createBundlerNamespace(config: BundlerProjectConfig | NormalizedBundlerProjectConfig = {}): BundlerNamespace {
-  const prefix = normalizeBundlerPrefix(config.prefix);
-  return {
-    className(name: string) {
-      return prefixedName(prefix, name);
-    },
-    cssVar(name: string) {
-      return `--${prefixedName(prefix, name)}`;
-    },
-    dataAttr(name: string) {
-      return `data-${prefixedName(prefix, name)}`;
-    },
-    dataSelector(name: string) {
-      return `[data-${prefixedName(prefix, name)}]`;
-    },
-    prefix,
-  };
 }
 
 function cloneRecord<TValue>(value: Record<string, TValue>|undefined): Record<string, TValue>|undefined {
@@ -241,3 +207,11 @@ export {
   pickDefined,
 };
 export type { LoadBundlerProjectConfigOptions };
+export {
+  generateNamespaceModule,
+  writeNamespaceModule,
+} from "./namespace-module.js";
+export type {
+  GenerateNamespaceModuleOptions,
+  WriteNamespaceModuleOptions,
+} from "./namespace-module.js";

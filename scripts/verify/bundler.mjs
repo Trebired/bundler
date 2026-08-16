@@ -15,7 +15,9 @@ import {
   createFrontendEntryRules,
   DEFAULT_FRONTEND_CLIENT_ENTRY_PATTERNS,
   DEFAULT_FRONTEND_DEFERRED_CLIENT_ENTRY_PATTERNS,
+  generateNamespaceModule,
   renderAssetLinkTags,
+  writeNamespaceModule,
   watch,
 } from "../../dist/index.js";
 import {
@@ -51,10 +53,12 @@ async function verifyBundlerFeatures() {
       applyProjectConfigToStaticAssetOptions,
       applyProjectConfigsToFrontendBundlerOptions,
       findConfig,
+      generateNamespaceModule,
       loadConfig,
       normalizeBundlerPrefix,
       packageVersion,
       tempRoot,
+      writeNamespaceModule,
       writeFile: writeFixtureFile,
   });
   await verifyFrontendConfigStyles({
@@ -226,15 +230,23 @@ async function verifyScssPackageExports() {
   const cssOutput = result.outputs.find((item) => item.endsWith(".css"));
   assert.ok(cssOutput, "expected bundled SCSS CSS output");
   const css = await fs.readFile(cssOutput, "utf8");
-  assert.equal(css.includes("--package-accent"), true);
-  assert.equal(css.includes(".package-card"), true);
+  assert.equal(css.includes("--pkg-accent"), true);
+  assert.equal(css.includes(".pkg-card"), true);
   assert.equal(css.includes(".screen"), true);
+  assert.equal(css.includes(".pkg-screen"), false);
 }
 
 async function writeScssPackageFixture(fixture) {
   const packageRoot = path.join(fixture, "node_modules", "@scope", "style-kit");
   await fs.mkdir(packageRoot, { recursive: true });
-  await fs.writeFile(path.join(packageRoot, "package.json"), JSON.stringify({
+  await writeScssPackageMetadata(packageRoot);
+  await writeScssPackageSources(fixture);
+}
+
+async function writeScssPackageMetadata(packageRoot) {
+  await fs.writeFile(
+    path.join(packageRoot, "package.json"),
+    JSON.stringify({
         name: "@scope/style-kit",
         exports: {
           "./card/styles": {
@@ -245,28 +257,44 @@ async function writeScssPackageFixture(fixture) {
             sass: "./src/tokens.scss",
           },
         },
-      }, null, 2));
+      }, null, 2),
+  );
+}
+
+async function writeScssPackageSources(fixture) {
+  await writeFixtureFile(fixture, "node_modules/@scope/style-kit/.trebired/bundler/config.ts", [
+      "export default {",
+      `  forVersion: '${packageVersion}',`,
+      "  prefix: 'pkg',",
+      "};",
+      "",
+    ].join("\n"));
   await writeFixtureFile(fixture, "node_modules/@scope/style-kit/src/tokens.scss", [
+      '@use "@trebired/bundler/namespace" as ns;',
+      "",
       ":root {",
-      "  --package-accent: black;",
+      "  #{ns.css-var(\"accent\")}: black;",
       "}",
       "",
     ].join("\n"));
   await writeFixtureFile(fixture, "node_modules/@scope/style-kit/src/card/styles/index.scss", [
+      '@use "@trebired/bundler/namespace" as ns;',
+      "",
       "@mixin card-surface {",
-      "  border-color: var(--package-accent);",
+      "  border-color: #{ns.css-var-ref(\"accent\")};",
       "}",
       "",
-      ".package-card {",
-      "  color: var(--package-accent);",
+      "#{ns.class(\"card\")} {",
+      "  color: #{ns.css-var-ref(\"accent\")};",
       "}",
       "",
     ].join("\n"));
   await writeFixtureFile(fixture, "src/screen.client.scss", [
       '@use "@scope/style-kit/tokens";',
       '@use "@scope/style-kit/card/styles" as card;',
+      '@use "@trebired/bundler/namespace" as ns;',
       "",
-      ".screen {",
+      "#{ns.class(\"screen\")} {",
       "  @include card.card-surface;",
       "}",
       "",

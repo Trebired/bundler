@@ -5,6 +5,7 @@ import { pathToFileURL } from "node:url";
 import { loadConfigModule } from "#rk4f8tlkdhh7";
 import { bundle } from "#9b50ca986572";
 import { watch } from "#644f3e1f42a8";
+import { writeNamespaceModule } from "#3su2sutz3358";
 
 type CliRunOptions = {
   cwd?: string;
@@ -19,20 +20,23 @@ type CliRunResult = {
 
 function renderHelp(): string {
   return [
-    "Usage: package-bundler <command> --config <path>",
+    "Usage: package-bundler <command>",
     "",
     "Commands:",
     "  build         run a one-shot bundle using the config module",
+    "  namespace     write a generated namespace helper module",
     "  watch         run bundle watch mode using the config module",
     "",
     "Config:",
-    "  --config <path> must point to a module that default-exports the config object.",
+    "  build/watch: --config <path> must point to a module that default-exports the bundler config object.",
+    "  namespace: --out <path> writes helpers from .trebired/bundler/config.ts.",
     "",
   ].join("\n");
 }
 
-function parseArgs(args: string[]): { configPath?: string; extra: string[] } {
+function parseArgs(args: string[]): { configPath?: string; extra: string[]; outFile?: string } {
   let configPath: string | undefined;
+  let outFile: string | undefined;
   const extra: string[] = [];
 
   for (let index = 0; index < args.length; index += 1) {
@@ -49,10 +53,21 @@ function parseArgs(args: string[]): { configPath?: string; extra: string[] } {
       continue;
     }
 
+    if (arg === "--out") {
+      const value = args[index + 1];
+      if (!value) {
+        throw new Error("Missing value for --out");
+      }
+
+      outFile = value;
+      index += 1;
+      continue;
+    }
+
     extra.push(arg);
   }
 
-  return { configPath, extra };
+  return { configPath, extra, outFile };
 }
 
 async function waitForStop(session: Awaited<ReturnType<typeof watch>>, durationMs?: number): Promise<void> {
@@ -108,8 +123,9 @@ async function runCliCommand(
 ): Promise<CliRunResult> {
   const parsed = parseArgs(rest);
   if (parsed.extra.length > 0) throw new Error(`Unexpected arguments: ${parsed.extra.join(" ")}`);
-  if (!parsed.configPath) throw new Error("Missing required --config <path> option");
 
+  if (command === "namespace") return runNamespaceCommand(parsed, io.cwd, io.stdout);
+  if (!parsed.configPath) throw new Error("Missing required --config <path> option");
   const { config } = await loadConfigModule(io.cwd, parsed.configPath);
   if (command === "build") return runBuildCommand(config, io.cwd, io.stdout);
   if (command === "watch") return runWatchCommand(config, io.cwd, io.stdout, options.watchDurationMs);
@@ -117,6 +133,21 @@ async function runCliCommand(
   io.stderr(`Unknown command: ${command}\n`);
   io.stderr(`${renderHelp()}\n`);
   return { exitCode: 1 };
+}
+
+async function runNamespaceCommand(
+  parsed: ReturnType<typeof parseArgs>,
+  cwd: string,
+  stdout: (text: string) => void,
+): Promise<CliRunResult> {
+  if (!parsed.outFile) throw new Error("Missing required --out <path> option");
+  const outFile = await writeNamespaceModule({
+      configPath: parsed.configPath,
+      outFile: parsed.outFile,
+      rootDir: cwd,
+  });
+  stdout(`${outFile}\n`);
+  return { exitCode: 0 };
 }
 
 async function runBuildCommand(

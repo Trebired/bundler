@@ -8,6 +8,12 @@ import { toObject } from "@trebired/utils";
 import { toPosixPath } from "#tsnh4vdfql8p";
 import { createTextScannerState, type TextScannerState } from "#tzyfbjqi6bpj";
 import { PACKAGE_WORKSPACE_CONFIG_DIR } from "#m7884285ke1w";
+import {
+  BUNDLER_NAMESPACE_SPECIFIER,
+  loadSassNamespace,
+  resolveNamespaceOwnerRoot,
+  toNamespaceUrl,
+} from "./namespace.js";
 
 const SCSS_ALIAS_SCHEME = "package-scss-alias:";
 
@@ -21,6 +27,7 @@ type PackageJson = {
 };
 type ScssImportContext = {
   importsMap: Record<string, unknown>;
+  namespacePrefixes: Map<string, string>;
   rootDir: string;
 };
 
@@ -327,13 +334,19 @@ function resolveCanonicalFilePath(url: string, context: ScssImportContext): stri
 
 function createScssAliasImporter(rootDir: string): Importer<"async"> {
   const importsMap = readAliasImports(rootDir);
-  const context = { importsMap, rootDir };
+  const context = { importsMap, namespacePrefixes: new Map<string, string>(), rootDir };
   return {
-    canonicalize(url) {
-      const resolvedFile = resolveCanonicalFilePath(String(url || "").trim(), context);
+    canonicalize(url, options) {
+      const specifier = String(url || "").trim();
+      if (specifier === BUNDLER_NAMESPACE_SPECIFIER) {
+        return toNamespaceUrl(resolveNamespaceOwnerRoot(context.rootDir, options.containingUrl));
+      }
+      const resolvedFile = resolveCanonicalFilePath(specifier, context);
       return resolvedFile ? pathToFileURL(resolvedFile) : null;
     },
     load(canonicalUrl) {
+      const namespace = loadSassNamespace(context, canonicalUrl);
+      if (namespace) return namespace;
       if (canonicalUrl.protocol !== "file:") return null;
       const filePath = fileURLToPath(canonicalUrl);
       return {

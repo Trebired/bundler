@@ -113,8 +113,11 @@ export type {
 } from "./types/import_graph.js";
 export type {
   BundlerBuildResult,
+  BundlerDataAttrsInput,
+  BundlerDataAttrsOutput,
   BundlerEnvironment,
   BundlerNamespace,
+  BundlerNamespaceValue,
   BundlerOptions,
   BundlerProjectBuildConfig,
   BundlerProjectConfig,
@@ -125,6 +128,10 @@ export type {
   LoadedBundlerProjectConfig,
   NormalizedBundlerProjectConfig,
 } from "./types/runtime.js";
+export type {
+  GenerateNamespaceModuleOptions,
+  WriteNamespaceModuleOptions,
+} from "./config/namespace-module.js";
 export type {
   BundlerI18nOptions,
   NormalizedBundlerI18nOptions,

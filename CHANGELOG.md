@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.3.0
+
+- Added generic prefix-aware namespace helpers for classes, BEM elements/modifiers, data attributes, selectors, CSS variables, tokens, and event names.
+- Added generated namespace module support and the `package-bundler namespace --out <file>` CLI command.
+- Added a virtual Sass namespace module that resolves prefixes from the owning app or package bundler config.
+
 ## 5.2.0
 
 - Added `createFrontendBundlerRuntimeSession()` so apps can reuse package-owned frontend runtime assembly.

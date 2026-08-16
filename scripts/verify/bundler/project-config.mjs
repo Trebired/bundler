@@ -22,7 +22,9 @@ async function verifyMissingAndEmptyConfig(context) {
   assert.deepEqual(missing.dependencies, []);
   assert.equal(context.createBundlerNamespace(missing.config).className("button"), "button");
   assert.equal(context.createBundlerNamespace(missing.config).cssVar("button-color"), "--button-color");
+  assert.equal(context.createBundlerNamespace(missing.config).cssVarRef("button-color"), "var(--button-color)");
   assert.equal(context.createBundlerNamespace(missing.config).dataAttr("popover"), "data-popover");
+  assert.equal(context.createBundlerNamespace(missing.config).eventName("upload-change"), "upload-change");
   await assert.rejects(
     () => context.loadConfig(noConfig, { defaultIfMissing: false }),
     /not found/u,
@@ -51,11 +53,34 @@ async function verifyPrefixedProjectConfig(context) {
   const namespace = context.createBundlerNamespace(prefixed.config);
   assertPrefixedConfig(prefixed.config, context);
   assert.equal(namespace.className("button"), "tbf-button");
+  assert.equal(namespace.elementClass("upload", "surface"), "tbf-upload__surface");
+  assert.equal(namespace.modifierClass("button", "strong"), "tbf-button--strong");
   assert.equal(namespace.cssVar("button-color"), "--tbf-button-color");
+  assert.equal(namespace.cssVarRef("button-color", "red"), "var(--tbf-button-color, red)");
   assert.equal(namespace.dataAttr("popover"), "data-tbf-popover");
+  assert.deepEqual(namespace.dataAttrs({ popover: "", open: true }), {
+      "data-tbf-open": true,
+      "data-tbf-popover": "",
+  });
   assert.equal(namespace.dataSelector("popover"), "[data-tbf-popover]");
+  assert.equal(namespace.dataSelector("open", true), "[data-tbf-open=\"true\"]");
+  assert.equal(namespace.token("router"), "tbf-router");
+  assert.equal(namespace.eventName("upload-change"), "tbf:upload-change");
+  await verifyGeneratedNamespaceModule(context, prefixedConfig);
   assert.equal(context.normalizeBundlerPrefix(".tbf"), "tbf");
   return { prefixed, prefixedConfig };
+}
+
+async function verifyGeneratedNamespaceModule(context, prefixedConfig) {
+  const source = context.generateNamespaceModule({ prefix: "tbf" });
+  assert.equal(source.includes("NAMESPACE_PREFIX = \"tbf\""), true);
+  assert.equal(source.includes("function elementClass"), true);
+  const outFile = await context.writeNamespaceModule({
+      outFile: "src/generated/namespace.ts",
+      rootDir: prefixedConfig,
+  });
+  const written = await fs.readFile(outFile, "utf8");
+  assert.equal(written.includes("NAMESPACE_PREFIX = \"tbf\""), true);
 }
 
 async function writePrefixedConfig(context, prefixedConfig) {

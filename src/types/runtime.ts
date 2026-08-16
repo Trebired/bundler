@@ -119,19 +119,34 @@ type LoadedBundlerProjectConfig = {
   dependencies: string[];
 };
 
+type BundlerNamespaceValue = string | number | boolean;
+
+type BundlerDataAttrsInput = Record<string, BundlerNamespaceValue|null|undefined>;
+
+type BundlerDataAttrsOutput = Record<string, BundlerNamespaceValue|null|undefined>;
+
 type BundlerNamespace = {
   className(name: string): string;
   cssVar(name: string): string;
+  cssVarRef(name: string, fallback?: string): string;
   dataAttr(name: string): string;
-  dataSelector(name: string): string;
+  dataAttrs(input: BundlerDataAttrsInput): BundlerDataAttrsOutput;
+  dataSelector(name: string, value?: BundlerNamespaceValue): string;
+  elementClass(block: string, element: string): string;
+  eventName(name: string): string;
+  modifierClass(block: string, modifier: string): string;
   prefix: string;
+  token(name: string): string;
 };
 
 export type {
   BundlerBuildResult,
   BundlerEnvironment,
+  BundlerDataAttrsInput,
+  BundlerDataAttrsOutput,
   BundlerOptions,
   BundlerNamespace,
+  BundlerNamespaceValue,
   BundlerProjectBuildConfig,
   BundlerProjectConfig,
   BundlerProjectFrontendConfig,

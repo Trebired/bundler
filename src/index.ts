@@ -69,8 +69,10 @@ export {
 export {
   BUNDLER_PROJECT_CONFIG_PATH,
   createBundlerNamespace,
+  generateNamespaceModule,
   normalizeBundlerPrefix,
   normalizeBundlerProjectConfig,
+  writeNamespaceModule,
 } from "./config/index.js";
 export { resolveLogger } from "./logging.js";
 export { buildSourceAnnotation, injectSourceAnnotation, resolveSourceLabel } from "./plugins/source-annotations.js";
@@ -110,6 +112,8 @@ export type {
   BundlerEntryRecord,
   BundlerEntrySource,
   BundlerEnvironment,
+  BundlerDataAttrsInput,
+  BundlerDataAttrsOutput,
   BundlerFontPreloadLink,
   BundlerGenericLogMethod,
   BundlerImportGraph,
@@ -162,6 +166,7 @@ export type {
   BundlerFrontendRuntimeSessionOptions,
   BundlerFrontendRuntimeState,
   BundlerNamespace,
+  BundlerNamespaceValue,
   BundlerQuarantineResult,
   BundlerProjectBuildConfig,
   BundlerProjectConfig,
@@ -184,9 +189,11 @@ export type {
   BundlerWatchSession,
   LoadedBundlerConfig,
   LoadedBundlerProjectConfig,
+  GenerateNamespaceModuleOptions,
   NormalizedBundlerI18nOptions,
   NormalizedBundlerLogger,
   NormalizedBundlerProjectConfig,
+  WriteNamespaceModuleOptions,
 } from "./types.js";
 
 export { bundle as default } from "./core/build.js";
