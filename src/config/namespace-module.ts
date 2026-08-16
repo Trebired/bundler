@@ -23,12 +23,15 @@ function generateNamespaceModule(
 ): string {
   const prefix = normalizeBundlerPrefix(config.prefix);
   const prefixExportName = normalizeExportName(options.prefixExportName || "NAMESPACE_PREFIX");
-  const prefixLines = prefixExportName === "NAMESPACE_PREFIX"
-  ? [`const NAMESPACE_PREFIX = ${JSON.stringify(prefix)};`]
-  : [
-    `const ${prefixExportName} = ${JSON.stringify(prefix)};`,
-    `const NAMESPACE_PREFIX = ${prefixExportName};`,
-  ];
+  const prefixLines: string[] = [];
+  if (prefixExportName === "NAMESPACE_PREFIX") {
+    prefixLines.push(`const NAMESPACE_PREFIX = ${JSON.stringify(prefix)};`);
+  } else {
+    prefixLines.push(
+      `const ${prefixExportName} = ${JSON.stringify(prefix)};`,
+      `const NAMESPACE_PREFIX = ${prefixExportName};`,
+    );
+  }
   return [
     "type NamespaceValue = string | number | boolean;",
     "type DataAttrsInput = Record<string, NamespaceValue | null | undefined>;",
@@ -99,23 +102,46 @@ function namespaceRuntimePrivateSource(): string[] {
 
 function namespaceRuntimePublicSource(): string[] {
   return [
-    "function className(name: string): string { return prefixedName(name); }",
-    "function elementClass(block: string, element: string): string { return `${prefixedName(block)}__${namespaceName(element)}`; }",
-    "function modifierClass(block: string, modifier: string): string { return `${prefixedName(block)}--${namespaceName(modifier)}`; }",
-    "function dataAttr(name: string): string { return `data-${prefixedName(name)}`; }",
-    "function dataAttrs(input: DataAttrsInput): DataAttrsOutput {",
-    "  return Object.fromEntries(Object.entries(input).map(([name, value]) => [dataAttr(name), value]));",
+    "function className(name: string): string {",
+    "  return prefixedName(name);",
     "}",
+    "",
+    "function elementClass(block: string, element: string): string {",
+    "  return `${prefixedName(block)}__${namespaceName(element)}`;",
+    "}",
+    "",
+    "function modifierClass(block: string, modifier: string): string {",
+    "  return `${prefixedName(block)}--${namespaceName(modifier)}`;",
+    "}",
+    "",
+    "function dataAttr(name: string): string {",
+    "  return `data-${prefixedName(name)}`;",
+    "}",
+    "",
+    "function dataAttrs(input: DataAttrsInput): DataAttrsOutput {",
+    "  return Object.fromEntries(",
+    "    Object.entries(input).map(([name, value]) => [dataAttr(name), value]),",
+    "  );",
+    "}",
+    "",
     "function dataSelector(name: string, value?: NamespaceValue): string {",
     "  const attr = dataAttr(name);",
     "  return value === undefined ? `[${attr}]` : `[${attr}=\\\"${selectorValue(value)}\\\"]`;",
     "}",
-    "function cssVar(name: string): string { return `--${prefixedName(name)}`; }",
+    "",
+    "function cssVar(name: string): string {",
+    "  return `--${prefixedName(name)}`;",
+    "}",
+    "",
     "function cssVarRef(name: string, fallback?: string): string {",
     "  const variable = `var(${cssVar(name)}`;",
     "  return fallback === undefined ? `${variable})` : `${variable}, ${fallback})`;",
     "}",
-    "function token(name: string): string { return prefixedName(name); }",
+    "",
+    "function token(name: string): string {",
+    "  return prefixedName(name);",
+    "}",
+    "",
     "function eventName(name: string): string {",
     "  const normalizedName = namespaceName(name);",
     "  return NAMESPACE_PREFIX ? `${NAMESPACE_PREFIX}:${normalizedName}` : normalizedName;",

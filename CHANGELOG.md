@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.3.1
+
+- Fixed generated namespace modules so they are emitted with discipline-clean TypeScript formatting.
+
 ## 5.3.0
 
 - Added generic prefix-aware namespace helpers for classes, BEM elements/modifiers, data attributes, selectors, CSS variables, tokens, and event names.
