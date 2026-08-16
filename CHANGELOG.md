@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.3.2
+
+- Matched generated namespace module union formatting to strict consumer formatting rules.
+
 ## 5.3.1
 
 - Fixed generated namespace modules so they are emitted with discipline-clean TypeScript formatting.

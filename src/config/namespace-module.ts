@@ -34,8 +34,8 @@ function generateNamespaceModule(
   }
   return [
     "type NamespaceValue = string | number | boolean;",
-    "type DataAttrsInput = Record<string, NamespaceValue | null | undefined>;",
-    "type DataAttrsOutput = Record<string, NamespaceValue | null | undefined>;",
+    "type DataAttrsInput = Record<string, NamespaceValue|null|undefined>;",
+    "type DataAttrsOutput = Record<string, NamespaceValue|null|undefined>;",
     "",
     ...prefixLines,
     "",
