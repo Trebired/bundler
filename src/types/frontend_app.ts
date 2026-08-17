@@ -234,8 +234,10 @@ type BundlerStaticAssetDir = string | {
 };
 
 type BundlerStaticAssetHandlerOptions = {
+  assetCacheMaxBytes?: number;
   blockPrivate?: boolean;
   blockSourceMaps?: boolean;
+  cacheAssetsInMemory?: boolean;
   clientOutDir: string;
   devCacheControl?: string;
   extraStaticDirs?: readonly BundlerStaticAssetDir[];

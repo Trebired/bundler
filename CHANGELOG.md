@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.4.0
+
+- Added an in-memory static asset cache to `createStaticAssetMiddleware`/`serveStaticAsset`. Previously every asset request performed a `stat` to resolve the file, a further `stat` per precompressed candidate, and a full `readFile` of the asset body, so serving a bundle re-read it from disk on every request. Resolved responses (body plus headers, per negotiated encoding) are now cached, which removes all per-request filesystem syscalls for assets after the first hit. The cache is bounded by total bytes (`assetCacheMaxBytes`, default 256 MB) and can be disabled with `cacheAssetsInMemory: false`. It is skipped entirely in `development` mode so rebuilt assets are still picked up immediately.
+
 ## 5.3.4
 
 - Removed dead `config.creator` from `package.json`.
