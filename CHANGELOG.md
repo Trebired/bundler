@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.3.4
+
+- Removed dead `config.creator` from `package.json`.
+- Updated shared utilities to `@trebired/utils@^0.6.0` and replaced the removed `readPackageIdentity()` with `readPackageJsonUrl()` + `readOrganizationIdentity()` + `packageSlug()`/`joinLogGroup()`. No change to exported metadata values.
+
 ## 5.3.2
 
 - Matched generated namespace module union formatting to strict consumer formatting rules.

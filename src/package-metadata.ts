@@ -1,16 +1,20 @@
-import { readPackageIdentity } from "@trebired/utils";
+import {
+  joinLogGroup,
+  packageSlug,
+  readOrganizationIdentity,
+  readPackageJsonUrl,
+  toTrimmedString,
+} from "@trebired/utils";
 
-const packageIdentity = readPackageIdentity({
-    fallbackSlug: "bundler",
-    fallbackVersion: "5.1.4",
-    packageJsonUrl: new URL("../package.json", import.meta.url),
-});
-const PACKAGE_NAME = packageIdentity.name;
-const PACKAGE_VERSION = packageIdentity.version;
-const PACKAGE_ORGANIZATION_NAME = packageIdentity.organizationName;
-const PACKAGE_SLUG = packageIdentity.slug;
-const PACKAGE_WORKSPACE_CONFIG_DIR = packageIdentity.workspaceConfigDir;
-const buildPackageLogGroup = packageIdentity.buildLogGroup;
+const packageJson = readPackageJsonUrl(new URL("../package.json", import.meta.url));
+const organization = readOrganizationIdentity({ packageJson });
+
+const PACKAGE_ORGANIZATION_NAME = organization.name;
+const PACKAGE_NAME = toTrimmedString(packageJson?.name) || `@${PACKAGE_ORGANIZATION_NAME}/bundler`;
+const PACKAGE_VERSION = toTrimmedString(packageJson?.version, "5.1.4");
+const PACKAGE_SLUG = packageSlug(PACKAGE_NAME) || "bundler";
+const PACKAGE_WORKSPACE_CONFIG_DIR = PACKAGE_ORGANIZATION_NAME ? `.${PACKAGE_ORGANIZATION_NAME}` : "";
+const buildPackageLogGroup = (...parts: unknown[]) => joinLogGroup(PACKAGE_ORGANIZATION_NAME, PACKAGE_SLUG, ...parts);
 
 export {
   buildPackageLogGroup,

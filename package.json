@@ -5,13 +5,10 @@
       "displayName": "Trebired",
       "name": "trebired",
       "website": "https://trebired.com"
-    },
-    "creator": {
-      "name": "Miroslav Machynka"
     }
   },
   "name": "@trebired/bundler",
-  "version": "5.3.3",
+  "version": "5.3.4",
   "description": "Discover-only esbuild bundler wrapper with SCSS support, watch mode, and runtime asset manifests.",
   "type": "module",
   "private": false,
@@ -66,7 +63,7 @@
     "@package/i18n": "npm:@trebired/i18n@^0.4.1",
     "@package/logger-adapter": "npm:@trebired/logger-adapter@^0.4.6",
     "@package/result": "npm:@trebired/result@^1.1.6",
-    "@trebired/utils": "^0.4.5",
+    "@trebired/utils": "^0.6.0",
     "esbuild": "^0.28.1",
     "sass-embedded": "^1.100.0"
   },
