@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.5.0
+
+- Reduced the static asset cache default budget from 256 MB to 16 MB and gave it real LRU eviction. The previous implementation stopped caching once the budget was reached, so with a large asset set the first files seen would pin the cache and everything else permanently re-read from disk. Entries are now evicted least-recently-used, bounded by both total bytes (`assetCacheMaxBytes`) and entry count (`assetCacheMaxEntries`, default 512). The default comfortably holds a typical built client bundle while no longer reserving memory far in excess of what any real asset set needs.
+
 ## 5.4.0
 
 - Added an in-memory static asset cache to `createStaticAssetMiddleware`/`serveStaticAsset`. Previously every asset request performed a `stat` to resolve the file, a further `stat` per precompressed candidate, and a full `readFile` of the asset body, so serving a bundle re-read it from disk on every request. Resolved responses (body plus headers, per negotiated encoding) are now cached, which removes all per-request filesystem syscalls for assets after the first hit. The cache is bounded by total bytes (`assetCacheMaxBytes`, default 256 MB) and can be disabled with `cacheAssetsInMemory: false`. It is skipped entirely in `development` mode so rebuilt assets are still picked up immediately.
