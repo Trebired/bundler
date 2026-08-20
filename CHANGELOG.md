@@ -4,6 +4,10 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.6.3
+
+- Updated logger, logger-adapter, result, and code-discipline dependency ranges to the current package releases so frontend-only builds do not retain older nested logger installs.
+
 ## 5.6.2
 
 - Changed the shared default logger used by `bundle()`, `watch()`, and frontend-app build helpers to use `@trebired/logger` formatting, matching the CLI path.
