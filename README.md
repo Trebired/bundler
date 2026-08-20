@@ -304,10 +304,68 @@ const assets = await runtime.buildAssetLinks(["account"]);
 app.use("/assets", createStaticAssetMiddleware(bundlerConfig));
 ```
 
+For a backend-less static SPA, build only the client, disable SSR, and let the package write the HTML shell:
+
+```ts
+import {
+  buildFrontendApp,
+  buildStaticShell,
+  createBunStaticAssetHandler,
+  defineConfig,
+} from "@trebired/bundler/frontend-app";
+
+const bundlerConfig = defineConfig({
+  browser: {
+    external: ["/flags/*"],
+  },
+  clientOutDir: "dist/client",
+  mode: "production",
+  publicPath: "/",
+  ssr: false,
+});
+
+const build = await buildFrontendApp({ ...bundlerConfig, target: "client" });
+
+await buildStaticShell({
+  build,
+  config: bundlerConfig,
+  meta: {
+    description: "Static app description.",
+    lang: "en",
+    title: "Static App",
+  },
+});
+
+const devHandler = createBunStaticAssetHandler({
+  clientOutDir: "dist/client",
+  mode: "development",
+  publicDir: "src/frontend/public",
+  rootDir: process.cwd(),
+});
+
+Bun.serve({ fetch: devHandler, port: 5173 });
+```
+
+`buildStaticShell()` writes `dist/client/index.html` by default and returns the generated HTML string plus the resolved asset links. It uses `collectFrontendAssetLinks()` and `renderAssetLinkTags()` internally, so static apps do not hand-write a document template just to include global CSS and client entries.
+
+Use `routes` for SSG-lite route shells. This does not render page HTML; it writes one static document per client route with route-specific metadata and the page's related client entries:
+
+```ts
+await buildStaticShell({
+  build,
+  config: bundlerConfig,
+  meta: { lang: "en", title: "Docs" },
+  routes: [
+    { path: "/", pageIds: ["home"], meta: { title: "Home" } },
+    { path: "/pricing", pageIds: ["pricing"], meta: { title: "Pricing" } },
+  ],
+});
+```
+
 Defaults:
 
 - `frontendDir`: `src/frontend`
-- `publicDir`: `src/frontend/public`
+- `publicDir`: `src/frontend/public`. The exported `DEFAULT_FRONTEND_PUBLIC_DIR` constant is `"public"` because it is joined under `frontendDir`.
 - client entries: `*.client.ts`, `*.client.tsx`, `*.client.js`, `*.client.jsx`, `*.client.css`, `*.client.scss`
 - deferred client entries: `*.client.defer.ts`, `*.client.defer.tsx`, `*.client.defer.js`, `*.client.defer.jsx`
 - global client entries: `auto`, using `js/**/*.client.*` and `js/**/*.client.defer.*`
@@ -421,6 +479,17 @@ Supported tokens are `[path]`, `[dir]`, `[name]`, and `[ext]`. `outputLayout: tr
 
 Common static asset extensions such as images and fonts use esbuild's `file` loader by default so CSS and JS references can emit assets. Override `loader` when a project needs a different asset treatment.
 
+Use `browser.external` for public-root URLs that must stay literal inside browser bundles or vendor Sass. For example, `country-flag-icons` Sass can reference `/flags/*.svg`; mark that URL family external so esbuild does not try to resolve it as a source import:
+
+```ts
+const bundlerConfig = defineConfig({
+  browser: {
+    external: ["/flags/*"],
+  },
+  clientOutDir: "dist/client",
+});
+```
+
 ### Import Graph Walking
 
 Use `walkImportGraph()` when a higher-level tool needs to inspect internal source dependencies without bundling:
@@ -522,7 +591,7 @@ When enabled, JS and CSS outputs are compressed by default. Use `include`, `excl
 
 ### Static Assets
 
-Use `serveStaticAsset()` for a framework-neutral static response object, or `createStaticAssetMiddleware()` for an Express-compatible middleware.
+Use `serveStaticAsset()` for a framework-neutral static response object, `createStaticAssetMiddleware()` for an Express-compatible middleware, or `createBunStaticAssetHandler()` for a `Bun.serve()` `fetch` handler.
 
 ```ts
 import { createStaticAssetMiddleware } from "@trebired/bundler";
@@ -537,6 +606,23 @@ app.use("/assets", createStaticAssetMiddleware({
 }));
 ```
 
+For a Bun static app with SPA fallback:
+
+```ts
+import { createBunStaticAssetHandler } from "@trebired/bundler/frontend-app";
+
+Bun.serve({
+  fetch: createBunStaticAssetHandler({
+    clientOutDir: "dist/client",
+    mode: "development",
+    publicDir: "src/frontend/public",
+    rootDir: process.cwd(),
+    spaFallback: "index.html",
+  }),
+  port: 5173,
+});
+```
+
 The handler:
 
 - blocks `manifest.json`, `bundler-manifest.json`, and source map requests
@@ -545,6 +631,7 @@ The handler:
 - sends immutable cache headers for hashed production assets
 - sends `no-store` cache headers in development
 - can serve `publicDir` in development and `clientOutDir` in all modes
+- can fall back extensionless HTML navigation requests to `index.html` through the Bun handler
 - accepts a frontend app runtime/config object directly when paths should resolve from `rootDir`
 
 Use `quarantineUnwritableOutputDir(dir, { logger })` before a build when a project wants to move aside an existing output directory that cannot be written.
@@ -807,6 +894,17 @@ type BundlerOptions = {
   loggerAdapter?: BundlerLoggerAdapter;
 };
 ```
+
+### Frontend App Helpers
+
+`@trebired/bundler/frontend-app` exports the frontend preset helpers:
+
+- `buildFrontendApp()` builds client and optional SSR targets.
+- `buildStaticShell()` renders and optionally writes backend-free SPA shells.
+- `createBunStaticAssetHandler()` adapts package static assets to `Bun.serve({ fetch })` with optional SPA fallback.
+- `createStaticAssetMiddleware()` adapts package static assets to Express-like middleware.
+- `serveStaticAsset()` returns the framework-neutral static response object used by both adapters.
+- `collectFrontendAssetLinks()` and `renderAssetLinkTags()` expose the asset-link collection used by the shell helper.
 
 ## CLI
 

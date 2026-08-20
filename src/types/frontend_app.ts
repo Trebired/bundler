@@ -248,6 +248,14 @@ type BundlerStaticAssetHandlerOptions = {
   rootDir?: string;
 };
 
+type BundlerBunStaticAssetHandlerOptions = BundlerStaticAssetHandlerOptions& {
+  notFoundBody?: Buffer | Uint8Array | string | null;
+  notFoundHeaders?: Headers | Record<string, string>;
+  spaFallback?: string | false;
+};
+
+type BundlerBunStaticAssetHandler = (request: Request) => Promise<Response>;
+
 type BundlerExpressLikeRequest = BundlerStaticAssetRequest;
 
 type BundlerExpressLikeResponse = {
@@ -266,8 +274,50 @@ type BundlerQuarantineResult = {
 
 type BundlerSsrModuleMapRule = BundlerDiscoverAggregateRule;
 
+type BundlerStaticShellMeta = {
+  description?: string;
+  lang?: string;
+  title?: string;
+};
+
+type BundlerStaticShellRoute = {
+  body?: string;
+  meta?: BundlerStaticShellMeta;
+  outFile?: string | false;
+  pageIds?: readonly string[];
+  path?: string;
+};
+
+type BundlerStaticShellOptions = {
+  body?: string;
+  build: BundlerFrontendBuildResult;
+  config: BundlerFrontendAppBundlerConfig | BundlerFrontendAppBundlerConfigOptions;
+  meta?: BundlerStaticShellMeta;
+  outFile?: string | false;
+  pageIds?: readonly string[];
+  publicPath?: string;
+  rootId?: string;
+  routes?: readonly BundlerStaticShellRoute[];
+};
+
+type BundlerStaticShellFile = {
+  assetLinks: BundlerFrontendAssetLinks;
+  html: string;
+  outFile: string;
+  pageIds: readonly string[];
+  path: string;
+};
+
+type BundlerStaticShellResult = {
+  assetLinks?: BundlerFrontendAssetLinks;
+  files: BundlerStaticShellFile[];
+  html: string;
+};
+
 export type {
   BundlerAggregateSourceIdOptions,
+  BundlerBunStaticAssetHandler,
+  BundlerBunStaticAssetHandlerOptions,
   BundlerExpressLikeNext,
   BundlerExpressLikeRequest,
   BundlerExpressLikeResponse,
@@ -299,6 +349,11 @@ export type {
   BundlerStaticAssetHandlerOptions,
   BundlerStaticAssetRequest,
   BundlerStaticAssetResponse,
+  BundlerStaticShellFile,
+  BundlerStaticShellMeta,
+  BundlerStaticShellOptions,
+  BundlerStaticShellResult,
+  BundlerStaticShellRoute,
   BundlerWatchSession,
   BundlerFrontendEntryRulesOptions,
 };

@@ -7,6 +7,9 @@ export {
   copyPublicDir,
 } from "./build.js";
 export {
+  createBunStaticAssetHandler,
+} from "./bun.js";
+export {
   applyProjectConfigToFrontendBundlerOptions,
   createFrontendAppBundlerOptions,
   createFrontendBundlerRuntimeConfig,
@@ -68,6 +71,10 @@ export {
   createSsrModuleMapRule,
   resolveSsrModuleMapRuleOptions,
 } from "./ssr.js";
+export {
+  buildStaticShell,
+  renderStaticShellDocument,
+} from "./shell.js";
 export {
   applyProjectConfigToStaticAssetOptions,
   createStaticAssetMiddleware,

@@ -1,5 +1,15 @@
 # Changelog
 
+All notable changes to `@trebired/bundler` will be documented here.
+
+This project follows semantic versioning once published.
+
+## 5.6.0
+
+- Added `buildStaticShell()` for backend-free frontend app shells, including optional per-route static shells with route-specific metadata.
+- Added `createBunStaticAssetHandler()` for `Bun.serve({ fetch })` static serving with optional SPA fallback to `index.html`.
+- Documented static-SPA frontend app builds, SSG-lite route shells, `browser.external` for public-root vendor asset URLs, and the `publicDir` default resolution under `frontendDir`.
+
 ## 5.5.0
 
 - Reduced the static asset cache default budget from 256 MB to 16 MB and gave it real LRU eviction. The previous implementation stopped caching once the budget was reached, so with a large asset set the first files seen would pin the cache and everything else permanently re-read from disk. Entries are now evicted least-recently-used, bounded by both total bytes (`assetCacheMaxBytes`) and entry count (`assetCacheMaxEntries`, default 512). The default comfortably holds a typical built client bundle while no longer reserving memory far in excess of what any real asset set needs.
@@ -35,10 +45,6 @@
 ## 5.1.5
 
 - Updated shared utilities to `@trebired/utils@^0.4.4`.
-
-All notable changes to `@trebired/bundler` will be documented here.
-
-This project follows semantic versioning once published.
 
 ## 5.1.4
 

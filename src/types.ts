@@ -70,6 +70,8 @@ export type {
 } from "./types/frontend.js";
 export type {
   BundlerAggregateSourceIdOptions,
+  BundlerBunStaticAssetHandler,
+  BundlerBunStaticAssetHandlerOptions,
   BundlerExpressLikeNext,
   BundlerExpressLikeRequest,
   BundlerExpressLikeResponse,
@@ -101,6 +103,11 @@ export type {
   BundlerStaticAssetHandlerOptions,
   BundlerStaticAssetRequest,
   BundlerStaticAssetResponse,
+  BundlerStaticShellFile,
+  BundlerStaticShellMeta,
+  BundlerStaticShellOptions,
+  BundlerStaticShellResult,
+  BundlerStaticShellRoute,
 } from "./types/frontend_app.js";
 export type {
   BundlerImportGraph,

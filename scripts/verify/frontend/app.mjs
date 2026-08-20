@@ -6,9 +6,11 @@ import { fileURLToPath } from "node:url";
 import {
   buildFrontendApp,
   buildRelatedClientEntryMap,
+  buildStaticShell,
   collectAggregateMatchedSourcesByRuleKey,
   collectFrontendAssetLinks,
   createAggregateSourceIdMap,
+  createBunStaticAssetHandler,
   createFrontendAppBundlerOptions,
   createFrontendBundlerRuntime,
   createFrontendBundlerRuntimeConfig,
@@ -86,6 +88,8 @@ async function verifyFrontendBuildHelpers() {
   assertRelatedMap(result.relatedClientEntryMap);
   await assertRuntime(config);
   await assertAssetLinksAndStatic(result, fixture);
+  await assertStaticShell(result, fixture, config);
+  await assertBunStaticHandler(fixture);
   await fs.access(path.join(fixture, "dist/client/robots.txt"));
 }
 
@@ -195,6 +199,52 @@ async function assertAssetLinksAndStatic(result, fixture) {
   assert.equal(privateResponse.status, 404);
   assert.equal(sourceMapResponse.status, 404);
   assert.equal(publicResponse.body.toString(), "User-agent: *\n");
+}
+
+async function assertStaticShell(result, fixture, config) {
+  const shell = await buildStaticShell({
+      build: result,
+      config,
+      meta: {
+        description: "Static app description",
+        lang: "en",
+        title: "Static App",
+      },
+      routes: [
+        { pageIds: ["home"], path: "/" },
+        {
+          meta: { title: "About" },
+          pageIds: ["about"],
+          path: "/about",
+        },
+      ],
+  });
+  const indexHtml = await fs.readFile(path.join(fixture, "dist/client/index.html"), "utf8");
+  const aboutHtml = await fs.readFile(path.join(fixture, "dist/client/about/index.html"), "utf8");
+
+  assert.equal(shell.files.length, 2);
+  assert.ok(shell.html.includes("<title>Static App</title>"));
+  assert.ok(indexHtml.includes("<script type=\"module\""));
+  assert.ok(indexHtml.includes("<meta name=\"description\" content=\"Static app description\">"));
+  assert.ok(aboutHtml.includes("<title>About</title>"));
+}
+
+async function assertBunStaticHandler(fixture) {
+  const handler = createBunStaticAssetHandler({
+      clientOutDir: path.join(fixture, "dist/client"),
+      mode: "production",
+  });
+  const asset = await handler(new Request("http://localhost/robots.txt"));
+  const fallback = await handler(new Request("http://localhost/app/deep", {
+        headers: { accept: "text/html" },
+  }));
+  const missingAsset = await handler(new Request("http://localhost/missing.js"));
+
+  assert.equal(asset.status, 200);
+  assert.equal(await asset.text(), "User-agent: *\n");
+  assert.equal(fallback.status, 200);
+  assert.ok((await fallback.text()).includes("<title>Static App</title>"));
+  assert.equal(missingAsset.status, 404);
 }
 
 async function verifyTargetSpecificBuilds() {
