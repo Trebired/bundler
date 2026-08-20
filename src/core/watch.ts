@@ -3,7 +3,7 @@ import { context as createContext } from "esbuild";
 import { logPackageInitialized } from "@package/logger-adapter";
 
 import { BUNDLER_LOG_GROUP, BUNDLER_PACKAGE_NAME } from "#0e84q8f4ubat";
-import { resolveLogger } from "#dcx0jw9bw3ka";
+import { createDefaultBundlerLogger, resolveLogger } from "#dcx0jw9bw3ka";
 import type { BundlerBuildResult, BundlerOptions, BundlerWatchSession } from "#3c8d8166992a";
 import { createEsbuildOptions, normalizeBundlerOptions } from "./esbuild-options.js";
 import { postProcessBuildOutput } from "./post-build.js";
@@ -33,6 +33,7 @@ async function createWatchState(options: BundlerOptions) {
   const logger = resolveLogger(normalized.logger, normalized.loggerAdapter);
   logPackageInitialized({
       adapter: normalized.loggerAdapter,
+      defaultLogger: createDefaultBundlerLogger,
       fallback: "console",
       groupPrefix: BUNDLER_LOG_GROUP,
       logger: normalized.logger,

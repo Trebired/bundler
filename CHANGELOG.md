@@ -4,6 +4,11 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.6.2
+
+- Changed the shared default logger used by `bundle()`, `watch()`, and frontend-app build helpers to use `@trebired/logger` formatting, matching the CLI path.
+- Kept package initialization logs on the same default logger so programmatic frontend-only builds do not fall back to raw console output.
+
 ## 5.6.1
 
 - Changed the bundler CLI to use `@trebired/logger` by default for build/watch logs when no logger is supplied by config.
