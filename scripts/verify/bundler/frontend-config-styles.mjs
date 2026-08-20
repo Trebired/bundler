@@ -68,6 +68,104 @@ function assertFrontendConfigFontLinks(context, result) {
   assert.ok(rendered.fontPreloads.includes('type="font/woff2"'));
   assert.ok(frontendLinks.fontPreloads.some((item) => item.href.endsWith(".woff2")));
   assert.ok(frontendLinks.tags.fontPreloads.includes('rel="preload"'));
+  assertFrontendCssOrder(context);
+}
+
+function assertFrontendCssOrder(context) {
+  const links = collectFrontendCssOrderLinks(context, createFrontendCssOrderManifest());
+
+  assert.deepEqual(links.styles, [
+      "/css/frontend.css",
+      "/css/bundle-app.css",
+      "/css/client.css",
+      "/css/page.css",
+  ]);
+  assert.equal(links.styles.filter((href) => href === "/css/frontend.css").length, 1);
+  assert.ok(
+    links.tags.styles.indexOf('href="/css/frontend.css"') <
+    links.tags.styles.indexOf('href="/css/bundle-app.css"'),
+  );
+}
+
+function createFrontendCssOrderManifest() {
+  return {
+    entries: {
+      "frontend-config:styles": frontendEntry("frontend-config:styles", "frontend-config", ["css/frontend.css"]),
+      "app-global": frontendEntry("app-global", "global-style", ["css/bundle-app.css"]),
+      "app-client": frontendEntry("app-client", "global-client", ["css/client.css"]),
+      "page-client": frontendEntry("page-client", "page", ["css/page.css"]),
+      "shared-duplicate": frontendEntry("shared-duplicate", "page", ["css/frontend.css"]),
+    },
+    entryOutputs: {},
+    outputs: {},
+    rules: {
+      "frontend-config": {
+        entryKeys: ["frontend-config:styles"],
+        ignoredSources: [],
+        ruleKey: "frontend-config",
+        strategy: "entry",
+      },
+      "global-style": {
+        entryKeys: ["app-global"],
+        ignoredSources: [],
+        ruleKey: "global-style",
+        strategy: "bundle",
+      },
+    },
+    sources: {
+      "src/frontend/pages/home.tsx": {
+        entryKey: "page-client",
+        outputs: [],
+        ruleKey: "page",
+        source: "src/frontend/pages/home.tsx",
+        strategy: "entry",
+      },
+      "src/frontend/shared/duplicate.ts": {
+        entryKey: "shared-duplicate",
+        outputs: [],
+        ruleKey: "page",
+        source: "src/frontend/shared/duplicate.ts",
+        strategy: "entry",
+      },
+    },
+  };
+}
+
+function collectFrontendCssOrderLinks(context, manifest) {
+  return context.collectFrontendAssetLinks({
+      collect: { publicPath: "/" },
+      globalEntryIds: ["app-client"],
+      globalStyleRuleKey: "global-style",
+      manifest,
+      pageIds: ["src/frontend/pages/home.tsx", "src/frontend/shared/duplicate.ts"],
+      relatedEntryMap: createFrontendCssOrderRelatedMap(),
+      renderTags: true,
+  });
+}
+
+function createFrontendCssOrderRelatedMap() {
+  return {
+    "src/frontend/pages/home.tsx": ["src/frontend/pages/home.tsx"],
+    "src/frontend/shared/duplicate.ts": ["src/frontend/shared/duplicate.ts"],
+  };
+}
+
+function frontendEntry(key, ruleKey, css) {
+  return {
+    assets: [],
+    css,
+    entryOutput: `${key}.js`,
+    file: `${key}.js`,
+    generated: false,
+    imports: [],
+    js: [],
+    key,
+    kind: "entry",
+    outputs: css,
+    ruleKey,
+    sources: [],
+    strategy: "entry",
+  };
 }
 
 async function verifyFrontendConfigWatchRebuild(context) {

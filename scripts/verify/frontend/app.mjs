@@ -185,8 +185,18 @@ async function assertStaticShell(result, fixture, config) {
   assert.equal(shell.files.length, 2);
   assert.ok(shell.html.includes("<title>Static App</title>"));
   assert.ok(indexHtml.includes("<script type=\"module\""));
+  assertStaticShellStyleOrder(shell.assetLinks.styles);
   assert.ok(indexHtml.includes("<meta name=\"description\" content=\"Static app description\">"));
   assert.ok(aboutHtml.includes("<title>About</title>"));
+}
+
+function assertStaticShellStyleOrder(styles) {
+  const bundleCssIndex = styles.findIndex((href) => href.includes("/css/bundle-"));
+  const pageCssIndex = styles.findIndex((href) => href.includes("card.client.css"));
+
+  assert.ok(bundleCssIndex >= 0, "expected static shell to include app bundle CSS");
+  assert.ok(pageCssIndex >= 0, "expected static shell to include page-related CSS");
+  assert.ok(bundleCssIndex < pageCssIndex, "expected app global CSS before page CSS");
 }
 
 async function verifyTargetSpecificBuilds() {

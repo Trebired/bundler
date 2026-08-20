@@ -11,8 +11,8 @@ import { sortFontPreloadLinks } from "#cliwdvy5eown";
 
 function collectFrontendAssetLinks(options: BundlerFrontendAssetLinksOptions): BundlerFrontendAssetLinks {
   const state = createAssetLinkState();
-  collectRuleAssetLinks(state, options, options.globalStyleRuleKey);
   collectRuleAssetLinks(state, options, FRONTEND_CONFIG_RULE_KEY);
+  collectRuleAssetLinks(state, options, options.globalStyleRuleKey);
   if (options.globalEntryIds?.length) {
     mergeAssetLinks(state, collectAssetLinks(options.manifest, [...options.globalEntryIds], options.collect));
   }
@@ -74,7 +74,8 @@ function createAssetLinkState() {
     missing: new Set<string>(),
     outputs: new Set<string>(),
     scripts: new Set<string>(),
-    styles: new Set<string>(),
+    styleSet: new Set<string>(),
+    styles: [] as string[],
   };
 }
 
@@ -85,7 +86,16 @@ function mergeAssetLinks(state: ReturnType<typeof createAssetLinkState>, links: 
   links.missing.forEach((value) => state.missing.add(value));
   links.outputs.forEach((value) => state.outputs.add(value));
   links.scripts.forEach((value) => state.scripts.add(value));
-  links.styles.forEach((value) => state.styles.add(value));
+  links.styles.forEach((value) => addStyleLink(state, value));
+}
+
+function addStyleLink(
+  state: ReturnType<typeof createAssetLinkState>,
+  value: string,
+): void {
+  if (!value || state.styleSet.has(value)) return;
+  state.styleSet.add(value);
+  state.styles.push(value);
 }
 
 function finalizeAssetLinks(state: ReturnType<typeof createAssetLinkState>): BundlerCollectedAssetLinks {
@@ -96,7 +106,7 @@ function finalizeAssetLinks(state: ReturnType<typeof createAssetLinkState>): Bun
     missing: sorted(state.missing),
     outputs: sorted(state.outputs),
     scripts: sorted(state.scripts),
-    styles: sorted(state.styles),
+    styles: state.styles.slice(),
   };
 }
 
