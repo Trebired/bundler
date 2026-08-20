@@ -8,9 +8,7 @@ import {
   buildRelatedClientEntryMap,
   buildStaticShell,
   collectAggregateMatchedSourcesByRuleKey,
-  collectFrontendAssetLinks,
   createAggregateSourceIdMap,
-  createBunStaticAssetHandler,
   createFrontendAppBundlerOptions,
   createFrontendBundlerRuntime,
   createFrontendBundlerRuntimeConfig,
@@ -22,15 +20,22 @@ import {
   DEFAULT_FRONTEND_SSR_PAGE_PATTERNS,
   normalizeAggregateSourceId,
   resolveAggregateEntryByRuleKey,
-  serveStaticAsset,
 } from "../../../dist/index.js";
 import {
   importJavaScriptOutput,
   resetTemporaryRoot,
   toPosixPathValue,
-  writeFixtureFile,
 } from "#0ss24zzupv8u";
 import { verifyDevelopmentRuntimeReusesInitialWatchBuild } from "./app-i18n.mjs";
+import {
+  writeFrontendFixture,
+  writeNodeModulesFixture,
+  writeTsconfigRelatedFixture,
+} from "./fixtures.mjs";
+import {
+  assertAssetLinksAndStatic,
+  assertBunStaticHandler,
+} from "./static-assets.mjs";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const tempRoot = path.join(rootDir, ".tmp", "verify-frontend-app");
@@ -156,51 +161,6 @@ async function assertRuntime(config) {
   assert.ok(runtime.buildAssetLinksSync(["home"]).scripts.some((item) => item.startsWith("/assets/js/")));
 }
 
-async function assertAssetLinksAndStatic(result, fixture) {
-  const links = collectFrontendAssetLinks({
-      collect: { publicPath: "/assets/" },
-      globalEntryIds: result.globalClientEntries,
-      globalStyleRuleKey: "global-style",
-      manifest: result.client.assetManifest,
-      pageIds: ["home"],
-      relatedEntryMap: result.relatedClientEntryMap,
-      renderTags: true,
-  });
-  const scriptOutput = result.client.assetManifest.entries[links.entryKeys.find((key) => result.client.assetManifest.entries[key].js.length)].file;
-  const response = await serveStaticAsset({
-      headers: { "accept-encoding": "gzip, br" },
-      url: `/${scriptOutput}`,
-    }, {
-      clientOutDir: path.join(fixture, "dist/client"),
-      mode: "production",
-  });
-  const privateResponse = await serveStaticAsset({ url: "/bundler-manifest.json" }, {
-      clientOutDir: path.join(fixture, "dist/client"),
-      mode: "production",
-  });
-  const sourceMap = Object.keys(result.client.assetManifest.outputs).find((item) => item.endsWith(".map"));
-  assert.ok(sourceMap, "expected a source map output");
-  const sourceMapResponse = await serveStaticAsset({ url: `/${sourceMap}` }, {
-      clientOutDir: path.join(fixture, "dist/client"),
-      mode: "production",
-  });
-  const publicResponse = await serveStaticAsset({ url: "/robots.txt" }, {
-      clientOutDir: "dist/client",
-      mode: "development",
-      publicDir: "src/frontend/public",
-      rootDir: fixture,
-  });
-
-  assert.ok(links.styles.some((item) => item.startsWith("/assets/css/")));
-  assert.ok(links.scripts.some((item) => item.startsWith("/assets/js/")));
-  assert.ok(links.entryKeys.some((key) => key.includes("src/frontend/js/global.client")));
-  assert.equal(response.headers["Content-Encoding"], "br");
-  assert.equal(response.headers.Vary, "Accept-Encoding");
-  assert.equal(privateResponse.status, 404);
-  assert.equal(sourceMapResponse.status, 404);
-  assert.equal(publicResponse.body.toString(), "User-agent: *\n");
-}
-
 async function assertStaticShell(result, fixture, config) {
   const shell = await buildStaticShell({
       build: result,
@@ -227,24 +187,6 @@ async function assertStaticShell(result, fixture, config) {
   assert.ok(indexHtml.includes("<script type=\"module\""));
   assert.ok(indexHtml.includes("<meta name=\"description\" content=\"Static app description\">"));
   assert.ok(aboutHtml.includes("<title>About</title>"));
-}
-
-async function assertBunStaticHandler(fixture) {
-  const handler = createBunStaticAssetHandler({
-      clientOutDir: path.join(fixture, "dist/client"),
-      mode: "production",
-  });
-  const asset = await handler(new Request("http://localhost/robots.txt"));
-  const fallback = await handler(new Request("http://localhost/app/deep", {
-        headers: { accept: "text/html" },
-  }));
-  const missingAsset = await handler(new Request("http://localhost/missing.js"));
-
-  assert.equal(asset.status, 200);
-  assert.equal(await asset.text(), "User-agent: *\n");
-  assert.equal(fallback.status, 200);
-  assert.ok((await fallback.text()).includes("<title>Static App</title>"));
-  assert.equal(missingAsset.status, 404);
 }
 
 async function verifyTargetSpecificBuilds() {
@@ -337,45 +279,6 @@ async function verifyRelatedMapTsconfigResolution() {
       tsconfig: true,
   });
   assert.deepEqual(map.alias, ["src/frontend/features/card.client.scss"]);
-}
-
-async function writeFrontendFixture(fixture) {
-  await writeFixtureFile(fixture, "src/frontend/layouts/root/document.tsx", "export const rootDocument = 'root';\n");
-  await writeFixtureFile(fixture, "src/frontend/pages/home.tsx", "import '../features/card';\nexport default 'home';\n");
-  await writeFixtureFile(fixture, "src/frontend/pages/about/index.tsx", "const Page = 'about';\nexport { Page as default };\n");
-  await writeFixtureFile(fixture, "src/frontend/pages/reexport.tsx", "export { default } from '../shared/reexported';\n");
-  await writeFixtureFile(fixture, "src/frontend/pages/helper.tsx", "export const helper = true;\n");
-  await writeFixtureFile(fixture, "src/frontend/pages/home.client.tsx", `export const hydrate = ${JSON.stringify("x".repeat(2048))};\n`);
-  await writeFixtureFile(fixture, "src/frontend/pages/home.client.defer.ts", "export const deferred = true;\n");
-  await writeFixtureFile(fixture, "src/frontend/features/card.ts", "export const card = true;\n");
-  await writeFixtureFile(fixture, "src/frontend/features/card.client.scss", ".card { color: red; }\n");
-  await writeFixtureFile(fixture, "src/frontend/js/global.client.ts", `export const global = ${JSON.stringify("x".repeat(2048))};\n`);
-  await writeFixtureFile(fixture, "src/frontend/shared/reexported.tsx", "export default 'reexported';\n");
-  await writeFixtureFile(fixture, "src/frontend/css/base.css", `.base { content: "${"x".repeat(2048)}"; }\n`);
-  await writeFixtureFile(fixture, "src/frontend/public/robots.txt", "User-agent: *\n");
-}
-
-async function writeNodeModulesFixture(fixture) {
-  await writeFixtureFile(fixture, "src/frontend/layouts/root/document.tsx", "export const rootDocument = 'root';\n");
-  await writeFixtureFile(fixture, "src/frontend/pages/home.tsx", "import value from 'runtime-value';\nexport default value;\n");
-  await writeFixtureFile(fixture, "src/frontend/js/global.client.ts", "export const global = true;\n");
-  await writeFixtureFile(fixture, "runtime_node_modules/runtime-value/index.js", "export default 'runtime-value';\n");
-  await writeFixtureFile(fixture, "runtime_node_modules/runtime-value/package.json", JSON.stringify({
-        exports: "./index.js",
-        type: "module",
-  }));
-}
-
-async function writeTsconfigRelatedFixture(fixture) {
-  await writeFixtureFile(fixture, "tsconfig.json", JSON.stringify({
-        compilerOptions: {
-          baseUrl: ".",
-          paths: { "#feature/*": ["src/frontend/features/*"] },
-        },
-      }, null, 2));
-  await writeFixtureFile(fixture, "src/frontend/pages/alias.tsx", "import '#feature/card';\nexport default 'alias';\n");
-  await writeFixtureFile(fixture, "src/frontend/features/card.ts", "export const card = true;\n");
-  await writeFixtureFile(fixture, "src/frontend/features/card.client.scss", ".card { color: blue; }\n");
 }
 
 await verifyFrontendAppPackage();

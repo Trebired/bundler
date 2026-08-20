@@ -627,6 +627,7 @@ The handler:
 
 - blocks `manifest.json`, `bundler-manifest.json`, and source map requests
 - prefers `.br` over `.gz` for JS/CSS when `Accept-Encoding` allows it
+- serves known browser asset types with matching `Content-Type` values, including CSS, JavaScript, HTML, JSON, SVG, common images, web manifests, WASM, and font files such as `.woff2`
 - sets `Content-Encoding`, `Vary: Accept-Encoding`, and `X-Content-Type-Options: nosniff`
 - sends immutable cache headers for hashed production assets
 - sends `no-store` cache headers in development

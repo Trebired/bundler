@@ -4,6 +4,10 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.6.4
+
+- Fixed static asset `Content-Type` headers for fonts, images, manifests, WASM, text, and other common browser assets served by `serveStaticAsset()`, `createStaticAssetMiddleware()`, and `createBunStaticAssetHandler()`. Font files now serve as `font/woff2`, `font/woff`, `font/ttf`, or `font/otf` instead of `application/octet-stream`, avoiding browser rejection when `X-Content-Type-Options: nosniff` is present.
+
 ## 5.6.3
 
 - Updated logger, logger-adapter, result, and code-discipline dependency ranges to the current package releases so frontend-only builds do not retain older nested logger installs.
