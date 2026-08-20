@@ -4,6 +4,11 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.6.1
+
+- Changed the bundler CLI to use `@trebired/logger` by default for build/watch logs when no logger is supplied by config.
+- Updated the logger-adapter dependency to pick up idempotent package initialization logging.
+
 ## 5.6.0
 
 - Added `buildStaticShell()` for backend-free frontend app shells, including optional per-route static shells with route-specific metadata.

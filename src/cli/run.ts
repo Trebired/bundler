@@ -6,6 +6,8 @@ import { loadConfigModule } from "#rk4f8tlkdhh7";
 import { bundle } from "#9b50ca986572";
 import { watch } from "#644f3e1f42a8";
 import { writeNamespaceModule } from "#3su2sutz3358";
+import type { BundlerOptions } from "#3c8d8166992a";
+import { createDefaultCliLogger } from "./logging.js";
 
 type CliRunOptions = {
   cwd?: string;
@@ -127,12 +129,27 @@ async function runCliCommand(
   if (command === "namespace") return runNamespaceCommand(parsed, io.cwd, io.stdout);
   if (!parsed.configPath) throw new Error("Missing required --config <path> option");
   const { config } = await loadConfigModule(io.cwd, parsed.configPath);
-  if (command === "build") return runBuildCommand(config, io.cwd, io.stdout);
-  if (command === "watch") return runWatchCommand(config, io.cwd, io.stdout, options.watchDurationMs);
+  const logger = shouldUseDefaultCliLogger(options) ? createDefaultCliLogger() : null;
+  if (command === "build") return runBuildCommand(config, io.cwd, io.stdout, logger);
+  if (command === "watch") return runWatchCommand(config, io.cwd, io.stdout, options.watchDurationMs, logger);
 
   io.stderr(`Unknown command: ${command}\n`);
   io.stderr(`${renderHelp()}\n`);
   return { exitCode: 1 };
+}
+
+function shouldUseDefaultCliLogger(options: CliRunOptions): boolean {
+  return !options.stdout && !options.stderr;
+}
+
+function withCliDefaults(
+  config: Awaited<ReturnType<typeof loadConfigModule>>["config"],
+  cwd: string,
+  logger: ReturnType<typeof createDefaultCliLogger>|null,
+): BundlerOptions {
+  const next: BundlerOptions = { ...config, rootDir: config.rootDir ?? cwd };
+  if (!next.logger && !next.loggerAdapter && logger) next.logger = logger;
+  return next;
 }
 
 async function runNamespaceCommand(
@@ -154,8 +171,9 @@ async function runBuildCommand(
   config: Awaited<ReturnType<typeof loadConfigModule>>["config"],
   cwd: string,
   stdout: (text: string) => void,
+  logger: ReturnType<typeof createDefaultCliLogger>|null,
 ): Promise<CliRunResult> {
-  const result = await bundle({ ...config, rootDir: config.rootDir ?? cwd });
+  const result = await bundle(withCliDefaults(config, cwd, logger));
   stdout(`${JSON.stringify(result)}\n`);
   return { exitCode: 0 };
 }
@@ -165,8 +183,9 @@ async function runWatchCommand(
   cwd: string,
   stdout: (text: string) => void,
   watchDurationMs?: number,
+  logger: ReturnType<typeof createDefaultCliLogger>|null = null,
 ): Promise<CliRunResult> {
-  const session = await watch({ ...config, rootDir: config.rootDir ?? cwd });
+  const session = await watch(withCliDefaults(config, cwd, logger));
   stdout("Watching for changes.\n");
   await waitForStop(session, watchDurationMs);
   return { exitCode: 0 };
