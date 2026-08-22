@@ -4,6 +4,12 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.7.0
+
+### Added
+
+- Resolves `@trebired/frontend/static-icons` to a build-time generated module. When the app's frontend config sets `assets.icons.mode: "static"` with `assets.icons.specs`, the bundler asks `@trebired/frontend/config` for the rendered icon cache and serves it as a virtual module, so a consumer no longer has to write a generated TypeScript file into its own `src/` tree and sequence that write ahead of the build. Apps not using static mode, and node-environment builds, are unaffected — the specifier falls through to the package's real no-op module. Requires `@trebired/frontend` 11.5.0 or newer; older versions lack the generator and the plugin falls back to the no-op module.
+
 ## 5.6.5
 
 - Fixed frontend asset link stylesheet ordering so package frontend config CSS loads before app global CSS while preserving stable dedupe.

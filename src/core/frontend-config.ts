@@ -23,6 +23,16 @@ type FrontendConfigApi = {
   findConfig?: (startDir?: string, boundaryDir?: string) => Promise<string|null>;
   loadConfig?: (projectRoot?: string, options?: Record<string, unknown>) => Promise<LoadedFrontendConfig>;
   generateFrontendScss?: (config: unknown) => string;
+  generateStaticIconsModule?: (
+    config: unknown,
+    options?: { rootDir?: string },
+  ) => Promise<{ contents: string; count: number; specs: string[] }>;
+};
+
+type ResolvedFrontendStaticIcons = {
+  configPath: string | null;
+  contents: string;
+  count: number;
 };
 
 type ResolvedFrontendConfigStyles = {
@@ -158,6 +168,27 @@ async function resolveFrontendConfigStyles(
   };
 }
 
+async function resolveFrontendStaticIcons(
+  rootDir: string,
+  preloadedApi?: FrontendConfigApi | null,
+): Promise<ResolvedFrontendStaticIcons> {
+  const api = preloadedApi || await loadFrontendConfigApi(rootDir);
+  if (typeof api?.loadConfig !== "function"
+    || typeof api?.generateStaticIconsModule !== "function") {
+    return { configPath: null, contents: "export {};\n", count: 0 };
+  }
+  const loaded = await api.loadConfig(rootDir, {
+      defaultIfMissing: true,
+      searchFrom: rootDir,
+  });
+  const generated = await api.generateStaticIconsModule(loaded.config, { rootDir });
+  return {
+    configPath: loaded.configPath,
+    contents: generated.contents,
+    count: generated.count,
+  };
+}
+
 async function prepareFrontendConfigStyles(args: {
     environment?: string;
     logger: NormalizedBundlerLogger;
@@ -225,6 +256,7 @@ function createEmptyResolvedDiscovery(): ResolvedDiscovery {
 }
 
 export {
+  resolveFrontendStaticIcons,
   FRONTEND_CONFIG_PATH,
   FRONTEND_CONFIG_RULE_KEY,
   FRONTEND_CONFIG_VIRTUAL_ENTRY_NAME,

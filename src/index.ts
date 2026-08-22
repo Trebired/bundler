@@ -80,6 +80,7 @@ export {
 export { resolveLogger } from "./logging.js";
 export { buildSourceAnnotation, injectSourceAnnotation, resolveSourceLabel } from "./plugins/source-annotations.js";
 export { createScssPlugin } from "./plugins/scss.js";
+export { createFrontendStaticIconsPlugin, STATIC_ICONS_SPECIFIER } from "./plugins/frontend-static-icons.js";
 export { createI18nPlugin } from "./plugins/i18n.js";
 export { runCli } from "./cli/run.js";
 
