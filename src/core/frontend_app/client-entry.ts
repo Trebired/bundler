@@ -3,7 +3,8 @@ import path from "node:path";
 import { VIRTUAL_ENTRY_PREFIX } from "../discovery/shared.js";
 import type { BundlerEntryRecord } from "#3c8d8166992a";
 
-const CLIENT_ENTRY_RULE_KEY = "client-root";
+const CLIENT_ROOT_RULE_KEY = "client-root";
+const CLIENT_ENTRY_RULE_KEY = CLIENT_ROOT_RULE_KEY;
 const CLIENT_ENTRY_KEY = "client-root:entry";
 const CLIENT_ENTRY_NAME = "index.client";
 const CLIENT_ENTRY_VIRTUAL_NAME = CLIENT_ENTRY_NAME;
@@ -67,6 +68,7 @@ function createClientEntryRecord(options: ClientEntryOptions): BundlerEntryRecor
 
 export {
   appendClientRootEntry,
+  CLIENT_ROOT_RULE_KEY,
   withClientRootIgnored,
   CLIENT_ENTRY_KEY,
   CLIENT_ENTRY_NAME,

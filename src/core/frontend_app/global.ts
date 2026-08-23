@@ -4,6 +4,7 @@ import type {
   BundlerFrontendGlobalClientEntries,
 } from "#3c8d8166992a";
 import { matchesAnyPattern, normalizePathValue } from "#tsnh4vdfql8p";
+import { CLIENT_ENTRY_KEY } from "./client-entry.js";
 
 function resolveFrontendGlobalClientEntries(args: {
     entries: BundlerFrontendGlobalClientEntries;
@@ -15,12 +16,19 @@ function resolveFrontendGlobalClientEntries(args: {
   if (Array.isArray(args.entries)) return stableEntries(args.entries);
   if (args.entries !== "auto" || !args.manifest) return [];
   const frontendDir = normalizePathValue(args.frontendDir);
-  return stableEntries(Object.keys(args.manifest.sources).filter((source) => {
-        const discoverRel = toFrontendRelativeSource(source, frontendDir);
-        if (!discoverRel) return false;
-        if (!matchesAnyPattern(discoverRel, [...args.include])) return false;
-        return !matchesAnyPattern(discoverRel, [...(args.exclude || [])]);
-  }));
+  const matched = Object.keys(args.manifest.sources).filter((source) => {
+      const discoverRel = toFrontendRelativeSource(source, frontendDir);
+      if (!discoverRel) return false;
+      if (!matchesAnyPattern(discoverRel, [...args.include])) return false;
+      return !matchesAnyPattern(discoverRel, [...(args.exclude || [])]);
+  });
+  /**
+   * A synthesized client-root entry has no on-disk source to glob against — its
+   * module is the configured root component — so it is included by entry key.
+   * Without this the shell links no script and the page renders blank.
+   */
+  if (args.manifest.entries?.[CLIENT_ENTRY_KEY]) matched.push(CLIENT_ENTRY_KEY);
+  return stableEntries(matched);
 }
 
 function resolveConfiguredFrontendGlobalClientEntries(

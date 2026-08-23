@@ -4,6 +4,12 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.8.1
+
+### Fixed
+
+- A `clientRoot` app's shell now links its script. `resolveFrontendGlobalClientEntries()` derives the global entry list by pattern-matching `manifest.sources` against `globalClientEntryInclude` relative to `frontendDir`. The synthesized client entry is virtual — its module is the configured root component and it has no on-disk source under `frontendDir` to glob against — so it never matched, the list came back empty, and `buildStaticShell()` emitted HTML with no `<script>` at all. The build reported success and the entry chunk was written, so the failure only showed as a blank page. The synthesized entry is now included by its entry key, which `collectAssetLinks()` resolves like any other.
+
 ## 5.8.0
 
 ### Added
