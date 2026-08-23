@@ -4,6 +4,15 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.8.0
+
+### Added
+
+- `clientRoot` synthesizes the client entry. An app that declares `clientRoot: "src/frontend/app.tsx"` (with optional `rootId`, default `"root"`) no longer writes an `index.client.tsx` of its own: the bundler generates the entry, mounts the named component into the shell's root element, calls `bindFrontendRuntime()` with the icon mode read from the resolved frontend config, and side-effect imports `@trebired/frontend/static-icons` when that mode is `"static"`. None of that was app-specific — every React frontend-only app wrote the identical file, restating the icon mode a third time after the frontend config and the static-icons specs already declared it.
+- The file named by `clientRoot` is exempted from discovery's unmatched-source check, and an app whose only entry is the synthesized one no longer trips the empty-entries error.
+
+Hand-written client entries are unaffected; omit `clientRoot` and nothing changes.
+
 ## 5.7.0
 
 ### Added

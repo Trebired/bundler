@@ -106,8 +106,10 @@ function createClientOptions(
   const overrides = options.browser || {};
   return {
     ...createCommonBuildOptions(options, base, overrides, base.mode === "production", "client"),
+    clientRoot: options.clientRoot,
     discover: { dir: base.frontendDir, rules: createClientDiscoverRules(options, base) },
     environment: "browser",
+    rootId: (options as { rootId?: string }).rootId,
     format: "esm",
     outDir: base.clientOutDir,
     splitting: overrides.splitting ?? true,

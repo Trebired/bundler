@@ -189,6 +189,17 @@ async function resolveFrontendStaticIcons(
   };
 }
 
+async function resolveFrontendIconMode(rootDir: string): Promise<string> {
+  const api = await loadFrontendConfigApi(rootDir);
+  if (typeof api?.loadConfig !== "function") return "server";
+  const loaded = await api.loadConfig(rootDir, {
+      defaultIfMissing: true,
+      searchFrom: rootDir,
+  });
+  const config = loaded.config as { assets?: { icons?: { mode?: string } } };
+  return String(config?.assets?.icons?.mode || "server");
+}
+
 async function prepareFrontendConfigStyles(args: {
     environment?: string;
     logger: NormalizedBundlerLogger;
@@ -256,6 +267,7 @@ function createEmptyResolvedDiscovery(): ResolvedDiscovery {
 }
 
 export {
+  resolveFrontendIconMode,
   resolveFrontendStaticIcons,
   FRONTEND_CONFIG_PATH,
   FRONTEND_CONFIG_RULE_KEY,

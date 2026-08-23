@@ -11,6 +11,8 @@ import type { BundlerPrecompressOptions, BundlerPrecompressStats } from "./preco
 type BundlerEnvironment = "browser" | "node" | "neutral";
 
 type BundlerOptions = {
+  clientRoot?: string;
+  rootId?: string;
   discover: import("./discovery.js").BundlerDiscoverOptions | import("./discovery.js").BundlerDiscoverOptions[];
   outDir: string;
   rootDir?: string;
