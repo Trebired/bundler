@@ -8,7 +8,7 @@
     }
   },
   "name": "@trebired/bundler",
-  "version": "5.8.1",
+  "version": "5.8.2",
   "description": "Discover-only esbuild bundler wrapper with SCSS support, watch mode, and runtime asset manifests.",
   "type": "module",
   "private": false,
@@ -64,7 +64,7 @@
     "@package/logger": "npm:@trebired/logger@^2.5.32",
     "@package/logger-adapter": "npm:@trebired/logger-adapter@^0.4.18",
     "@package/result": "npm:@trebired/result@^1.2.7",
-    "@trebired/utils": "^0.6.0",
+    "@trebired/utils": "^0.8.0",
     "esbuild": "^0.28.1",
     "sass-embedded": "^1.100.0"
   },
