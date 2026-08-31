@@ -275,9 +275,35 @@ type BundlerQuarantineResult = {
 
 type BundlerSsrModuleMapRule = BundlerDiscoverAggregateRule;
 
+type BundlerStaticShellLink = {
+  href: string;
+  rel: string;
+  [attribute: string]: string | undefined;
+};
+
+type BundlerStaticShellMetaTag = {
+  content: string;
+  name?: string;
+  property?: string;
+};
+
 type BundlerStaticShellMeta = {
   description?: string;
   lang?: string;
+  /**
+   * Rendered as `<link>` tags after the built-in title/description/asset
+   * tags: favicon (`rel: "icon"`), canonical URLs, `hreflang` alternates,
+   * manifest links, and anything else `<link>` covers. Each entry needs at
+   * least `rel` and `href`; any other key becomes an attribute (`hreflang`,
+   * `type`, `sizes`, `media`, ...).
+   */
+  links?: readonly BundlerStaticShellLink[];
+  /**
+   * Rendered as `<meta>` tags: `theme-color`, Open Graph (`property`), robots,
+   * and anything else `<meta>` covers. Each entry needs `content` and exactly
+   * one of `name` or `property`.
+   */
+  metas?: readonly BundlerStaticShellMetaTag[];
   title?: string;
 };
 
@@ -351,7 +377,9 @@ export type {
   BundlerStaticAssetRequest,
   BundlerStaticAssetResponse,
   BundlerStaticShellFile,
+  BundlerStaticShellLink,
   BundlerStaticShellMeta,
+  BundlerStaticShellMetaTag,
   BundlerStaticShellOptions,
   BundlerStaticShellResult,
   BundlerStaticShellRoute,

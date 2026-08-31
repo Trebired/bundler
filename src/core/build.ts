@@ -6,10 +6,9 @@ import { createDefaultBundlerLogger, resolveLogger } from "#dcx0jw9bw3ka";
 import type { BundlerBuildResult, BundlerOptions } from "#3c8d8166992a";
 import { createEsbuildOptions, normalizeBundlerOptions } from "./esbuild-options.js";
 import { postProcessBuildOutput } from "./post-build.js";
-import { resolveBundlerEntries } from "./discovery.js";
-import { appendFrontendConfigStyleEntry, createEmptyResolvedDiscovery, prepareFrontendConfigStyles } from "./frontend-config.js";
+import { resolveFrontendDiscovery } from "./discovery-resolve.js";
+import { prepareFrontendConfigStyles } from "./frontend-config.js";
 import { cleanOutDir, formatFailure, logWarnings, toBuildResult } from "./shared.js";
-import { appendClientRootEntry, withClientRootIgnored } from "./frontend_app/client-entry.js";
 
 type NormalizedBundlerOptions = ReturnType<typeof normalizeBundlerOptions>;
 
@@ -58,19 +57,7 @@ async function resolveBuildDiscovery(
       logger,
       rootDir: normalized.rootDir,
   });
-  const synthesizesClientRoot = Boolean(String(options?.clientRoot || "").trim());
-  const discoverOptions = synthesizesClientRoot
-  ? withClientRootIgnored(options as BundlerOptions, normalized.rootDir)
-  : options;
-  const discoveredEntries = discoverOptions?.discover || !frontendStyles
-  ? await resolveBundlerEntries(discoverOptions || {} as BundlerOptions, normalized.rootDir, {
-      allowEmpty: Boolean(frontendStyles) || synthesizesClientRoot,
-    }, {
-      ignoredDirs: normalized.i18n.enabled ? [normalized.i18n.dirName] : [],
-  })
-  : createEmptyResolvedDiscovery();
-  const withStyles = appendFrontendConfigStyleEntry(discoveredEntries, frontendStyles);
-  return await appendClientRootEntry(withStyles, options, normalized, logger);
+  return await resolveFrontendDiscovery(options, normalized, logger, frontendStyles);
 }
 
 async function runBuild(

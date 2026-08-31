@@ -7,11 +7,10 @@ import { createDefaultBundlerLogger, resolveLogger } from "#dcx0jw9bw3ka";
 import type { BundlerBuildResult, BundlerOptions, BundlerWatchSession } from "#3c8d8166992a";
 import { createEsbuildOptions, normalizeBundlerOptions } from "./esbuild-options.js";
 import { postProcessBuildOutput } from "./post-build.js";
-import { resolveBundlerEntries, normalizeDiscoverRoots } from "./discovery.js";
+import { normalizeDiscoverRoots } from "./discovery.js";
 import { createDiscoveryWatcher } from "./discovery_watch/runtime.js";
+import { resolveFrontendDiscovery } from "./discovery-resolve.js";
 import {
-  appendFrontendConfigStyleEntry,
-  createEmptyResolvedDiscovery,
   prepareFrontendConfigStyles,
   type PreparedFrontendConfigStyles,
 } from "./frontend-config.js";
@@ -49,15 +48,17 @@ async function createWatchState(options: BundlerOptions) {
       logger,
       rootDir: normalized.rootDir,
   });
-  const discoveredEntries = options?.discover || !frontendStyles
-  ? await resolveBundlerEntries(options || {} as BundlerOptions, normalized.rootDir, { allowEmpty: true }, {
-      ignoredDirs: normalized.i18n.enabled ? [normalized.i18n.dirName] : [],
-  })
-  : createEmptyResolvedDiscovery();
+  const currentDiscovery = await resolveFrontendDiscovery(
+    options || {} as BundlerOptions,
+    normalized,
+    logger,
+    frontendStyles,
+    { allowEmpty: true },
+  );
 
   return {
     currentContext: null as BuildContext<any>|null,
-    currentDiscovery: appendFrontendConfigStyleEntry(discoveredEntries, frontendStyles),
+    currentDiscovery,
     discoveryWatcher: null as ReturnType<typeof createDiscoveryWatcher>|null,
     disposed: false,
     frontendStyles: frontendStyles as PreparedFrontendConfigStyles | null,
@@ -184,14 +185,13 @@ async function refreshDiscovery(state: Awaited<ReturnType<typeof createWatchStat
       logger: state.logger,
       rootDir: state.normalized.rootDir,
   });
-  const discoveredEntries = state.options?.discover || !state.frontendStyles
-  ? await resolveBundlerEntries(state.options || {} as BundlerOptions, state.normalized.rootDir, {
-      allowEmpty: true,
-    }, {
-      ignoredDirs: state.normalized.i18n.enabled ? [state.normalized.i18n.dirName] : [],
-  })
-  : createEmptyResolvedDiscovery();
-  const nextDiscovery = appendFrontendConfigStyleEntry(discoveredEntries, state.frontendStyles);
+  const nextDiscovery = await resolveFrontendDiscovery(
+    state.options || {} as BundlerOptions,
+    state.normalized,
+    state.logger,
+    state.frontendStyles,
+    { allowEmpty: true },
+  );
   if (nextDiscovery.signature === state.currentDiscovery.signature) return;
 
   state.logger.info("watch", `entry-set-changed :: count=${nextDiscovery.entries.length}`);

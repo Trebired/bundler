@@ -6,7 +6,9 @@ import type {
   BundlerFrontendAppBundlerConfigOptions,
   BundlerFrontendBuildResult,
   BundlerStaticShellFile,
+  BundlerStaticShellLink,
   BundlerStaticShellMeta,
+  BundlerStaticShellMetaTag,
   BundlerStaticShellOptions,
   BundlerStaticShellResult,
   BundlerStaticShellRoute,
@@ -58,6 +60,8 @@ function renderStaticShellDocument(input: {
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
     renderTitle(input.meta.title),
     renderDescription(input.meta.description),
+    ...(input.meta.links || []).map(renderLink),
+    ...(input.meta.metas || []).map(renderMetaTag),
     input.tags,
   ].filter(Boolean).join("\n");
   return [
@@ -130,6 +134,27 @@ function renderTitle(value: unknown): string {
 function renderDescription(value: unknown): string {
   const text = String(value || "").trim();
   return text ? `<meta name="description" content="${escapeHtmlAttribute(text)}">` : "";
+}
+
+function renderAttributes(attributes: Record<string, string | undefined>): string {
+  return Object.entries(attributes)
+  .filter((entry): entry is [string, string] => Boolean(entry[1]))
+  .map(([key, value]) => ` ${key}="${escapeHtmlAttribute(value)}"`)
+  .join("");
+}
+
+function renderLink(link: BundlerStaticShellLink): string {
+  const { href, rel, ...rest } = link;
+  if (!rel || !href) return "";
+  return `<link${renderAttributes({ rel, href, ...rest })}>`;
+}
+
+function renderMetaTag(tag: BundlerStaticShellMetaTag): string {
+  const content = String(tag.content || "").trim();
+  const name = String(tag.name || "").trim();
+  const property = String(tag.property || "").trim();
+  if (!content || (!name && !property)) return "";
+  return `<meta${renderAttributes({ name: name || undefined, property: property || undefined, content })}>`;
 }
 
 function escapeHtmlText(value: string): string {

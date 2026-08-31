@@ -4,6 +4,26 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.9.0
+
+### Fixed
+
+- `watch()` reimplemented entry discovery inline instead of reusing `bundle()`'s
+  `resolveBuildDiscovery()`, and never called `withClientRootIgnored()`/`appendClientRootEntry()` —
+  the two calls that exclude a `clientRoot`-configured root component from normal discovery and
+  synthesize it as its own entry. A `clientRoot`-configured project built correctly once via
+  `bundle()`, then silently lost that entry on the very first watch rebuild (both the initial watch
+  state and every subsequent `rebuild()` shared the same bug), with no error anywhere — whatever
+  read the manifest (`globalClientEntries`, `buildStaticShell()`) just found nothing there. Both
+  code paths now share one `resolveFrontendDiscovery()` in `core/discovery-resolve.ts`.
+
+### Added
+
+- `BundlerStaticShellMeta` gained `links`/`metas` arrays, rendered as `<link>`/`<meta>` tags after
+  the built-in title/description/asset tags. There was previously no way to emit a favicon,
+  `theme-color`, canonical URL, Open Graph tags, or `hreflang` alternates from `buildStaticShell()`
+  — every value is escaped per-attribute, so this is not a raw head-string escape hatch.
+
 ## 5.8.2
 
 ### Changed
