@@ -13,6 +13,7 @@ import type {
   BundlerStaticShellResult,
   BundlerStaticShellRoute,
 } from "#3c8d8166992a";
+import { resolveFrontendFavicon } from "#d0ppiu0440kk";
 import { collectFrontendAssetLinks } from "./assets.js";
 import { createFrontendAppBundlerOptions } from "./config.js";
 
@@ -22,6 +23,8 @@ async function buildStaticShell(
   const { client, config } = createFrontendAppBundlerOptions(options.config);
   const manifest = options.build.client?.assetManifest;
   if (!manifest) throw new Error("bundler-static-shell-client-manifest-missing");
+
+  const favicon = options.build.favicon || await emitShellFavicon(config);
 
   const files: BundlerStaticShellFile[] = [];
   for (const route of resolveShellRoutes(options)) {
@@ -36,7 +39,7 @@ async function buildStaticShell(
     });
     const html = renderStaticShellDocument({
         body: route.body ?? options.body,
-        meta: withFaviconLinks({ ...options.meta, ...route.meta }, options.build.favicon),
+        meta: withFaviconLinks({ ...options.meta, ...route.meta }, favicon),
         rootId: options.rootId,
         tags: assetLinks.tags?.html || "",
     });
@@ -46,6 +49,21 @@ async function buildStaticShell(
   }
 
   return { assetLinks: files[0]?.assetLinks, files, html: files[0]?.html || "" };
+}
+
+async function emitShellFavicon(
+  config: BundlerFrontendAppBundlerConfig,
+): Promise<BundlerFrontendBuildResult["favicon"]> {
+  const generated = await resolveFrontendFavicon(config.rootDir);
+  if (!generated.files.length) return undefined;
+
+  const targetDir = path.resolve(config.rootDir, config.clientOutDir);
+  await fs.mkdir(targetDir, { recursive: true });
+  for (const file of generated.files) {
+    await fs.writeFile(path.resolve(targetDir, file.path), file.contents);
+  }
+
+  return { links: generated.links, rasterized: generated.rasterized };
 }
 
 function withFaviconLinks(

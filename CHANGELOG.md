@@ -4,6 +4,10 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.11.1
+
+- Fixed favicons disappearing in watch and dev builds. `buildStaticShell()` now generates and emits them itself when the build result carries none, so a caller that assembles a synthetic build result (as a file watcher does after a rebuild clears the out dir) still gets the files and the head links. `buildFrontendApp()` keeps emitting them once up front, and its result is reused when present.
+
 ## 5.11.0
 
 - Added favicon emission to `buildFrontendApp()`. It calls `generateFaviconAssets()` on `@trebired/frontend` through the same duck-typed bridge used for static icons, writes the returned files into the client out dir, and reports them on the build result as `favicon`. A frontend without that export degrades to no favicon output rather than failing.
