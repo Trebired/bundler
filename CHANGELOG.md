@@ -4,6 +4,18 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.11.0
+
+- Added favicon emission to `buildFrontendApp()`. It calls `generateFaviconAssets()` on `@trebired/frontend` through the same duck-typed bridge used for static icons, writes the returned files into the client out dir, and reports them on the build result as `favicon`. A frontend without that export degrades to no favicon output rather than failing.
+- Added favicon link injection to `buildStaticShell()`. Generated links merge into every route's links rather than the shared `meta`, because per-route meta is a shallow spread and a route supplying its own `links` would otherwise drop them. Links a route already declares for the same `rel` and `href` win.
+- Changed the emission order so favicons are written after `copyPublicDir()`, whose `force: true` copy would otherwise overwrite a generated file of the same name.
+- Updated the `@trebired/utils` dependency range to `^0.9.1`, which scopes the `forVersion` key-order rule to real config files. Under 0.9.0 the inline project config passed to `applyProjectConfigToFrontendBundlerOptions()` failed that rule.
+
+## 5.10.0
+
+- Changed the `forVersion` check to pass the config object to `resolveForVersion()`, which `@trebired/utils` 0.9.0 requires. A config that does not declare `forVersion` as its first key now fails instead of loading.
+- Updated the `@trebired/utils` dependency range to `^0.9.0`.
+
 ## 5.9.0
 
 ### Fixed

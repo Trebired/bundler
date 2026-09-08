@@ -6,6 +6,7 @@ import type {
   BundlerEntryRecord,
   BundlerResolvedDiscovery,
   NormalizedBundlerLogger,
+  BundlerStaticShellLink,
 } from "#3c8d8166992a";
 import { VIRTUAL_ENTRY_PREFIX, toPosixPath } from "#5kd9snhn6zft";
 import { PACKAGE_ORGANIZATION_NAME, PACKAGE_WORKSPACE_CONFIG_DIR } from "#m7884285ke1w";
@@ -26,7 +27,22 @@ type FrontendConfigApi = {
   generateStaticIconsModule?: (
     config: unknown,
     options?: { rootDir?: string },
-  ) => Promise<{ contents: string; count: number; specs: string[] }>;
+  ) => Promise<{contents:string;count:number;specs:string[]}>;
+  generateFaviconAssets?: (
+    config: unknown,
+    options?: { rootDir?: string },
+  ) => Promise<ResolvedFrontendFavicon>;
+};
+
+type ResolvedFrontendFaviconFile = {
+  contents: Uint8Array;
+  path: string;
+};
+
+type ResolvedFrontendFavicon = {
+  files: ResolvedFrontendFaviconFile[];
+  links: BundlerStaticShellLink[];
+  rasterized: boolean;
 };
 
 type ResolvedFrontendStaticIcons = {
@@ -174,7 +190,7 @@ async function resolveFrontendStaticIcons(
 ): Promise<ResolvedFrontendStaticIcons> {
   const api = preloadedApi || await loadFrontendConfigApi(rootDir);
   if (typeof api?.loadConfig !== "function"
-    || typeof api?.generateStaticIconsModule !== "function") {
+    ||typeof api?.generateStaticIconsModule !== "function") {
     return { configPath: null, contents: "export {};\n", count: 0 };
   }
   const loaded = await api.loadConfig(rootDir, {
@@ -187,6 +203,21 @@ async function resolveFrontendStaticIcons(
     contents: generated.contents,
     count: generated.count,
   };
+}
+
+async function resolveFrontendFavicon(
+  rootDir: string,
+  preloadedApi?: FrontendConfigApi | null,
+): Promise<ResolvedFrontendFavicon> {
+  const empty: ResolvedFrontendFavicon = { files: [], links: [], rasterized: false };
+  const api = preloadedApi || await loadFrontendConfigApi(rootDir);
+  if (typeof api?.loadConfig !== "function" || typeof api?.generateFaviconAssets !== "function") {
+    return empty;
+  }
+
+  const loaded = await api.loadConfig(rootDir, { defaultIfMissing: true, searchFrom: rootDir });
+  const generated = await api.generateFaviconAssets(loaded.config, { rootDir });
+  return generated || empty;
 }
 
 async function resolveFrontendIconMode(rootDir: string): Promise<string> {
@@ -267,6 +298,7 @@ function createEmptyResolvedDiscovery(): ResolvedDiscovery {
 }
 
 export {
+  resolveFrontendFavicon,
   resolveFrontendIconMode,
   resolveFrontendStaticIcons,
   FRONTEND_CONFIG_PATH,
@@ -280,4 +312,10 @@ export {
   prepareFrontendConfigStyles,
   resolveFrontendConfigStyles,
 };
-export type { LoadedFrontendConfig, PreparedFrontendConfigStyles, ResolvedFrontendConfigStyles };
+export type {
+  LoadedFrontendConfig,
+  PreparedFrontendConfigStyles,
+  ResolvedFrontendConfigStyles,
+  ResolvedFrontendFavicon,
+  ResolvedFrontendFaviconFile,
+};

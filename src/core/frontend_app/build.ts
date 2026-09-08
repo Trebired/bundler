@@ -14,6 +14,7 @@ import { resolveAssetManifestEntryOutputPath } from "./manifest.js";
 import { prepareSsrNodeModules } from "./node_modules.js";
 import { applyProjectConfigsToFrontendBundlerOptions } from "./project-config.js";
 import { buildRelatedClientEntryMap } from "./related.js";
+import { resolveFrontendFavicon } from "#d0ppiu0440kk";
 import { pathExists } from "#47cd321d28f1";
 
 async function buildFrontendApp(
@@ -26,6 +27,7 @@ async function buildFrontendApp(
   const { client, config, ssr } = createFrontendAppBundlerOptions(resolvedOptions);
   const clientResult = target !== "ssr" ? await bundle(client) : undefined;
   const publicDirCopied = clientResult ? await copyPublicDir(config) : false;
+  const favicon = clientResult ? await emitFaviconAssets(config) : undefined;
   const ssrResult = target !== "client" && ssr ? await bundle(ssr) : undefined;
   const relatedClientEntryMap = await resolveBuildRelatedClientEntryMap(config, ssrResult);
   const ssrEntryOutput = resolveBuildSsrEntryOutput(config, ssrResult);
@@ -34,6 +36,7 @@ async function buildFrontendApp(
 
   return {
     client: clientResult,
+    favicon,
     globalClientEntries,
     nodeModules,
     publicDirCopied,
@@ -59,6 +62,21 @@ async function copyPublicDir(config: BundlerFrontendAppBundlerConfig): Promise<b
   await fs.mkdir(targetDir, { recursive: true });
   await fs.cp(sourceDir, targetDir, { recursive: true, force: true });
   return true;
+}
+
+async function emitFaviconAssets(
+  config: BundlerFrontendAppBundlerConfig,
+): Promise<BundlerFrontendBuildResult["favicon"]> {
+  const generated = await resolveFrontendFavicon(config.rootDir);
+  if (!generated.files.length) return undefined;
+
+  const targetDir = path.resolve(config.rootDir, config.clientOutDir);
+  await fs.mkdir(targetDir, { recursive: true });
+  for (const file of generated.files) {
+    await fs.writeFile(path.resolve(targetDir, file.path), file.contents);
+  }
+
+  return { links: generated.links, rasterized: generated.rasterized };
 }
 
 async function resolveBuildRelatedClientEntryMap(

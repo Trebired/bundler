@@ -13,18 +13,18 @@ import type { BundlerOptions } from "#3c8d8166992a";
 type NormalizedBundlerOptions = ReturnType<typeof normalizeBundlerOptions>;
 
 /**
- * Discovers entries and appends the synthesized client-root and
- * frontend-config-style entries, in that order.
- *
- * `bundle()` and `watch()` both need this exact composition: a project
- * configured with `clientRoot` must have it excluded from normal discovery
- * (`withClientRootIgnored`) and re-added as its own synthesized entry
- * (`appendClientRootEntry`), or that entry is silently missing from the
- * manifest. `watch()` used to reimplement discovery inline without either
- * call, so a `clientRoot`-configured project built correctly once via
- * `bundle()` and then lost its client entry on the very next watch rebuild,
- * with no error — whatever read the manifest just found nothing there.
- */
+* Discovers entries and appends the synthesized client-root and
+* frontend-config-style entries, in that order.
+*
+* `bundle()` and `watch()` both need this exact composition: a project
+* configured with `clientRoot` must have it excluded from normal discovery
+* (`withClientRootIgnored`) and re-added as its own synthesized entry
+* (`appendClientRootEntry`), or that entry is silently missing from the
+* manifest. `watch()` used to reimplement discovery inline without either
+* call, so a `clientRoot`-configured project built correctly once via
+* `bundle()` and then lost its client entry on the very next watch rebuild,
+* with no error — whatever read the manifest just found nothing there.
+*/
 async function resolveFrontendDiscovery(
   options: BundlerOptions,
   normalized: NormalizedBundlerOptions,

@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { VIRTUAL_ENTRY_PREFIX } from "../discovery/shared.js";
+import { VIRTUAL_ENTRY_PREFIX } from "#tsnh4vdfql8p";
 import type { BundlerEntryRecord } from "#3c8d8166992a";
 
 const CLIENT_ROOT_RULE_KEY = "client-root";
@@ -78,7 +78,7 @@ export {
 };
 export type { ClientEntryOptions };
 
-async function appendClientRootEntry<T extends { entries: readonly unknown[] }>(
+async function appendClientRootEntry<T extends{entries:readonly unknown[]}>(
   discovery: T,
   options: { clientRoot?: string; rootId?: string } | undefined,
   normalized: { environment?: string; rootDir: string },
@@ -90,7 +90,7 @@ async function appendClientRootEntry<T extends { entries: readonly unknown[] }>(
   let iconMode = "server";
   let staticIcons = false;
   try {
-    const { resolveFrontendIconMode } = await import("../frontend-config.js");
+    const { resolveFrontendIconMode } = await import("#d0ppiu0440kk");
     iconMode = await resolveFrontendIconMode(normalized.rootDir);
     staticIcons = iconMode === "static";
   } catch {
@@ -108,7 +108,7 @@ async function appendClientRootEntry<T extends { entries: readonly unknown[] }>(
   return {
     ...discovery,
     entries: [
-      ...(discovery.entries as Array<{ key?: string }>).filter((item) => item.key !== entry.key),
+      ...(discovery.entries as Array<{key?:string}>).filter((item) => item.key !== entry.key),
       entry,
     ].sort((a, b) => String((a as { key?: string }).key).localeCompare(String((b as { key?: string }).key))),
   } as T;
@@ -117,10 +117,10 @@ async function appendClientRootEntry<T extends { entries: readonly unknown[] }>(
 const CLIENT_ROOT_IGNORE_RULE_KEY = "client-root-source";
 
 /**
- * The root component is consumed by the synthesized entry, so discovery must not
- * treat it as an unmatched source file.
- */
-function withClientRootIgnored<T extends { clientRoot?: string; discover?: unknown }>(
+* The root component is consumed by the synthesized entry, so discovery must not
+* treat it as an unmatched source file.
+*/
+function withClientRootIgnored<T extends{clientRoot?:string;discover?:unknown}>(
   options: T,
   rootDir: string,
 ): T {

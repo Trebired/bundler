@@ -162,6 +162,7 @@ export type {
   BundlerFrontendAssetLinksOptions,
   BundlerFrontendBuildOptions,
   BundlerFrontendBuildResult,
+  BundlerFrontendFaviconResult,
   BundlerFrontendBuildTarget,
   BundlerFrontendGlobalClientEntries,
   BundlerFrontendMode,

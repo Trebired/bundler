@@ -36,7 +36,7 @@ async function buildStaticShell(
     });
     const html = renderStaticShellDocument({
         body: route.body ?? options.body,
-        meta: { ...options.meta, ...route.meta },
+        meta: withFaviconLinks({ ...options.meta, ...route.meta }, options.build.favicon),
         rootId: options.rootId,
         tags: assetLinks.tags?.html || "",
     });
@@ -46,6 +46,21 @@ async function buildStaticShell(
   }
 
   return { assetLinks: files[0]?.assetLinks, files, html: files[0]?.html || "" };
+}
+
+function withFaviconLinks(
+  meta: BundlerStaticShellMeta,
+  favicon: BundlerFrontendBuildResult["favicon"],
+): BundlerStaticShellMeta {
+  const generated = favicon?.links || [];
+  if (!generated.length) return meta;
+
+  const declared = meta.links || [];
+  const taken = new Set(declared.map((link) => `${link.rel}:${link.href}`));
+  const added = generated.filter((link) => !taken.has(`${link.rel}:${link.href}`));
+  if (!added.length) return meta;
+
+  return { ...meta, links: [...declared, ...added] };
 }
 
 function renderStaticShellDocument(input: {
@@ -136,9 +151,9 @@ function renderDescription(value: unknown): string {
   return text ? `<meta name="description" content="${escapeHtmlAttribute(text)}">` : "";
 }
 
-function renderAttributes(attributes: Record<string, string | undefined>): string {
+function renderAttributes(attributes: Record<string, string|undefined>): string {
   return Object.entries(attributes)
-  .filter((entry): entry is [string, string] => Boolean(entry[1]))
+  .filter((entry): entry is[string, string] => Boolean(entry[1]))
   .map(([key, value]) => ` ${key}="${escapeHtmlAttribute(value)}"`)
   .join("");
 }

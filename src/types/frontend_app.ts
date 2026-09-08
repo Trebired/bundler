@@ -156,8 +156,14 @@ type BundlerFrontendBuildOptions = BundlerFrontendAppBundlerConfigOptions& {
   target?: BundlerFrontendBuildTarget;
 };
 
+type BundlerFrontendFaviconResult = {
+  links: BundlerStaticShellLink[];
+  rasterized: boolean;
+};
+
 type BundlerFrontendBuildResult = {
   client?: BundlerBuildResult;
+  favicon?: BundlerFrontendFaviconResult;
   globalClientEntries: string[];
   nodeModules?: BundlerSsrNodeModulesResult;
   publicDirCopied: boolean;
@@ -291,18 +297,18 @@ type BundlerStaticShellMeta = {
   description?: string;
   lang?: string;
   /**
-   * Rendered as `<link>` tags after the built-in title/description/asset
-   * tags: favicon (`rel: "icon"`), canonical URLs, `hreflang` alternates,
-   * manifest links, and anything else `<link>` covers. Each entry needs at
-   * least `rel` and `href`; any other key becomes an attribute (`hreflang`,
-   * `type`, `sizes`, `media`, ...).
-   */
+  * Rendered as `<link>` tags after the built-in title/description/asset
+  * tags: favicon (`rel: "icon"`), canonical URLs, `hreflang` alternates,
+  * manifest links, and anything else `<link>` covers. Each entry needs at
+  * least `rel` and `href`; any other key becomes an attribute (`hreflang`,
+  * `type`, `sizes`, `media`, ...).
+  */
   links?: readonly BundlerStaticShellLink[];
   /**
-   * Rendered as `<meta>` tags: `theme-color`, Open Graph (`property`), robots,
-   * and anything else `<meta>` covers. Each entry needs `content` and exactly
-   * one of `name` or `property`.
-   */
+  * Rendered as `<meta>` tags: `theme-color`, Open Graph (`property`), robots,
+  * and anything else `<meta>` covers. Each entry needs `content` and exactly
+  * one of `name` or `property`.
+  */
   metas?: readonly BundlerStaticShellMetaTag[];
   title?: string;
 };
@@ -355,6 +361,7 @@ export type {
   BundlerFrontendAssetLinksOptions,
   BundlerFrontendBuildOptions,
   BundlerFrontendBuildResult,
+  BundlerFrontendFaviconResult,
   BundlerFrontendBuildTarget,
   BundlerFrontendGlobalClientEntries,
   BundlerFrontendMode,
