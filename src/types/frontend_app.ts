@@ -294,6 +294,12 @@ type BundlerStaticShellMetaTag = {
 };
 
 type BundlerStaticShellMeta = {
+  /**
+  * Inline scripts rendered at the top of `<head>`, before the title, links
+  * and asset tags, so they run before first paint. Use for the theme and
+  * locale boot scripts that must settle the document before it renders.
+  */
+  bootScripts?: readonly string[];
   description?: string;
   lang?: string;
   /**

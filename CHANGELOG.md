@@ -4,6 +4,10 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.12.0
+
+- Added `bootScripts` to the static shell meta. Entries render as inline `<script>` tags at the top of `<head>`, before the title, links and asset tags, so they execute before first paint. Static shells previously had no way to emit the theme and locale boot scripts that have to settle the document before it renders.
+
 ## 5.11.2
 
 - Updated the shipped `.trebired/logger/config.ts` `forVersion` to `2.7.0` and the `@trebired/code-discipline` / `@trebired/configs` ranges to `^7.2.0` / `^0.4.0`. The logger config named an older release, so under `@trebired/logger` 2.7 the version check threw and this package's log prefix was dropped.

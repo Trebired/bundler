@@ -91,6 +91,7 @@ function renderStaticShellDocument(input: {
   const head = [
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
+    ...(input.meta.bootScripts || []).map(renderBootScript),
     renderTitle(input.meta.title),
     renderDescription(input.meta.description),
     ...(input.meta.links || []).map(renderLink),
@@ -157,6 +158,12 @@ function resolveShellOutFile(
 async function writeShellFile(outFile: string, html: string): Promise<void> {
   await fs.mkdir(path.dirname(outFile), { recursive: true });
   await fs.writeFile(outFile, html);
+}
+
+function renderBootScript(source: string): string {
+  const value = String(source || "").trim();
+  if (!value) return "";
+  return `<script>${value.replace(/<\//gu, "<\\/")}</script>`;
 }
 
 function renderTitle(value: unknown): string {
