@@ -4,6 +4,10 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.13.1
+
+- Made `clientOutDir` optional on `BundlerFrontendAppBundlerConfigOptions`, defaulting to `dist`. 5.13.0 added the config surface but the option stayed required, so an application still had to pass the value in code and could not let `.trebired/bundler/config.ts` own it.
+
 ## 5.13.0
 
 - Added `build.clientOutDir` to the project config, so an application declares its build output directory in `.trebired/bundler/config.ts` alongside `publicPath` and `outputLayout` instead of hardcoding it in a build script. An explicit `clientOutDir` passed to `applyProjectConfigsToFrontendBundlerOptions()` still wins, so nothing existing changes.

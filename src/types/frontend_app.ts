@@ -61,7 +61,7 @@ type BundlerSsrNodeModulesResult = {
 
 type BundlerFrontendAppBundlerConfigOptions = {
   browser?: Partial<BundlerOptions>;
-  clientOutDir: string;
+  clientOutDir?: string;
   clientRoot?: string;
   define?: Record<string, string>;
   deferredClientEntryKey?: string;

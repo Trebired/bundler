@@ -21,6 +21,7 @@ import {
   DEFAULT_FRONTEND_DEFERRED_CLIENT_ENTRY_KEY,
   DEFAULT_FRONTEND_GLOBAL_CLIENT_ENTRY_PATTERNS,
   DEFAULT_FRONTEND_GLOBAL_STYLE_PATTERNS,
+  DEFAULT_FRONTEND_CLIENT_OUT_DIR,
   DEFAULT_FRONTEND_GLOBAL_STYLE_RULE_KEY,
   DEFAULT_FRONTEND_IGNORED_SOURCE_PATTERNS,
   DEFAULT_FRONTEND_PUBLIC_DIR,
@@ -142,7 +143,7 @@ function normalizeFrontendConfigBase(options: BundlerFrontendAppBundlerConfigOpt
   const frontendDir = normalizeRootRelative(rootDir, options.frontendDir || DEFAULT_FRONTEND_SOURCE_DIR);
   const publicDir = normalizePublicDir(rootDir, frontendDir, options.publicDir);
   return {
-    clientOutDir: normalizeRootRelative(rootDir, options.clientOutDir),
+    clientOutDir: normalizeRootRelative(rootDir, options.clientOutDir || DEFAULT_FRONTEND_CLIENT_OUT_DIR),
     deferredClientEntryKey: options.deferredClientEntryKey || DEFAULT_FRONTEND_DEFERRED_CLIENT_ENTRY_KEY,
     frontendDir,
     globalClientEntries: options.globalClientEntries || "auto",
