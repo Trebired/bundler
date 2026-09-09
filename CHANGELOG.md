@@ -4,6 +4,10 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.11.2
+
+- Updated the shipped `.trebired/logger/config.ts` `forVersion` to `2.7.0` and the `@trebired/code-discipline` / `@trebired/configs` ranges to `^7.2.0` / `^0.4.0`. The logger config named an older release, so under `@trebired/logger` 2.7 the version check threw and this package's log prefix was dropped.
+
 ## 5.11.1
 
 - Fixed favicons disappearing in watch and dev builds. `buildStaticShell()` now generates and emits them itself when the build result carries none, so a caller that assembles a synthetic build result (as a file watcher does after a rebuild clears the out dir) still gets the files and the head links. `buildFrontendApp()` keeps emitting them once up front, and its result is reused when present.
