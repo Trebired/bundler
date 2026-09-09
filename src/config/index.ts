@@ -66,6 +66,7 @@ function normalizeBuildConfig(input: BundlerProjectBuildConfig | undefined): Bun
   if (!isRecord(input)) return {};
   return pickDefined({
       annotateSources: input.annotateSources,
+      clientOutDir: normalizeOptionalString(input.clientOutDir),
       loader: cloneRecord(input.loader),
       minify: input.minify,
       outputLayout: input.outputLayout,

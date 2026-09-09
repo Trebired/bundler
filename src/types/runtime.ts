@@ -69,6 +69,7 @@ type LoadedBundlerConfig = {
 
 type BundlerProjectBuildConfig = {
   annotateSources?: boolean;
+  clientOutDir?: string;
   loader?: Record<string, Loader>;
   minify?: boolean;
   outputLayout?: BundlerOutputLayoutOptions;

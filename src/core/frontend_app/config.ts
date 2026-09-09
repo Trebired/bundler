@@ -60,6 +60,7 @@ function applyProjectConfigToFrontendBundlerOptions(
   const buildDefaults = projectBuildDefaults(config);
   const i18nBuildDefaults = projectI18nDefaults(config.i18n, buildDefaults);
   const frontendDefaults = pickDefined({
+      clientOutDir: config.build.clientOutDir,
       deferredClientEntryKey: config.frontend.deferredClientEntryKey,
       frontendDir: config.frontend.frontendDir,
       globalClientEntryExclude: config.frontend.globalClientEntryExclude,

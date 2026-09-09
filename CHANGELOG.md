@@ -4,6 +4,10 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.13.0
+
+- Added `build.clientOutDir` to the project config, so an application declares its build output directory in `.trebired/bundler/config.ts` alongside `publicPath` and `outputLayout` instead of hardcoding it in a build script. An explicit `clientOutDir` passed to `applyProjectConfigsToFrontendBundlerOptions()` still wins, so nothing existing changes.
+
 ## 5.12.1
 
 - Static asset serving now resolves a directory to its `index.html`. A request for an extension-less path such as `/cs` matched no file and fell through to the SPA fallback, so every prerendered sub-path was served the root document instead of its own.
