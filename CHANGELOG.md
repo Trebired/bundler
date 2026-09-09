@@ -4,6 +4,10 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.12.1
+
+- Static asset serving now resolves a directory to its `index.html`. A request for an extension-less path such as `/cs` matched no file and fell through to the SPA fallback, so every prerendered sub-path was served the root document instead of its own.
+
 ## 5.12.0
 
 - Added `bootScripts` to the static shell meta. Entries render as inline `<script>` tags at the top of `<head>`, before the title, links and asset tags, so they execute before first paint. Static shells previously had no way to emit the theme and locale boot scripts that have to settle the document before it renders.
