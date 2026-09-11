@@ -5,7 +5,7 @@
     "": {
       "name": "@trebired/bundler",
       "dependencies": {
-        "@package/i18n": "npm:@trebired/i18n@^0.6.1",
+        "@package/i18n": "npm:@trebired/i18n@^0.7.0",
         "@package/logger": "npm:@trebired/logger@^2.7.1",
         "@package/logger-adapter": "npm:@trebired/logger-adapter@^0.5.1",
         "@package/result": "npm:@trebired/result@^1.2.8",
@@ -77,7 +77,7 @@
 
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.28.2", "", { "os": "win32", "cpu": "x64" }, "sha512-5ebpxr3nWMzrL/rnUI755Jkuee0bHL/Gq0WTF9lvcpv73wAp5eu8MfBUgWK9bhWvZjj7yX8etf/8tI8Ney695g=="],
 
-    "@package/i18n": ["@trebired/i18n@0.6.1", "", { "dependencies": { "@trebired/utils": "^0.9.3", "typescript": "^6.0.3" }, "bin": { "trebired-i18n": "dist/cli.js" } }, "sha512-iZtpI9edMgRt6vAPpWvIe3MGpAZAqGqEcbPV0+IEG2QUdKHz0mjZtp29f5wlWl5N0GnV9kDxQU/3RjubRpLeMg=="],
+    "@package/i18n": ["@trebired/i18n@0.7.0", "", { "dependencies": { "@trebired/grammar": "^0.1.0", "@trebired/utils": "^0.9.3", "typescript": "^6.0.3" }, "bin": { "trebired-i18n": "dist/cli.js" } }, "sha512-jBk1huYM3OtYcKWBj0G/rJcoZJ7RxzJQ/t5u9sg+RV4nj1Y/RCLimKEppGEHkhb2CtlIRMLXGjf4nSwLCs1vwA=="],
 
     "@package/logger": ["@trebired/logger@2.7.1", "", { "dependencies": { "@package/result": "npm:@trebired/result@^1.2.8", "@trebired/utils": "^0.9.0", "fflate": "^0.8.3", "tar-stream": "^3.2.0" }, "peerDependencies": { "react": ">=18" }, "optionalPeers": ["react"] }, "sha512-4eWft8axEaWUiXjkFIrjUQC21li5phEBcGK0JbRNOOlwTzEcZgCD90auu9jvRIDy+GIT2rzS9hgd9zfVANyBBA=="],
 
@@ -114,6 +114,8 @@
     "@trebired/code-discipline": ["@trebired/code-discipline@7.2.0", "", { "dependencies": { "@package/logger": "npm:@trebired/logger@^2.7.0", "@package/result": "npm:@trebired/result@^1.2.8", "@trebired/utils": "^0.9.3", "typescript": "^6.0.3" }, "bin": { "code-discipline": "dist/cli.js" } }, "sha512-/CWVWimPrf7Gq+A9RZWxCb/BFk/PJxRfbb2v+iQYYdWtCTYcWvXM2Pql/mXdBS3cxB8W/tOS6R7sgGbscNtSbg=="],
 
     "@trebired/configs": ["@trebired/configs@0.4.0", "", {}, "sha512-y4GhZMVZqip2LcGqFzvm+ebVr0smuC1cYrU8uJvPlz9Lx7Qo4CJGRr9A5G+RYamlGA/WbBXjujw7mDZALBtwjQ=="],
+
+    "@trebired/grammar": ["@trebired/grammar@0.1.0", "", {}, "sha512-5Fhf/eOARjRWGlbI5M14hEqb61ANO6Vk4Mto9rSWyr0sdHhjzNTfY1pPntpMKTTd2620Q8yRtZskDJ+ul4LbjA=="],
 
     "@trebired/utils": ["@trebired/utils@0.9.4", "", {}, "sha512-oFXNPejhhT/eTerlG6LTqfbVq7MsI8z6BsRnabRPXgcE6IeJmcpUeu6g60gGWq6X4F9yBdFfmkFBX3Mz5+cOrw=="],
 
