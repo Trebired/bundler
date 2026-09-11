@@ -3,6 +3,9 @@ import os from "node:os";
 import path from "node:path";
 
 import { bundle } from "#sof0gxa0cxhk";
+import { createLog } from "@package/logger";
+
+const log = createLog({ console: true, save: false });
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "@package-bundler-example-"));
 const srcDir = path.join(root, "src");
@@ -62,4 +65,4 @@ const result = await bundle({
     sourcemap: "external",
 });
 
-console.log(result);
+log.info("example.dummy", "bundle result", { result });

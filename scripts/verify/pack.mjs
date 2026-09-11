@@ -5,6 +5,9 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { existsSync, readdirSync } from "node:fs";
 import { resetTemporaryRoot } from "./shared.mjs";
+import { createLog } from "@package/logger";
+
+const log = createLog({ console: true, save: false });
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const tempRoot = path.join(rootDir, ".tmp", "verify-pack");
@@ -23,7 +26,7 @@ async function verifyPackagePack() {
   finally {
     await fs.rm(tarballPath, { force: true });
   }
-  console.log("Pack verification succeeded.");
+  log.info("verify.pack", "Pack verification succeeded.");
 }
 
 function packPackage() {

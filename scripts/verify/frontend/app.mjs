@@ -36,6 +36,9 @@ import {
   assertAssetLinksAndStatic,
   assertBunStaticHandler,
 } from "./static-assets.mjs";
+import { createLog } from "@package/logger";
+
+const log = createLog({ console: true, save: false });
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const tempRoot = path.join(rootDir, ".tmp", "verify-frontend-app");
@@ -49,7 +52,7 @@ async function verifyFrontendAppPackage() {
   await verifyBuildOnceRuntimeSession();
   await verifyDevelopmentRuntimeReusesInitialWatchBuild(tempRoot);
   await verifyRelatedMapTsconfigResolution();
-  console.log("Frontend app verification succeeded.");
+  log.info("verify.frontend.app", "Frontend app verification succeeded.");
 }
 
 async function verifyFrontendPresetDefaults() {

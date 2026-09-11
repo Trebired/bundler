@@ -4,6 +4,10 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.13.3
+
+- Changed the verification scripts and examples to print through `@trebired/logger` instead of `console` and `process.stdout`.
+
 ## 5.13.2
 
 - Updated the `@trebired/i18n` dependency to `^0.7.0`. The build-time i18n check ran the 0.6 checker, which read a plural message (`{ one, few, many, other }`) as nested keys, so a Czech plural object next to an English string or a two-form English plural failed every build with `bundler-i18n-invalid-folder`. The 0.7 checker treats a plural message as one key and also reports missing plural categories and unknown pipes.

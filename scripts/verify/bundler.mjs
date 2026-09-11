@@ -37,6 +37,9 @@ import {
   resetTemporaryRoot,
   writeFixtureFile,
 } from "./shared.mjs";
+import { createLog } from "@package/logger";
+
+const log = createLog({ console: true, save: false });
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const tempRoot = path.join(rootDir, ".tmp", "verify-bundler");
@@ -73,7 +76,7 @@ async function verifyBundlerFeatures() {
   await verifyFrontendConfigTokenWatch({ readFirstCss, tempRoot, watch });
   await verifyRelatedEntries();
   verifyFrontendConventions();
-  console.log("Bundler feature verification succeeded.");
+  log.info("verify.bundler", "Bundler feature verification succeeded.");
 }
 
 async function verifyAggregateModuleMap() {

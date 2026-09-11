@@ -10,6 +10,9 @@ import {
   organizationName,
   resetTemporaryRoot,
 } from "./shared.mjs";
+import { createLog } from "@package/logger";
+
+const log = createLog({ console: true, save: false });
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const tempRoot = path.join(rootDir, ".tmp", "verify-i18n");
@@ -22,7 +25,7 @@ async function verifyI18nPlugin() {
   await verifyLocalTranslatorLogging();
   await verifyBuildFailures();
   await verifyExistingBuildPath();
-  console.log("Bundler i18n verification succeeded.");
+  log.info("verify.i18n", "Bundler i18n verification succeeded.");
 }
 
 async function verifyBrowserBuild() {
