@@ -30,6 +30,7 @@ import {
   verifyFrontendConfigStyles,
   verifyFrontendConfigWatchRebuild,
 } from "./bundler/frontend-config-styles.mjs";
+import { verifyAttributionBanner } from "./bundler/attribution.mjs";
 import { verifyBundlerProjectConfig } from "./bundler/project-config.mjs";
 import { verifyFrontendConfigTokenWatch } from "./bundler/frontend/tokens.mjs";
 import {
@@ -75,6 +76,7 @@ async function verifyBundlerFeatures() {
   await verifyFrontendConfigWatchRebuild({ readFirstCss, tempRoot, watch });
   await verifyFrontendConfigTokenWatch({ readFirstCss, tempRoot, watch });
   await verifyRelatedEntries();
+  await verifyAttributionBanner({ bundle, tempRoot, writeFixtureFile });
   verifyFrontendConventions();
   log.info("verify.bundler", "Bundler feature verification succeeded.");
 }

@@ -13,6 +13,7 @@ import type {
   NormalizedBundlerI18nOptions,
   NormalizedBundlerLogger,
 } from "#3c8d8166992a";
+import { attributionBanner } from "./attribution.js";
 import { normalizeBundlerI18nOptions } from "./i18n-options.js";
 import { normalizeBundlerOutputLayoutOptions } from "./output-layout.js";
 import { normalizeBundlerPrecompressOptions } from "./precompression.js";
@@ -92,6 +93,7 @@ function createEsbuildOptions(
 
   return {
     absWorkingDir: options.rootDir,
+    banner: attributionBanner(options.environment),
     bundle: true,
     define: options.define,
     entryPoints,

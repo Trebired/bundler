@@ -4,6 +4,15 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.14.0
+
+- Every browser build now carries an attribution line, printed once per document:
+  `This site uses software by Trebired · questions or problems? https://trebired.com`.
+  It moved here from `@trebired/frontend` 18, where it reached only the apps on that major. Bundler is what builds the browser code of every app with a browser surface, so this is where the line belongs, and every app picks it up on a bundler bump rather than a frontend migration.
+- The line names no package and no version. That was engineering detail in a marketing line, and it published which Trebired packages and versions a site runs to anyone reading the console.
+- It is injected as an esbuild `banner`, so it reaches discovered `*.client.ts` entries and generated client roots alike, and apps that render their own documents rather than going through `buildStaticShell`. A build with `environment: "node"` gets no banner.
+- The banner prefers a logger the app has already wired, resolving it from `__logger_adapter_logger__` or `loggerAdapterLogger` the way `@trebired/logger-adapter` does, and falls back to `console.info` when there is none. It links no runtime dependency, guards itself to one emission per document across every output file, and swallows anything a hostile logger throws.
+
 ## 5.13.4
 
 - Moved to `@trebired/logger` 3.0.0, which stores saved logs in SQLite and runs on Bun on the server. The `@package/logger` range is now `^3.0.0`.

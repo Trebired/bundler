@@ -102,8 +102,10 @@
   "#uo5sa4lisay5": "./src/types/manifest.ts",
   "#uutmr3kbt43m": "./src/types/discovery.ts",
   "#ymbmz1vdz4oa": "./src/core/discovery/public.ts",
+  "#yshi2x7kqd3f": "./src/core/attribution.ts",
   "#yxnf8p9y0waa": "./scripts/verify/frontend/app.mjs",
   "#z1hxysbp7ydt": "./src/config/index.ts",
   "#ze7c8hijtyk0": "./src/core/discovery/scan.ts",
+  "#zfcitd9jrekg": "./scripts/verify/bundler/attribution.mjs",
   "#zjbdgm10truc": "./src/plugins/scss/syntax.ts"
 }

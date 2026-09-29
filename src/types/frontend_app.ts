@@ -294,27 +294,10 @@ type BundlerStaticShellMetaTag = {
 };
 
 type BundlerStaticShellMeta = {
-  /**
-  * Inline scripts rendered at the top of `<head>`, before the title, links
-  * and asset tags, so they run before first paint. Use for the theme and
-  * locale boot scripts that must settle the document before it renders.
-  */
   bootScripts?: readonly string[];
   description?: string;
   lang?: string;
-  /**
-  * Rendered as `<link>` tags after the built-in title/description/asset
-  * tags: favicon (`rel: "icon"`), canonical URLs, `hreflang` alternates,
-  * manifest links, and anything else `<link>` covers. Each entry needs at
-  * least `rel` and `href`; any other key becomes an attribute (`hreflang`,
-  * `type`, `sizes`, `media`, ...).
-  */
   links?: readonly BundlerStaticShellLink[];
-  /**
-  * Rendered as `<meta>` tags: `theme-color`, Open Graph (`property`), robots,
-  * and anything else `<meta>` covers. Each entry needs `content` and exactly
-  * one of `name` or `property`.
-  */
   metas?: readonly BundlerStaticShellMetaTag[];
   title?: string;
 };

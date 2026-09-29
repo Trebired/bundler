@@ -22,11 +22,6 @@ function resolveFrontendGlobalClientEntries(args: {
       if (!matchesAnyPattern(discoverRel, [...args.include])) return false;
       return !matchesAnyPattern(discoverRel, [...(args.exclude || [])]);
   });
-  /**
-  * A synthesized client-root entry has no on-disk source to glob against — its
-  * module is the configured root component — so it is included by entry key.
-  * Without this the shell links no script and the page renders blank.
-  */
   if (args.manifest.entries?.[CLIENT_ENTRY_KEY]) matched.push(CLIENT_ENTRY_KEY);
   return stableEntries(matched);
 }

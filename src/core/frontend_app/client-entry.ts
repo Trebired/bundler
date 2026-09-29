@@ -116,10 +116,6 @@ async function appendClientRootEntry<T extends{entries:readonly unknown[]}>(
 
 const CLIENT_ROOT_IGNORE_RULE_KEY = "client-root-source";
 
-/**
-* The root component is consumed by the synthesized entry, so discovery must not
-* treat it as an unmatched source file.
-*/
 function withClientRootIgnored<T extends{clientRoot?:string;discover?:unknown}>(
   options: T,
   rootDir: string,
