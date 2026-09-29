@@ -11,16 +11,15 @@ function attributionBannerSource(): string {
   const message = JSON.stringify(ATTRIBUTION_MESSAGE);
   const group = JSON.stringify(ATTRIBUTION_GROUP);
   const flag = JSON.stringify(ATTRIBUTION_FLAG);
-  const metadata = JSON.stringify({ url: ATTRIBUTION_URL, vendor: ATTRIBUTION_VENDOR });
   return [
     "(function(){try{",
     "var g=typeof globalThis!=='undefined'?globalThis:window;",
     `if(!g||g[${flag}])return;g[${flag}]=true;`,
-    `var m=${message},p=${group},d=${metadata};`,
+    `var m=${message},p=${group};`,
     "var l=g.__logger_adapter_logger__||g.loggerAdapterLogger;",
     "if(typeof l==='function'){try{l=l()}catch(e){l=null}}",
-    "if(l&&typeof l.info==='function'){l.info(p,m,d);return}",
-    "if(typeof console!=='undefined'&&console.info)console.info('[INFO, '+p+'] '+m,d);",
+    "if(l&&typeof l.info==='function'){l.info(p,m);return}",
+    "if(typeof console!=='undefined'&&console.info)console.info('[INFO, '+p+'] '+m);",
     "}catch(e){}})();",
   ].join("");
 }

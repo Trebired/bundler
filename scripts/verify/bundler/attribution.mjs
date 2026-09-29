@@ -52,7 +52,7 @@ async function verifyAttributionBanner(context) {
   assert.match(plain[0][1], /^\[INFO, trebired\.attribution\] This site uses software by Trebired/u);
   assert.equal(plain[0][1].includes("—"), false, "no em dashes");
   assert.equal(/@trebired|\d+\.\d+\.\d+/u.test(plain[0][1]), false, "the line names no package and no version");
-  assert.deepEqual(plain[0][2], { url: "https://trebired.com", vendor: "Trebired" });
+  assert.equal(plain[0].length, 2, "the line carries no metadata object");
 
   const wired = runBanner(browser[0], (calls) => ({
         __logger_adapter_logger__: { info: (...args) => calls.push(["logger", ...args]) },
@@ -60,6 +60,7 @@ async function verifyAttributionBanner(context) {
   assert.equal(wired.length, 1);
   assert.equal(wired[0][0], "logger", "a wired logger is preferred over the console");
   assert.equal(wired[0][1], "trebired.attribution");
+  assert.equal(wired[0].length, 3, "a wired logger gets the group and the message, nothing more");
 
   const factory = runBanner(browser[0], (calls) => ({
         loggerAdapterLogger: () => ({ info: (...args) => calls.push(["logger", ...args]) }),

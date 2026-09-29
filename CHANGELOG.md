@@ -4,6 +4,10 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.15.0
+
+- The attribution line carries no metadata object. It is one sentence for a person reading the console, and an expandable object beside it was noise.
+
 ## 5.14.0
 
 - Every browser build now carries an attribution line, printed once per document:
