@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "category": "package",
+  "subcategory": "web",
+  "status": "active",
+  "npm": "@trebired/bundler",
+  "description": {
+    "en": "Builds and ships our sites and apps: bundling, SCSS and asset manifests.",
+    "cs": "Staví a vydává naše weby a aplikace: bundling, SCSS a manifesty assetů."
+  }
+}
