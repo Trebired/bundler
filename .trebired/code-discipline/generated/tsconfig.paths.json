@@ -85,6 +85,9 @@
       "#9btli5xubbll": [
         "../../../scripts/verify/frontend/fixtures.mjs"
       ],
+      "#9eksq3ssp4gv": [
+        "../../../src/core/data/source.ts"
+      ],
       "#a222003f1819": [
         "../../../src/core/manifest.ts"
       ],
@@ -211,6 +214,9 @@
       "#m7884285ke1w": [
         "../../../src/package-metadata.ts"
       ],
+      "#m96q6nj5509a": [
+        "../../../scripts/verify/bundler/data.mjs"
+      ],
       "#mnkhjuhyks6y": [
         "../../../src/core/frontend_app/index.ts"
       ],
@@ -306,6 +312,9 @@
       ],
       "#uutmr3kbt43m": [
         "../../../src/types/discovery.ts"
+      ],
+      "#wjkkj1c1k3oo": [
+        "../../../src/core/data/index.ts"
       ],
       "#ymbmz1vdz4oa": [
         "../../../src/core/discovery/public.ts"

@@ -17,6 +17,8 @@ import {
   DEFAULT_FRONTEND_DEFERRED_CLIENT_ENTRY_PATTERNS,
   generateNamespaceModule,
   renderAssetLinkTags,
+  syncBundlerData,
+  writeDataAssets,
   writeNamespaceModule,
   watch,
 } from "../../dist/index.js";
@@ -32,6 +34,7 @@ import {
 } from "./bundler/frontend-config-styles.mjs";
 import { verifyAttributionBanner } from "./bundler/attribution.mjs";
 import { verifyBundlerProjectConfig } from "./bundler/project-config.mjs";
+import { verifyBundlerData } from "./bundler/data.mjs";
 import { verifyFrontendConfigTokenWatch } from "./bundler/frontend/tokens.mjs";
 import {
   importJavaScriptOutput,
@@ -63,6 +66,13 @@ async function verifyBundlerFeatures() {
       packageVersion,
       tempRoot,
       writeNamespaceModule,
+      writeFile: writeFixtureFile,
+  });
+  await verifyBundlerData({
+      packageVersion,
+      syncBundlerData,
+      tempRoot,
+      writeDataAssets,
       writeFile: writeFixtureFile,
   });
   await verifyFrontendConfigStyles({

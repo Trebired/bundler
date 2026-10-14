@@ -566,6 +566,49 @@ await bundle({
 
 The helper returns ordinary discover rules. Override `clientInclude`, `deferredInclude`, rule keys, or excludes when a project uses different conventions.
 
+## Generated Data
+
+Anything a build fetches or derives is an artifact, and an artifact never belongs in the source tree. The bundler owns that split: the project config declares what to fetch, the bundler fetches it, writes it under the build output directory, and hands it back as one `define` value.
+
+Declare the sources in `.trebired/bundler/config.ts`:
+
+```ts
+import { defineConfig } from "@trebired/bundler/config";
+
+export default defineConfig({
+  forVersion: "5.16.0",
+  build: { clientOutDir: "dist" },
+  data: {
+    define: "BUILD_SITE_DATA",
+    dir: "dist/data",
+    sources: {
+      rates: { url: "https://example.net/rates.json", map: (payload) => payload.rates },
+      documents: { fetch: async ({ cached }) => await readDocuments(cached) },
+    },
+  },
+});
+```
+
+A source declares either a `url`, with optional `headers`, `timeout` and `map`, or a `fetch` function when the data takes more than one request. `fetch` receives `{ cached, name }`, where `cached` is what the last build wrote, and returns the value, or `{ value, assets }` when the source also brings files the site has to serve.
+
+Run it from the build:
+
+```ts
+import { syncBundlerData, writeDataAssets } from "@trebired/bundler/frontend-app";
+
+const { assets, data, define } = await syncBundlerData({ rootDir: process.cwd(), logger });
+await bundle({ define: { ...define, ...ownDefines }, /* ... */ });
+await writeDataAssets(`dist/${site}`, assets);
+```
+
+Behaviour:
+
+- Each source is written to `<dir>/<name>.json`, which defaults to `dist/data`. Nothing is written into the source tree.
+- A source that throws, times out or returns nothing falls back to the file the last build wrote, and the bundler says so in a warning. With no file to fall back to, that source is absent from `data` rather than empty, so a page can tell the difference.
+- `define` is ready to spread into a bundle's `define` option, under `data.define`, which defaults to `BUNDLER_DATA`. The application declares it once in an ambient `.d.ts` and reads it through one module.
+- `assets` carries `{ contents, path }` entries. `writeDataAssets(outDir, assets)` writes them under the site output directory and returns how many it wrote, so a downloaded image is served from the site's own origin instead of a third party.
+- The config module is imported once per process, so a config edit needs a new build, not a second call.
+
 ## Runtime
 
 ### Precompression

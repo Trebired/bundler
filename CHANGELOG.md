@@ -4,6 +4,12 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.16.0
+
+- The bundler owns generated data. `data.sources` in the project config declares what a build fetches, each source as a `url` with an optional `map`, or a `fetch` function for data that takes more than one request. `syncBundlerData()` runs them, writes each result to `dist/data/<name>.json`, and returns the collected object together with a ready `define` map, so an application stops keeping fetched snapshots in its source tree and stops hand-writing a sync per source.
+
+- A source that cannot be reached falls back to the file the last build wrote, with a warning naming it. A source that brings files with it returns `{ value, assets }`, and `writeDataAssets(outDir, assets)` writes those into the site output directory, so a downloaded asset is served from the site's own origin.
+
 ## 5.15.0
 
 - The attribution line carries no metadata object. It is one sentence for a person reading the console, and an expandable object beside it was noise.

@@ -98,8 +98,53 @@ type BundlerProjectStaticAssetsConfig = {
   immutableCacheControl?: string;
 };
 
+type BundlerDataAsset = {
+  contents: string | Uint8Array | ArrayBuffer;
+  path: string;
+};
+
+type BundlerDataSourceContext = {
+  cached: unknown;
+  name: string;
+};
+
+type BundlerDataSourceResult = {
+  assets?: BundlerDataAsset[];
+  value: unknown;
+};
+
+type BundlerDataSource = {
+  fetch?: (context: BundlerDataSourceContext) => Promise<unknown>|unknown;
+  headers?: Record<string, string>;
+  map?: (payload: unknown, context: BundlerDataSourceContext) => Promise<unknown>|unknown;
+  timeout?: number;
+  url?: string;
+};
+
+type BundlerProjectDataConfig = {
+  define?: string;
+  dir?: string;
+  sources?: Record<string, BundlerDataSource>;
+};
+
+type BundlerDataSyncOptions = {
+  data?: BundlerProjectDataConfig;
+  logger?: BundlerLogger;
+  loggerAdapter?: BundlerLoggerAdapter;
+  rootDir?: string;
+};
+
+type BundlerDataSyncResult = {
+  assets: BundlerDataAsset[];
+  data: Record<string, unknown>;
+  define: Record<string, string>;
+  defineName: string;
+  dir: string;
+};
+
 type BundlerProjectConfig = {
   build?: BundlerProjectBuildConfig;
+  data?: BundlerProjectDataConfig;
   forVersion?: string;
   frontend?: BundlerProjectFrontendConfig;
   i18n?: boolean | BundlerI18nOptions;
@@ -109,6 +154,7 @@ type BundlerProjectConfig = {
 
 type NormalizedBundlerProjectConfig = {
   build: BundlerProjectBuildConfig;
+  data: BundlerProjectDataConfig;
   forVersion: string;
   frontend: BundlerProjectFrontendConfig;
   i18n?: boolean | BundlerI18nOptions;
@@ -144,6 +190,12 @@ type BundlerNamespace = {
 
 export type {
   BundlerBuildResult,
+  BundlerDataAsset,
+  BundlerDataSource,
+  BundlerDataSourceContext,
+  BundlerDataSourceResult,
+  BundlerDataSyncOptions,
+  BundlerDataSyncResult,
   BundlerEnvironment,
   BundlerDataAttrsInput,
   BundlerDataAttrsOutput,
@@ -152,6 +204,7 @@ export type {
   BundlerNamespaceValue,
   BundlerProjectBuildConfig,
   BundlerProjectConfig,
+  BundlerProjectDataConfig,
   BundlerProjectFrontendConfig,
   BundlerProjectStaticAssetsConfig,
   BundlerWatchSession,

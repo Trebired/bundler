@@ -4,6 +4,7 @@ import { pathToFileURL } from "node:url";
 import type {
   BundlerProjectBuildConfig,
   BundlerProjectConfig,
+  BundlerProjectDataConfig,
   BundlerProjectFrontendConfig,
   BundlerProjectStaticAssetsConfig,
   LoadedBundlerProjectConfig,
@@ -54,12 +55,22 @@ function normalizeBundlerProjectConfig(
   const source = config as BundlerProjectConfig;
   return {
     build: normalizeBuildConfig(source.build),
+    data: normalizeDataConfig(source.data),
     forVersion: normalizeForVersion(source, options),
     frontend: normalizeFrontendConfig(source.frontend),
     i18n: normalizeI18nConfig(source.i18n),
     prefix: normalizeBundlerPrefix(source.prefix),
     staticAssets: normalizeStaticAssetsConfig(source.staticAssets),
   };
+}
+
+function normalizeDataConfig(input: BundlerProjectDataConfig | undefined): BundlerProjectDataConfig {
+  if (!isRecord(input)) return {};
+  return pickDefined({
+      define: normalizeOptionalString(input.define),
+      dir: normalizeOptionalString(input.dir),
+      sources: input.sources,
+  });
 }
 
 function normalizeBuildConfig(input: BundlerProjectBuildConfig | undefined): BundlerProjectBuildConfig {

@@ -20,6 +20,10 @@ export {
   loadFrontendProjectConfig,
 } from "./project-config.js";
 export {
+  syncBundlerData,
+  writeDataAssets,
+} from "./../data/index.js";
+export {
   DEFAULT_FRONTEND_CLIENT_ENTRY_KEY,
   DEFAULT_FRONTEND_DEFERRED_CLIENT_ENTRY_KEY,
   DEFAULT_FRONTEND_GLOBAL_CLIENT_ENTRY_PATTERNS,

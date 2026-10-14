@@ -100,6 +100,7 @@ async function writePrefixedConfig(context, prefixedConfig) {
 function assertPrefixedConfig(config, context) {
   assert.deepEqual(config, {
       build: { minify: false, publicPath: "/assets/" },
+      data: {},
       forVersion: context.packageVersion,
       frontend: { frontendDir: "ui", globalStyleRuleKey: "styles" },
       i18n: {
@@ -163,6 +164,7 @@ async function verifyI18nProjectConfigMerge(context) {
 function emptyProjectConfig(context) {
   return {
     build: {},
+    data: {},
     forVersion: context.packageVersion,
     frontend: {},
     i18n: undefined,
