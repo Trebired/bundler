@@ -23,6 +23,15 @@ export {
   syncBundlerData,
   writeDataAssets,
 } from "./../data/index.js";
+export type {
+  BundlerDataAsset,
+  BundlerDataSource,
+  BundlerDataSourceContext,
+  BundlerDataSourceResult,
+  BundlerDataSyncOptions,
+  BundlerDataSyncResult,
+  BundlerProjectDataConfig,
+} from "#3c8d8166992a";
 export {
   DEFAULT_FRONTEND_CLIENT_ENTRY_KEY,
   DEFAULT_FRONTEND_DEFERRED_CLIENT_ENTRY_KEY,

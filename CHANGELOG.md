@@ -4,6 +4,10 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.16.1
+
+- The data types are exported. `BundlerDataAsset`, `BundlerDataSource`, `BundlerDataSourceContext`, `BundlerDataSourceResult`, `BundlerDataSyncOptions`, `BundlerDataSyncResult` and `BundlerProjectDataConfig` are now reachable from the package root and from `@trebired/bundler/frontend-app`, so a source function can type its own context.
+
 ## 5.16.0
 
 - The bundler owns generated data. `data.sources` in the project config declares what a build fetches, each source as a `url` with an optional `map`, or a `fetch` function for data that takes more than one request. `syncBundlerData()` runs them, writes each result to `dist/data/<name>.json`, and returns the collected object together with a ready `define` map, so an application stops keeping fetched snapshots in its source tree and stops hand-writing a sync per source.
