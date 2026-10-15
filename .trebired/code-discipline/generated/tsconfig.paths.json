@@ -1,6 +1,9 @@
 {
   "compilerOptions": {
     "paths": {
+      "#00afjjd7sw1o": [
+        "../../../src/core/data/github_sources.ts"
+      ],
       "#0e84q8f4ubat": [
         "../../../src/constants.ts"
       ],
@@ -21,6 +24,9 @@
       ],
       "#1dro9tcir5ck": [
         "../../../src/cli/logging.ts"
+      ],
+      "#1sf6j9a6mgfu": [
+        "../../../src/core/data/github.ts"
       ],
       "#2hmco05zhfpg": [
         "../../../src/core/import_graph/parse.ts"

@@ -1,4 +1,5 @@
 {
+  "#00afjjd7sw1o": "./src/core/data/github_sources.ts",
   "#0e84q8f4ubat": "./src/constants.ts",
   "#0ss24zzupv8u": "./scripts/verify/shared.mjs",
   "#0vonposqf7ii": "./src/types/frontend_app.ts",
@@ -6,6 +7,7 @@
   "#17f3fba84f54": "./src/core/asset-manifest.ts",
   "#18o0cf9c108j": "./src/plugins/virtual-entries.ts",
   "#1dro9tcir5ck": "./src/cli/logging.ts",
+  "#1sf6j9a6mgfu": "./src/core/data/github.ts",
   "#2hmco05zhfpg": "./src/core/import_graph/parse.ts",
   "#2miyyo1bh0h2": "./src/core/related-entries.ts",
   "#2u41n2qmweqf": "./scripts/verify/bundler/frontend-config-styles.mjs",

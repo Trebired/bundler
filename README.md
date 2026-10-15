@@ -589,7 +589,7 @@ export default defineConfig({
 });
 ```
 
-A source declares either a `url`, with optional `headers`, `timeout` and `map`, or a `fetch` function when the data takes more than one request. `fetch` receives `{ cached, name }`, where `cached` is what the last build wrote, and returns the value, or `{ value, assets }` when the source also brings files the site has to serve.
+A source declares either a `url`, with optional `headers`, `timeout` and `map`, or a `fetch` function when the data takes more than one request. `fetch` receives `{ cached, dir, name }`, where `cached` is what the last build wrote and `dir` is where that file lives, and returns the value, or `{ value, assets, detail }` when the source also brings files the site has to serve or wants to describe its own result.
 
 Run it from the build:
 
@@ -601,6 +601,17 @@ await bundle({ define: { ...define, ...ownDefines }, /* ... */ });
 await writeDataAssets(`dist/${site}`, assets);
 ```
 
+Two GitHub sources come with the package, so an application declares a repository rather than writing a client:
+
+```ts
+sources: {
+  repos: githubReposSource({ org: "Example", map: (rows, context) => describe(rows, context) }),
+  release: githubReleaseSource({ org: "Example", repo: "app", assetKinds: { deb: [".deb"], rpm: [".rpm"] } }),
+}
+```
+
+`githubReposSource` returns the published repositories as `{ cloneUrl, language, license, name, pushedAt, url }`, with `include: "all"` to keep forks and archives. `githubReleaseSource` returns the latest release with its assets classified by extension, dropping the ones no kind matches unless `keepUnknownAssets` says otherwise. Both read `GITHUB_TOKEN` from the environment unless `token` is given, and both accept a `map` that shapes the value before it is written. `fetchRepoFiles({ org, repos, path })` reads the same file from many repositories at once, for the manifest a build wants beside each one.
+
 Behaviour:
 
 - Each source is written to `<dir>/<name>.json`, which defaults to `dist/data`. Nothing is written into the source tree.
@@ -608,6 +619,7 @@ Behaviour:
 - `define` is ready to spread into a bundle's `define` option, under `data.define`, which defaults to `BUNDLER_DATA`. The application declares it once in an ambient `.d.ts` and reads it through one module.
 - `assets` carries `{ contents, path }` entries. `writeDataAssets(outDir, assets)` writes them under the site output directory and returns how many it wrote, so a downloaded image is served from the site's own origin instead of a third party.
 - The config module is imported once per process, so a config edit needs a new build, not a second call.
+- Every step is logged under `data`: the sources about to be read, one line per source with what came back, a warning per source that fell back, and a closing line with the counts and the size of the define. `writeDataAssets(outDir, assets, { logger })` reports what it wrote.
 
 ## Runtime
 

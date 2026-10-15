@@ -131,6 +131,7 @@ export type {
   BundlerDataSourceResult,
   BundlerDataSyncOptions,
   BundlerDataSyncResult,
+  BundlerDataWriteAssetsOptions,
   BundlerEnvironment,
   BundlerNamespace,
   BundlerNamespaceValue,
@@ -145,6 +146,15 @@ export type {
   LoadedBundlerProjectConfig,
   NormalizedBundlerProjectConfig,
 } from "./types/runtime.js";
+export type {
+  GithubManifestOptions,
+  GithubReleaseAsset,
+  GithubReleaseSourceOptions,
+  GithubReleaseValue,
+  GithubRepoRow,
+  GithubReposSourceOptions,
+  GithubRequestOptions,
+} from "./core/data/github.js";
 export type {
   GenerateNamespaceModuleOptions,
   WriteNamespaceModuleOptions,

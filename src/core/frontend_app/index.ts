@@ -20,6 +20,9 @@ export {
   loadFrontendProjectConfig,
 } from "./project-config.js";
 export {
+  fetchRepoFiles,
+  githubReleaseSource,
+  githubReposSource,
   syncBundlerData,
   writeDataAssets,
 } from "./../data/index.js";
@@ -30,6 +33,7 @@ export type {
   BundlerDataSourceResult,
   BundlerDataSyncOptions,
   BundlerDataSyncResult,
+  BundlerDataWriteAssetsOptions,
   BundlerProjectDataConfig,
 } from "#3c8d8166992a";
 export {

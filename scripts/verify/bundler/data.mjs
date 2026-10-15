@@ -17,6 +17,7 @@ value: { names: ["one"] },
 }),
 },
 prices: { fetch: () => ({ eur: 2 }) },
+probe: { fetch: (context) => ({ detail: "one probe", value: { dir: context.dir, name: context.name } }) },
 },
 },
 };
@@ -29,7 +30,7 @@ function failingData() {
   return {
     define: "FIXTURE_DATA",
     dir: "dist/data",
-    sources: { people: { fetch: offline }, prices: { fetch: offline } },
+    sources: { people: { fetch: offline }, prices: { fetch: offline }, probe: { fetch: offline } },
   };
 }
 
@@ -39,7 +40,10 @@ async function verifyBundlerData(context) {
   await context.writeFile(root, configPath, CONFIG_SOURCE.replace("VERSION", context.packageVersion));
 
   const synced = await context.syncBundlerData({ rootDir: root });
-  assert.deepEqual(synced.data, { people: { names: ["one"] }, prices: { eur: 2 } });
+  assert.deepEqual(synced.data.people, { names: ["one"] });
+  assert.deepEqual(synced.data.prices, { eur: 2 });
+  assert.equal(synced.data.probe.name, "probe");
+  assert.equal(synced.data.probe.dir, path.join(root, "dist/data"));
   assert.equal(synced.defineName, "FIXTURE_DATA");
   assert.deepEqual(synced.define, { FIXTURE_DATA: JSON.stringify(synced.data) });
   assert.equal(synced.assets.length, 1);
@@ -58,7 +62,8 @@ async function verifyBundlerData(context) {
 
 async function verifyGeneratedFallback(context, root) {
   const kept = await context.syncBundlerData({ data: failingData(), rootDir: root });
-  assert.deepEqual(kept.data, { people: { names: ["one"] }, prices: { eur: 2 } });
+  assert.deepEqual(kept.data.people, { names: ["one"] });
+  assert.equal(kept.data.probe.name, "probe");
   assert.deepEqual(kept.assets, []);
 }
 

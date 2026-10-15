@@ -294,6 +294,7 @@ type BundlerStaticShellMetaTag = {
 };
 
 type BundlerStaticShellMeta = {
+  bodyScripts?: readonly string[];
   bootScripts?: readonly string[];
   description?: string;
   lang?: string;

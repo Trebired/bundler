@@ -4,6 +4,20 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.18.0
+
+- A static shell can carry scripts at the end of the body. `meta.bodyScripts` renders them just before `</body>`, where the document is parsed and can be measured, which a head script cannot do. Head `bootScripts` are unchanged.
+
+## 5.17.0
+
+- Two GitHub sources ship with the package. `githubReposSource({ org })` reads an organization's repositories, keeps the published ones, and hands normalized rows to an optional `map`; `githubReleaseSource({ org, repo })` reads the latest release and classifies its assets by extension, with `assetKinds` and `keepUnknownAssets` to decide what counts. Both read `GITHUB_TOKEN` from the environment unless a `token` is passed. `fetchRepoFiles({ org, repos, path })` reads one file from many repositories at once, for a manifest a build wants beside each repository.
+
+- The data sync says what it did. It logs the sources it is about to read, one line per source naming what came back (`documents :: fetched 18 documents from Trebired/meta@2152858, 104.3KB`), a warning per source that fell back to the last build's copy, and a closing line with how many were fetched, kept and missing, how many assets came with them, and the size of the define it produced. `writeDataAssets()` takes a logger and reports the files it wrote into a site output directory.
+
+- A source can describe its own result. Returning `detail` alongside `value` replaces the generic size summary with the source's own sentence, so a source that knows it read eighteen documents from a commit says so.
+
+- A source receives `dir`, the directory its result is written to, so a source that downloads a binary can cache it beside its JSON and still serve it when the network is gone.
+
 ## 5.16.1
 
 - The data types are exported. `BundlerDataAsset`, `BundlerDataSource`, `BundlerDataSourceContext`, `BundlerDataSourceResult`, `BundlerDataSyncOptions`, `BundlerDataSyncResult` and `BundlerProjectDataConfig` are now reachable from the package root and from `@trebired/bundler/frontend-app`, so a source function can type its own context.

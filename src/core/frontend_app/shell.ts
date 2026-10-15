@@ -106,6 +106,7 @@ function renderStaticShellDocument(input: {
     "</head>",
     "<body>",
     input.body ?? `<div id="${escapeHtmlAttribute(input.rootId || "root")}"></div>`,
+    ...(input.meta.bodyScripts || []).map(renderBootScript),
     "</body>",
     "</html>",
   ].join("\n");

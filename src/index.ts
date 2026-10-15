@@ -1,6 +1,12 @@
 export { BUNDLER_LOG_GROUP, BUNDLER_PACKAGE_NAME } from "./constants.js";
 export { bundle } from "./core/build.js";
-export { syncBundlerData, writeDataAssets } from "./core/data/index.js";
+export {
+  fetchRepoFiles,
+  githubReleaseSource,
+  githubReposSource,
+  syncBundlerData,
+  writeDataAssets,
+} from "./core/data/index.js";
 export { buildAssetManifest, collectAssetLinks } from "./core/asset-manifest.js";
 export {
   collectRelatedFrontendEntries,
@@ -127,6 +133,7 @@ export type {
   BundlerDataSourceResult,
   BundlerDataSyncOptions,
   BundlerDataSyncResult,
+  BundlerDataWriteAssetsOptions,
   BundlerFontPreloadLink,
   BundlerGenericLogMethod,
   BundlerImportGraph,
@@ -185,6 +192,13 @@ export type {
   BundlerProjectBuildConfig,
   BundlerProjectConfig,
   BundlerProjectDataConfig,
+  GithubManifestOptions,
+  GithubReleaseAsset,
+  GithubReleaseSourceOptions,
+  GithubReleaseValue,
+  GithubRepoRow,
+  GithubReposSourceOptions,
+  GithubRequestOptions,
   BundlerProjectFrontendConfig,
   BundlerProjectStaticAssetsConfig,
   BundlerRelatedClientEntryMapOptions,

@@ -5,11 +5,16 @@ import type {
   BundlerDataAsset,
   BundlerDataSyncOptions,
   BundlerDataSyncResult,
+  BundlerDataWriteAssetsOptions,
   BundlerProjectDataConfig,
 } from "#3c8d8166992a";
 import { resolveLogger } from "#dcx0jw9bw3ka";
 import { loadConfig } from "#z1hxysbp7ydt";
 import { collectSource, readCached } from "./source.js";
+
+type SyncLogger = ReturnType<typeof resolveLogger>;
+
+type SyncTotals = { assets: number; fetched: number; kept: number; missing: number };
 
 const DEFAULT_DEFINE = "BUNDLER_DATA";
 const DEFAULT_DIR = "dist/data";
@@ -22,15 +27,45 @@ function dataConfigOf(config: BundlerProjectDataConfig | undefined): Required<Bu
   };
 }
 
-async function writeDataAssets(outDir: string, assets: BundlerDataAsset[]): Promise<number> {
-  let written = 0;
-  for (const asset of assets) {
-    const target = path.join(outDir, asset.path);
-    await fs.mkdir(path.dirname(target), { recursive: true });
-    await fs.writeFile(target, asset.contents as Parameters<typeof fs.writeFile>[1]);
-    written += 1;
+function assetBytes(assets: BundlerDataAsset[]): number {
+  return assets.reduce((total, asset) => total + byteLengthOf(asset.contents), 0);
+}
+
+function byteLengthOf(contents: BundlerDataAsset["contents"]): number {
+  if (typeof contents === "string") return Buffer.byteLength(contents);
+  if (contents instanceof ArrayBuffer) return contents.byteLength;
+  return contents.byteLength;
+}
+
+function failureReason(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+async function collectOne(
+  dir: string,
+  name: string,
+  source: BundlerProjectDataConfig["sources"][string],
+  logger: SyncLogger,
+  totals: SyncTotals,
+): Promise<{assets:BundlerDataAsset[];value:unknown}|null> {
+  try {
+    const collected = await collectSource(dir, name, source);
+    totals.fetched += 1;
+    totals.assets += collected.assets.length;
+    const assets = collected.assets.length > 0 ? `, ${collected.assets.length} assets` : "";
+    logger.info("data", `${name} :: fetched ${collected.detail}${assets}`);
+    return { assets: collected.assets, value: collected.value };
+  } catch (error) {
+    const cached = await readCached(dir, name);
+    if (cached === undefined) {
+      totals.missing += 1;
+      logger.warn("data", `${name} :: reached nothing and nothing is kept :: ${failureReason(error)}`);
+      return null;
+    }
+    totals.kept += 1;
+    logger.warn("data", `${name} :: kept what the last build wrote :: ${failureReason(error)}`);
+    return { assets: [], value: cached };
   }
-  return written;
 }
 
 async function syncBundlerData(options: BundlerDataSyncOptions = {}): Promise<BundlerDataSyncResult> {
@@ -39,39 +74,55 @@ async function syncBundlerData(options: BundlerDataSyncOptions = {}): Promise<Bu
   const config = dataConfigOf(options.data || loaded.config.data);
   const logger = resolveLogger(options.logger, options.loggerAdapter);
   const dir = path.resolve(rootDir, config.dir);
+  const names = Object.keys(config.sources);
+  const totals: SyncTotals = { assets: 0, fetched: 0, kept: 0, missing: 0 };
   const assets: BundlerDataAsset[] = [];
   const data: Record<string, unknown> = {};
-  const kept: string[] = [];
 
-  for (const [name, source] of Object.entries(config.sources)) {
-    try {
-      const collected = await collectSource(dir, name, source);
-      data[name] = collected.value;
-      assets.push(...collected.assets);
-    } catch (error) {
-      const cached = await readCached(dir, name);
-      const reason = error instanceof Error ? error.message : String(error);
-      if (cached === undefined) {
-        logger.warn("data", `${name} reached nothing and nothing is kept :: ${reason}`);
-        continue;
-      }
-      data[name] = cached;
-      kept.push(name);
-      logger.warn("data", `${name} reached nothing, keeping what the last build wrote :: ${reason}`);
-    }
+  if (names.length === 0) {
+    return { assets, data, define: {[config.define]: "{}" }, defineName: config.define, dir };
   }
 
-  const names = Object.keys(data);
-  const detail = kept.length > 0 ? `, ${kept.length} kept from the last build` : "";
-  logger.info("data", `collected ${names.length} of ${Object.keys(config.sources).length} sources${detail}`);
+  logger.info("data", `start :: sources=${names.length} dir=${path.relative(rootDir, dir) || dir}`);
+  const startedAt = Date.now();
 
-  return {
-    assets,
-    data,
-    define: {[config.define]: JSON.stringify(data) },
-    defineName: config.define,
-    dir,
-  };
+  for (const name of names) {
+    const collected = await collectOne(dir, name, config.sources[name] as never, logger, totals);
+    if (!collected) continue;
+    data[name] = collected.value;
+    assets.push(...collected.assets);
+  }
+
+  const define = JSON.stringify(data);
+  logger.info(
+    "data",
+    `complete :: fetched=${totals.fetched} kept=${totals.kept} missing=${totals.missing}`
+    +` assets=${totals.assets} define=${config.define} size=${(Buffer.byteLength(define) / 1024).toFixed(1)}KB`
+    +` in ${Date.now() - startedAt}ms`,
+  );
+
+  return { assets, data, define: {[config.define]: define }, defineName: config.define, dir };
+}
+
+async function writeDataAssets(
+  outDir: string,
+  assets: BundlerDataAsset[],
+  options: BundlerDataWriteAssetsOptions = {},
+): Promise<number> {
+  let written = 0;
+  for (const asset of assets) {
+    const target = path.join(outDir, asset.path);
+    await fs.mkdir(path.dirname(target), { recursive: true });
+    await fs.writeFile(target, asset.contents as Parameters<typeof fs.writeFile>[1]);
+    written += 1;
+  }
+  if (written > 0 && (options.logger || options.loggerAdapter)) {
+    const logger = resolveLogger(options.logger, options.loggerAdapter);
+    const size = (assetBytes(assets) / 1024).toFixed(1);
+    logger.info("data", `assets :: wrote ${written} files, ${size}KB into ${outDir}`);
+  }
+  return written;
 }
 
 export { syncBundlerData, writeDataAssets };
+export { fetchRepoFiles, githubReleaseSource, githubReposSource } from "./github_sources.js";

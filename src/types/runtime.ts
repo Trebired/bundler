@@ -105,11 +105,13 @@ type BundlerDataAsset = {
 
 type BundlerDataSourceContext = {
   cached: unknown;
+  dir: string;
   name: string;
 };
 
 type BundlerDataSourceResult = {
   assets?: BundlerDataAsset[];
+  detail?: string;
   value: unknown;
 };
 
@@ -132,6 +134,11 @@ type BundlerDataSyncOptions = {
   logger?: BundlerLogger;
   loggerAdapter?: BundlerLoggerAdapter;
   rootDir?: string;
+};
+
+type BundlerDataWriteAssetsOptions = {
+  logger?: BundlerLogger;
+  loggerAdapter?: BundlerLoggerAdapter;
 };
 
 type BundlerDataSyncResult = {
@@ -196,6 +203,7 @@ export type {
   BundlerDataSourceResult,
   BundlerDataSyncOptions,
   BundlerDataSyncResult,
+  BundlerDataWriteAssetsOptions,
   BundlerEnvironment,
   BundlerDataAttrsInput,
   BundlerDataAttrsOutput,
