@@ -23,6 +23,8 @@ probe: { fetch: (context) => ({ detail: "one probe", value: { dir: context.dir, 
 };
 `;
 
+const APP_RULES = { dir: "src", rules: [{ include: ["app.ts"], key: "app", strategy: "entry" }] };
+
 function failingData() {
   const offline = () => {
     throw new Error("offline");
@@ -45,7 +47,9 @@ async function verifyBundlerData(context) {
   assert.equal(synced.data.probe.name, "probe");
   assert.equal(synced.data.probe.dir, path.join(root, "dist/data"));
   assert.equal(synced.defineName, "FIXTURE_DATA");
-  assert.deepEqual(synced.define, { FIXTURE_DATA: JSON.stringify(synced.data) });
+  const perSource = Object.fromEntries(Object.entries(synced.data).map(([name, value]) => [`FIXTURE_DATA.${name}`, JSON.stringify(value)]));
+  assert.deepEqual(synced.define, { ...perSource, FIXTURE_DATA: JSON.stringify(synced.data) });
+  assert.deepEqual(Object.keys(synced.define).slice(0, 3), ["FIXTURE_DATA.people", "FIXTURE_DATA.prices", "FIXTURE_DATA.probe"]);
   assert.equal(synced.assets.length, 1);
   assert.equal(synced.assets[0].path, "people/one.txt");
 
@@ -58,6 +62,29 @@ async function verifyBundlerData(context) {
 
   await verifyGeneratedFallback(context, root);
   await verifyMissingData(context);
+  await verifyDataModules(context, root);
+}
+
+async function verifyDataModules(context, root) {
+  await context.writeFile(root, "src/app.ts", 'import people from "bundler-data:people";\nexport const first = people.names[0];\n');
+  await context.bundle({
+      discover: APP_RULES,
+      format: "esm",
+      outDir: "dist/modules",
+      rootDir: root,
+  });
+  const modulesDir = path.join(root, "dist/modules");
+  const outputs = (await fs.readdir(modulesDir, { recursive: true })).filter((name) => String(name).endsWith(".js"));
+  const code = (await Promise.all(outputs.map((name) => fs.readFile(path.join(modulesDir, name), "utf8")))).join("\n");
+  assert.ok(code.includes('"one"'), "a bundler-data import inlines the synced source");
+
+  const ghost = 'import ghost from "bundler-data:ghost";\nexport const value = ghost;\n';
+  await context.writeFile(root, "src/app.ts", ghost);
+  await assert.rejects(
+    context.bundle({ discover: APP_RULES, outDir: "dist/ghost", rootDir: root }),
+    /was never synced/u,
+  );
+  await fs.rm(path.join(root, "src"), { force: true, recursive: true });
 }
 
 async function verifyGeneratedFallback(context, root) {

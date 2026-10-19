@@ -4,6 +4,18 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.18.1
+
+- Precompression runs every file and format at once instead of one after another, and keeps each result in `node_modules/.cache/@trebired/bundler/precompress` under the hash of its input. Identical bytes, from another site in the same run or from an earlier build, are copied rather than compressed again; an entry unused for thirty days is removed. `precompressAssets()` takes an optional `rootDir` that places the cache.
+- `syncBundlerData()` fetches every source at once instead of one after another. The define keeps the configured source order, so its bytes are unchanged.
+- `syncBundlerData()` also defines every source on its own key, `<define>.<source>`, beside the whole object. Code that reads `BUILD_DATA.documents` literally inlines that source alone, so a page that never reads the documents does not ship them; reading the whole object still works and still inlines everything.
+- `import value from "bundler-data:<source>"` resolves to the JSON the data sync wrote for that source. Unlike the define, which esbuild places in one chunk every page loads, the import lands in the chunk of the code that reads it, so a large source such as the text of long documents ships only with the pages that show it. A source that was never synced fails the build with its file path.
+- The colocated i18n check of a folder runs once per process for the same files and options instead of once per bundle, so building a client and a server bundle, or several sites, from one source tree parses each i18n folder once. A changed file changes the key, so watch mode still checks it again.
+- The bundler loads TypeScript, the Sass compiler and the i18n checker the first time a build needs them instead of when it is imported, so importing `@trebired/bundler/frontend-app` takes about 30 ms instead of 330 ms and the remaining load overlaps the work that starts first.
+- `githubReleaseSource` no longer stamps `fetchedAt`. The moment of the fetch made the build data, and every bundle that inlines it, differ between two builds of the same release.
+- The written `bundler-manifest.json` no longer carries `generatedAt`, and its discovered entry paths are relative to the project root instead of absolute, so the manifest is identical between builds and does not reveal the build machine's directory layout.
+- Moved the frontend config-styles and static-icons plugins under `src/plugins/frontend/`.
+
 ## 5.18.0
 
 - A static shell can carry scripts at the end of the body. `meta.bodyScripts` renders them just before `</body>`, where the document is parsed and can be measured, which a head script cannot do. Head `bootScripts` are unchanged.

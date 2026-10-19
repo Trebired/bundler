@@ -1,10 +1,16 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import ts from "typescript";
+import type ts from "typescript";
 
 import { resolveAggregateModuleLoader } from "./shared.js";
 import type { DiscoveredFile, NormalizedAggregateRule } from "./shared.js";
+
+let tsc: typeof ts;
+
+async function loadTypeScript(): Promise<void> {
+  tsc ??= (await import("typescript")).default;
+}
 
 type FilteredAggregateFiles = {
   matchedFiles: DiscoveredFile[];
@@ -19,6 +25,7 @@ async function filterAggregateMatchedFiles(args: {
     return { matchedFiles: args.matchedFiles, skippedSources: [] };
   }
 
+  await loadTypeScript();
   const matchedFiles: DiscoveredFile[] = [];
   const skippedSources: string[] = [];
 
@@ -44,10 +51,10 @@ function hasModuleExport(args: {
     filePath: string;
     source: string;
 }): boolean {
-  const sourceFile = ts.createSourceFile(
+  const sourceFile = tsc.createSourceFile(
     args.filePath,
     args.source,
-    ts.ScriptTarget.Latest,
+    tsc.ScriptTarget.Latest,
     true,
     resolveScriptKind(args.filePath),
   );
@@ -57,65 +64,65 @@ function hasModuleExport(args: {
 function statementExportsName(statement: ts.Statement, exportName: string): boolean {
   if (exportName === "default" && isDefaultExportAssignment(statement)) return true;
   if (isExportedDeclaration(statement, exportName)) return true;
-  if (ts.isVariableStatement(statement)) return variableStatementExportsName(statement, exportName);
-  if (ts.isExportDeclaration(statement)) return exportDeclarationExportsName(statement, exportName);
+  if (tsc.isVariableStatement(statement)) return variableStatementExportsName(statement, exportName);
+  if (tsc.isExportDeclaration(statement)) return exportDeclarationExportsName(statement, exportName);
   return false;
 }
 
 function isDefaultExportAssignment(statement: ts.Statement): boolean {
-  return ts.isExportAssignment(statement) && !statement.isExportEquals;
+  return tsc.isExportAssignment(statement) && !statement.isExportEquals;
 }
 
 function isExportedDeclaration(statement: ts.Statement, exportName: string): boolean {
   const modifiers = getNodeModifiers(statement);
-  const exported = modifiers.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword);
+  const exported = modifiers.some((modifier) => modifier.kind === tsc.SyntaxKind.ExportKeyword);
   if (!exported) return false;
-  const defaulted = modifiers.some((modifier) => modifier.kind === ts.SyntaxKind.DefaultKeyword);
+  const defaulted = modifiers.some((modifier) => modifier.kind === tsc.SyntaxKind.DefaultKeyword);
   if (defaulted) return exportName === "default";
   return getStatementName(statement) === exportName;
 }
 
 function variableStatementExportsName(statement: ts.VariableStatement, exportName: string): boolean {
-  if (!getNodeModifiers(statement).some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)) return false;
+  if (!getNodeModifiers(statement).some((modifier) => modifier.kind === tsc.SyntaxKind.ExportKeyword)) return false;
   return statement.declarationList.declarations.some((declaration) => bindingNameExportsName(declaration.name, exportName));
 }
 
 function getNodeModifiers(node: ts.Node): readonly ts.Modifier[] {
-  return ts.canHaveModifiers(node) ? ts.getModifiers(node) || [] : [];
+  return tsc.canHaveModifiers(node) ? tsc.getModifiers(node) || [] : [];
 }
 
 function getStatementName(statement: ts.Statement): string | undefined {
-  if (ts.isFunctionDeclaration(statement)) return statement.name?.text;
-  if (ts.isClassDeclaration(statement)) return statement.name?.text;
-  if (ts.isInterfaceDeclaration(statement)) return statement.name.text;
-  if (ts.isTypeAliasDeclaration(statement)) return statement.name.text;
-  if (ts.isEnumDeclaration(statement)) return statement.name.text;
-  if (ts.isModuleDeclaration(statement) && ts.isIdentifier(statement.name)) return statement.name.text;
+  if (tsc.isFunctionDeclaration(statement)) return statement.name?.text;
+  if (tsc.isClassDeclaration(statement)) return statement.name?.text;
+  if (tsc.isInterfaceDeclaration(statement)) return statement.name.text;
+  if (tsc.isTypeAliasDeclaration(statement)) return statement.name.text;
+  if (tsc.isEnumDeclaration(statement)) return statement.name.text;
+  if (tsc.isModuleDeclaration(statement) && tsc.isIdentifier(statement.name)) return statement.name.text;
   return undefined;
 }
 
 function bindingNameExportsName(name: ts.BindingName, exportName: string): boolean {
-  if (ts.isIdentifier(name)) return name.text === exportName;
-  const elements = ts.isObjectBindingPattern(name) ? name.elements : name.elements;
+  if (tsc.isIdentifier(name)) return name.text === exportName;
+  const elements = tsc.isObjectBindingPattern(name) ? name.elements : name.elements;
   return elements.some((element) => {
-      if (!ts.isBindingElement(element)) return false;
+      if (!tsc.isBindingElement(element)) return false;
       return bindingNameExportsName(element.name, exportName);
   });
 }
 
 function exportDeclarationExportsName(statement: ts.ExportDeclaration, exportName: string): boolean {
   const clause = statement.exportClause;
-  if (!clause || !ts.isNamedExports(clause)) return false;
+  if (!clause || !tsc.isNamedExports(clause)) return false;
   return clause.elements.some((specifier) => specifier.name.text === exportName);
 }
 
 function resolveScriptKind(filePath: string): ts.ScriptKind {
   const extension = path.extname(filePath).toLowerCase();
-  if (extension === ".tsx") return ts.ScriptKind.TSX;
-  if (extension === ".jsx") return ts.ScriptKind.JSX;
-  if (extension === ".ts" || extension === ".mts" || extension === ".cts") return ts.ScriptKind.TS;
-  if (extension === ".js" || extension === ".mjs" || extension === ".cjs") return ts.ScriptKind.JS;
-  return ts.ScriptKind.Unknown;
+  if (extension === ".tsx") return tsc.ScriptKind.TSX;
+  if (extension === ".jsx") return tsc.ScriptKind.JSX;
+  if (extension === ".ts" || extension === ".mts" || extension === ".cts") return tsc.ScriptKind.TS;
+  if (extension === ".js" || extension === ".mjs" || extension === ".cjs") return tsc.ScriptKind.JS;
+  return tsc.ScriptKind.Unknown;
 }
 
 export {

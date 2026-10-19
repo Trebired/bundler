@@ -11,6 +11,15 @@ import type {
   BundlerPrecompressedAsset,
 } from "#3c8d8166992a";
 import { matchesAnyPattern, normalizePathValue, normalizeStringList } from "./discovery/shared.js";
+import {
+  openPrecompressCache,
+  precompressCacheDir,
+  precompressKey,
+  prunePrecompressCache,
+  runLimited,
+  workerCount,
+  type PrecompressCache,
+} from "./precompress_cache.js";
 
 const brotliCompressAsync = promisify(zlib.brotliCompress);
 const gzipAsync = promisify(zlib.gzip);
@@ -47,19 +56,31 @@ function normalizeBundlerPrecompressOptions(options: BundlerPrecompressOptions |
   };
 }
 
+type PrecompressSource = { abs: string; content: Buffer; rel: string };
+
+type PrecompressJob = { format: BundlerPrecompressFormat; source: PrecompressSource };
+
+async function readPrecompressSources(
+  outDir: string,
+  sources: readonly string[],
+  options: NormalizedBundlerPrecompressOptions,
+): Promise<PrecompressSource[]> {
+  const eligible = sources
+  .map((abs) => ({ abs, rel: normalizePathValue(path.relative(outDir, abs)) }))
+  .filter((source) => shouldPrecompressSource(source.rel, options));
+  const read = await Promise.all(eligible.map(async(source) => ({ ...source, content: await fs.readFile(source.abs) })));
+  return read.filter((source) => source.content.byteLength >= options.minSize);
+}
+
 async function precompressAssets(options: BundlerPrecompressAssetsOptions): Promise<BundlerPrecompressStats> {
   const outDir = path.resolve(options.outDir);
   const normalized = normalizeBundlerPrecompressOptions({ ...options, enabled: true });
-  const sources = await resolvePrecompressSources(outDir, options.outputs);
-  const assets: BundlerPrecompressedAsset[] = [];
-
-  for (const sourceAbs of sources) {
-    const sourceRel = normalizePathValue(path.relative(outDir, sourceAbs));
-    if (!shouldPrecompressSource(sourceRel, normalized)) continue;
-    const content = await fs.readFile(sourceAbs);
-    if (content.byteLength < normalized.minSize) continue;
-    assets.push(...await compressSourceFile(sourceAbs, sourceRel, content, normalized));
-  }
+  const sources = await readPrecompressSources(outDir, await resolvePrecompressSources(outDir, options.outputs), normalized);
+  const cacheDir = precompressCacheDir(options.rootDir || process.cwd());
+  const cache = openPrecompressCache(cacheDir);
+  const jobs: PrecompressJob[] = sources.flatMap((source) => normalized.formats.map((format) => ({ format, source })));
+  const assets = await runLimited(jobs, workerCount(), (job) => compressJob(job, normalized, cache));
+  await prunePrecompressCache(cacheDir);
 
   return createPrecompressStats(assets, normalized.formats);
 }
@@ -89,20 +110,19 @@ function shouldPrecompressSource(sourceRel: string, options: NormalizedBundlerPr
   return !/\.(?:br|gz|map)$/iu.test(sourceRel);
 }
 
-async function compressSourceFile(
-  sourceAbs: string,
-  sourceRel: string,
-  content: Buffer,
+async function compressJob(
+  job: PrecompressJob,
   options: NormalizedBundlerPrecompressOptions,
-): Promise<BundlerPrecompressedAsset[]> {
-  const assets: BundlerPrecompressedAsset[] = [];
-  for (const format of options.formats) {
-    const compressed = await compressBuffer(content, format, options);
-    const outputRel = `${sourceRel}${format === "br" ? ".br" : ".gz"}`;
-    await fs.writeFile(`${sourceAbs}${format === "br" ? ".br" : ".gz"}`, compressed);
-    assets.push(createPrecompressedAsset(format, sourceRel, outputRel, content.byteLength, compressed.byteLength));
-  }
-  return assets;
+  cache: PrecompressCache,
+): Promise<BundlerPrecompressedAsset> {
+  const { format, source } = job;
+  const extension = format === "br" ? ".br" : ".gz";
+  const key = precompressKey(source.content, format === "br" ? `br${options.brotliQuality}` : `gz${options.gzipLevel}`);
+  const cached = await cache.read(key);
+  const compressed = cached || await compressBuffer(source.content, format, options);
+  await fs.writeFile(`${source.abs}${extension}`, compressed);
+  if (!cached) await cache.write(key, compressed);
+  return createPrecompressedAsset(format, source.rel, `${source.rel}${extension}`, source.content.byteLength, compressed.byteLength);
 }
 
 async function compressBuffer(

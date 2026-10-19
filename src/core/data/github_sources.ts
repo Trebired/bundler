@@ -103,7 +103,6 @@ async function readRelease(
   if (assets.length === 0) throw new Error(`${options.org}/${options.repo} ${tag} carries no installable asset`);
   const value: GithubReleaseValue = {
     assets,
-    fetchedAt: new Date().toISOString(),
     org: options.org,
     publishedAt: String(release.published_at || ""),
     releasesUrl: `https://github.com/${options.org}/${options.repo}/releases`,

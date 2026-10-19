@@ -23,7 +23,12 @@ async function postProcessBuildOutput(args: {
       rootDir: args.normalized.rootDir,
   });
   const precompressed = args.normalized.precompress.enabled
-  ? await precompressAssets({ ...args.normalized.precompress, outDir: args.normalized.outDir, outputs: outputLayout.outputs })
+  ? await precompressAssets({
+      ...args.normalized.precompress,
+      outDir: args.normalized.outDir,
+      outputs: outputLayout.outputs,
+      rootDir: args.normalized.rootDir,
+  })
   : undefined;
 
   return {

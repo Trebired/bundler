@@ -16,6 +16,11 @@ type ManifestWriteResult = {
   manifestPath?: string;
 };
 
+function portableDiscovery(discovery: BundlerResolvedDiscovery, rootDir: string): BundlerResolvedDiscovery {
+  const prefix = JSON.stringify(`${path.resolve(rootDir)}${path.sep}`).slice(1, -1);
+  return JSON.parse(JSON.stringify(discovery).split(prefix).join("")) as BundlerResolvedDiscovery;
+}
+
 async function writeBundlerManifest(args: {
     assetManifest?: BundlerAssetManifest;
     metafile?: Metafile;
@@ -34,8 +39,7 @@ async function writeBundlerManifest(args: {
   await fs.mkdir(path.dirname(manifestPath), { recursive: true });
 
   const body = {
-    generatedAt: new Date().toISOString(),
-    resolvedDiscovery: args.resolvedDiscovery,
+    resolvedDiscovery: portableDiscovery(args.resolvedDiscovery, args.rootDir),
     assetManifest: args.assetManifest || buildAssetManifest({
         metafile: args.metafile,
         outDir: args.outDir,

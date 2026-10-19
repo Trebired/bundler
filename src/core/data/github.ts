@@ -20,7 +20,6 @@ type GithubReleaseAsset = { kind: string; name: string; size: number; url: strin
 
 type GithubReleaseValue = {
   assets: GithubReleaseAsset[];
-  fetchedAt: string;
   org: string;
   publishedAt: string;
   releasesUrl: string;

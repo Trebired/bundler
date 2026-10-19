@@ -1,11 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import {
-  checkColocatedI18n,
-  formatI18nCheckViolations,
-} from "@package/i18n/checker";
-
 import type { NormalizedBundlerI18nOptions } from "#3c8d8166992a";
 import { normalizeLanguage, toRootRelative } from "./shared.js";
 
@@ -33,6 +28,17 @@ async function resolveI18nFolder(args: {
   };
 }
 
+const checkedFolders = new Map<string, Promise<void>>();
+
+async function folderSignature(folderPath: string): Promise<string> {
+  const entries = await fs.readdir(folderPath, { withFileTypes: true }).catch (() => []);
+  const files = await Promise.all(entries.filter((entry) => entry.isFile()).map(async(entry) => {
+        const stats = await fs.stat(path.join(folderPath, entry.name));
+        return `${entry.name}:${stats.size}:${stats.mtimeMs}`;
+  }));
+  return files.sort().join("|");
+}
+
 async function assertValidI18nFolder(
   folderPath: string,
   args: {
@@ -40,6 +46,25 @@ async function assertValidI18nFolder(
     rootDir: string;
   },
 ): Promise<void> {
+  const { defaultLanguage, dirName, extensions, supportedLanguages } = args.i18n;
+  const options = JSON.stringify([args.rootDir, defaultLanguage, dirName, extensions, supportedLanguages]);
+  const key = `${folderPath}\n${options}\n${await folderSignature(folderPath)}`;
+  const known = checkedFolders.get(key);
+  if (known) return known;
+  const pending = checkI18nFolder(folderPath, args);
+  checkedFolders.set(key, pending);
+  pending.catch (() => checkedFolders.delete(key));
+  return pending;
+}
+
+async function checkI18nFolder(
+  folderPath: string,
+  args: {
+    i18n: NormalizedBundlerI18nOptions;
+    rootDir: string;
+  },
+): Promise<void> {
+  const { checkColocatedI18n, formatI18nCheckViolations } = await import("@package/i18n/checker");
   const result = await checkColocatedI18n({
       defaultLanguage: args.i18n.defaultLanguage,
       dirName: args.i18n.dirName,

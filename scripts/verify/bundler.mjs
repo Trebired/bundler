@@ -16,6 +16,7 @@ import {
   DEFAULT_FRONTEND_CLIENT_ENTRY_PATTERNS,
   DEFAULT_FRONTEND_DEFERRED_CLIENT_ENTRY_PATTERNS,
   generateNamespaceModule,
+  precompressAssets,
   renderAssetLinkTags,
   syncBundlerData,
   writeDataAssets,
@@ -35,6 +36,7 @@ import {
 import { verifyAttributionBanner } from "./bundler/attribution.mjs";
 import { verifyBundlerProjectConfig } from "./bundler/project-config.mjs";
 import { verifyBundlerData } from "./bundler/data.mjs";
+import { verifyPrecompressCache } from "./bundler/precompress.mjs";
 import { verifyFrontendConfigTokenWatch } from "./bundler/frontend/tokens.mjs";
 import {
   importJavaScriptOutput,
@@ -53,6 +55,7 @@ async function verifyBundlerFeatures() {
   await resetTemporaryRoot(tempRoot);
   await verifyAggregateModuleMap();
   await verifyOutputLayoutAndPrecompression();
+  await verifyPrecompressCache({ precompressAssets, tempRoot });
   await verifyScssPackageExports();
   await verifyBundlerProjectConfig({
       createBundlerNamespace,
@@ -68,13 +71,7 @@ async function verifyBundlerFeatures() {
       writeNamespaceModule,
       writeFile: writeFixtureFile,
   });
-  await verifyBundlerData({
-      packageVersion,
-      syncBundlerData,
-      tempRoot,
-      writeDataAssets,
-      writeFile: writeFixtureFile,
-  });
+  await verifyBundlerData({ bundle, packageVersion, syncBundlerData, tempRoot, writeDataAssets, writeFile: writeFixtureFile });
   await verifyFrontendConfigStyles({
       bundle,
       collectAssetLinks,

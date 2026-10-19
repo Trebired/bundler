@@ -83,7 +83,7 @@
         "../../../src/plugins/scss/namespace.ts"
       ],
       "#8dn6s334ypu1": [
-        "../../../src/plugins/frontend-static-icons.ts"
+        "../../../src/plugins/frontend/static-icons.ts"
       ],
       "#9b50ca986572": [
         "../../../src/core/build.ts"
@@ -138,6 +138,9 @@
       ],
       "#cliwdvy5eown": [
         "../../../src/core/asset_links/fonts.ts"
+      ],
+      "#cx4sh61pdbhx": [
+        "../../../src/core/precompress_cache.ts"
       ],
       "#d0ppiu0440kk": [
         "../../../src/core/frontend-config.ts"
@@ -208,6 +211,9 @@
       "#lc29x958kzin": [
         "../../../src/core/discovery/emit.ts"
       ],
+      "#llcygeublpj0": [
+        "../../../src/plugins/data-modules.ts"
+      ],
       "#lxr3ttzj8fq9": [
         "../../../src/cli.ts"
       ],
@@ -222,6 +228,9 @@
       ],
       "#m96q6nj5509a": [
         "../../../scripts/verify/bundler/data.mjs"
+      ],
+      "#mbv2od5h2jdk": [
+        "../../../scripts/verify/bundler/precompress.mjs"
       ],
       "#mnkhjuhyks6y": [
         "../../../src/core/frontend_app/index.ts"
@@ -296,7 +305,7 @@
         "../../../src/core/discovery/shared.ts"
       ],
       "#txn6vz7y3qut": [
-        "../../../src/plugins/frontend-config-styles.ts"
+        "../../../src/plugins/frontend/config-styles.ts"
       ],
       "#tzyfbjqi6bpj": [
         "../../../src/core/text-scanner.ts"

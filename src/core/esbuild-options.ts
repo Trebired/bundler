@@ -7,6 +7,7 @@ import { createScssPlugin } from "#751yrciipoz0";
 import { createI18nPlugin } from "#m42z8fvtvpjc";
 import { createSourceAnnotationsPlugin } from "#ulrbecj1la7z";
 import { createVirtualEntriesPlugin } from "#18o0cf9c108j";
+import { createDataModulesPlugin } from "./../plugins/data-modules.js";
 import type {
   BundlerEntryRecord,
   BundlerOptions,
@@ -153,6 +154,7 @@ function createPlugins(
         logger,
         rootDir: options.rootDir,
     }),
+    createDataModulesPlugin({ rootDir: options.rootDir }),
     ...(options.i18n.enabled ? [createI18nPlugin({
             annotateSources: options.annotateSources,
             environment: options.environment,

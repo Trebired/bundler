@@ -86,14 +86,16 @@ async function syncBundlerData(options: BundlerDataSyncOptions = {}): Promise<Bu
   logger.info("data", `start :: sources=${names.length} dir=${path.relative(rootDir, dir) || dir}`);
   const startedAt = Date.now();
 
-  for (const name of names) {
-    const collected = await collectOne(dir, name, config.sources[name] as never, logger, totals);
-    if (!collected) continue;
-    data[name] = collected.value;
-    assets.push(...collected.assets);
-  }
+  const collected = await Promise.all(names.map((name) => collectOne(dir, name, config.sources[name] as never, logger, totals)));
+  names.forEach((name, index) => {
+      const entry = collected[index];
+      if (!entry) return;
+      data[name] = entry.value;
+      assets.push(...entry.assets);
+  });
 
   const define = JSON.stringify(data);
+  const perSource = Object.fromEntries(Object.entries(data).map(([name, value]) => [`${config.define}.${name}`, JSON.stringify(value)]));
   logger.info(
     "data",
     `complete :: fetched=${totals.fetched} kept=${totals.kept} missing=${totals.missing}`
@@ -101,7 +103,7 @@ async function syncBundlerData(options: BundlerDataSyncOptions = {}): Promise<Bu
     +` in ${Date.now() - startedAt}ms`,
   );
 
-  return { assets, data, define: {[config.define]: define }, defineName: config.define, dir };
+  return { assets, data, define: { ...perSource, [config.define]: define }, defineName: config.define, dir };
 }
 
 async function writeDataAssets(

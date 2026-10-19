@@ -1,7 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { compileStringAsync } from "sass-embedded";
 import type { OnLoadResult, Plugin } from "esbuild";
 
 import {
@@ -10,8 +9,8 @@ import {
   FRONTEND_CONFIG_VIRTUAL_ENTRY_PATH,
   resolveFrontendConfigStyles,
 } from "#d0ppiu0440kk";
-import { injectSourceAnnotation } from "./source-annotations.js";
-import { createScssAliasImporter, rewriteScssAliasDirectives } from "./scss/imports.js";
+import { injectSourceAnnotation } from "./../source-annotations.js";
+import { createScssAliasImporter, rewriteScssAliasDirectives } from "./../scss/imports.js";
 import type { NormalizedBundlerLogger } from "#3c8d8166992a";
 
 const FRONTEND_CONFIG_STYLES_NAMESPACE = "package-frontend-config-styles";
@@ -47,7 +46,7 @@ async function loadFrontendConfigStyle(options: FrontendConfigStylesPluginOption
     const loaded = await resolveFrontendConfigStyles(options.rootDir);
     const virtualScssPath = frontendVirtualScssPath(options.rootDir);
     const importer = createScssAliasImporter(options.rootDir);
-    const result = await compileStringAsync(rewriteScssAliasDirectives(loaded.scss), {
+    const result = await (await import("sass-embedded")).compileStringAsync(rewriteScssAliasDirectives(loaded.scss), {
         importer,
         importers: [importer],
         loadPaths: [options.rootDir],

@@ -1,7 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { compileStringAsync } from "sass-embedded";
 import type { Plugin } from "esbuild";
 
 import { injectSourceAnnotation } from "./source-annotations.js";
@@ -22,7 +21,7 @@ function createScssPlugin(options: ScssPluginOptions): Plugin {
       build.onLoad({ filter: /\.scss$/ }, async(args) => {
           try {
             const importer = createScssAliasImporter(options.rootDir);
-            const result = await compileStringAsync(
+            const result = await (await import("sass-embedded")).compileStringAsync(
               rewriteScssAliasDirectives(await fs.readFile(args.path, "utf8")),
               {
                 importer,

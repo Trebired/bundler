@@ -13,6 +13,7 @@ type BundlerPrecompressOptions = boolean | {
 type BundlerPrecompressAssetsOptions = Exclude<BundlerPrecompressOptions, boolean>& {
   outDir: string;
   outputs?: readonly string[];
+  rootDir?: string;
 };
 
 type BundlerPrecompressedAsset = {
