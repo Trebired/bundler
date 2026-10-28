@@ -615,6 +615,7 @@ sources: {
 Behaviour:
 
 - Each source is written to `<dir>/<name>.json`, which defaults to `dist/data`. Nothing is written into the source tree.
+- A build empties its output directory first but keeps `<dir>` when it lies inside it, so `clientOutDir: "dist"` with the default `dist/data` keeps the snapshots the next build falls back on.
 - A source that throws, times out or returns nothing falls back to the file the last build wrote, and the bundler says so in a warning. With no file to fall back to, that source is absent from `data` rather than empty, so a page can tell the difference.
 - `define` is ready to spread into a bundle's `define` option, under `data.define`, which defaults to `BUNDLER_DATA`. The application declares it once in an ambient `.d.ts` and reads it through one module.
 - `assets` carries `{ contents, path }` entries. `writeDataAssets(outDir, assets)` writes them under the site output directory and returns how many it wrote, so a downloaded image is served from the site's own origin instead of a third party.

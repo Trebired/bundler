@@ -91,8 +91,21 @@ async function toBuildResult(args: {
   };
 }
 
-export async function cleanOutDir(outDir: string): Promise<void> {
-  await fs.rm(outDir, { force: true, recursive: true });
+async function emptyExcept(dir: string, keep: string): Promise<void> {
+  const entries = await fs.readdir(dir).catch (() => [] as string[]);
+  for (const name of entries) {
+    const entry = path.join(dir, name);
+    if (entry === keep) continue;
+    if (keep.startsWith(`${entry}${path.sep}`)) await emptyExcept(entry, keep);
+    else await fs.rm(entry, { force: true, recursive: true });
+  }
+}
+
+export async function cleanOutDir(outDir: string, keep = ""): Promise<void> {
+  const root = path.resolve(outDir);
+  const kept = keep ? path.resolve(keep) : "";
+  if (kept.startsWith(`${root}${path.sep}`)) await emptyExcept(root, kept);
+  else await fs.rm(root, { force: true, recursive: true });
 }
 
 export function formatFailure(error: unknown): string {

@@ -30,4 +30,4 @@ function createDataModulesPlugin(options: { rootDir: string }): Plugin {
   };
 }
 
-export { createDataModulesPlugin, DATA_MODULE_FILTER };
+export { createDataModulesPlugin, DATA_MODULE_FILTER, dataDirOf };

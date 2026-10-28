@@ -9,6 +9,7 @@ import { postProcessBuildOutput } from "./post-build.js";
 import { resolveFrontendDiscovery } from "./discovery-resolve.js";
 import { prepareFrontendConfigStyles } from "./frontend-config.js";
 import { cleanOutDir, formatFailure, logWarnings, toBuildResult } from "./shared.js";
+import { dataDirOf } from "#llcygeublpj0";
 
 type NormalizedBundlerOptions = ReturnType<typeof normalizeBundlerOptions>;
 
@@ -27,7 +28,7 @@ async function bundle(options: BundlerOptions): Promise<BundlerBuildResult> {
 
   if (normalized.clean) {
     logger.info("build", `clean :: ${normalized.outDir}`);
-    await cleanOutDir(normalized.outDir);
+    await cleanOutDir(normalized.outDir, await dataDirOf(normalized.rootDir));
   }
 
   logger.info("build", "start");

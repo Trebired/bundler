@@ -15,6 +15,7 @@ import {
   type PreparedFrontendConfigStyles,
 } from "./frontend-config.js";
 import { cleanOutDir, formatFailure, logWarnings, toBuildResult } from "./shared.js";
+import { dataDirOf } from "#llcygeublpj0";
 
 async function watch(options: BundlerOptions): Promise<BundlerWatchSession> {
   const state = await createWatchState(options);
@@ -40,7 +41,7 @@ async function createWatchState(options: BundlerOptions) {
   });
   if (normalized.clean) {
     logger.info("watch", `clean :: ${normalized.outDir}`);
-    await cleanOutDir(normalized.outDir);
+    await cleanOutDir(normalized.outDir, await dataDirOf(normalized.rootDir));
   }
 
   const frontendStyles = await prepareFrontendConfigStyles({
@@ -206,7 +207,7 @@ async function refreshDiscovery(state: Awaited<ReturnType<typeof createWatchStat
     state.currentContext = null;
   }
 
-  await cleanOutDir(state.normalized.outDir);
+  await cleanOutDir(state.normalized.outDir, await dataDirOf(state.normalized.rootDir));
   if (state.currentDiscovery.entries.length === 0) {
     state.logger.info("watch", "entry-set-empty");
     return;

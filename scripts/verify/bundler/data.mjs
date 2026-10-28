@@ -78,6 +78,12 @@ async function verifyDataModules(context, root) {
   const code = (await Promise.all(outputs.map((name) => fs.readFile(path.join(modulesDir, name), "utf8")))).join("\n");
   assert.ok(code.includes('"one"'), "a bundler-data import inlines the synced source");
 
+  await context.writeFile(root, "dist/stale.txt", "old");
+  await context.bundle({ discover: APP_RULES, format: "esm", outDir: "dist", rootDir: root });
+  const snapshot = await fs.readFile(path.join(root, "dist/data/people.json"), "utf8");
+  assert.deepEqual(JSON.parse(snapshot), { names: ["one"] }, "cleaning the output directory keeps the data snapshots inside it");
+  await assert.rejects(fs.readFile(path.join(root, "dist/stale.txt")), /ENOENT/u, "and still removes everything else");
+
   const ghost = 'import ghost from "bundler-data:ghost";\nexport const value = ghost;\n';
   await context.writeFile(root, "src/app.ts", ghost);
   await assert.rejects(
