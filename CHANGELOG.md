@@ -4,6 +4,10 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.18.2
+
+- Fixed a build deleting the data snapshots. Cleaning the output directory removed everything in it, so with `clientOutDir: "dist"` and the default data `dir` of `dist/data` every build wiped the files the next one falls back on when a source cannot be reached. The clean step now keeps the data directory when it lies inside the output directory and removes everything else.
+
 ## 5.18.1
 
 - Precompression runs every file and format at once instead of one after another, and keeps each result in `node_modules/.cache/@trebired/bundler/precompress` under the hash of its input. Identical bytes, from another site in the same run or from an earlier build, are copied rather than compressed again; an entry unused for thirty days is removed. `precompressAssets()` takes an optional `rootDir` that places the cache.
