@@ -144,6 +144,8 @@ The watched set is not limited to `config.ts` itself. `@trebired/frontend` resol
 .trebired/frontend/tokens.ts    # editing this retriggers config CSS compilation
 ```
 
+The page shell preloads only the font files the config lists. `@trebired/frontend` returns them as `fontPreloads`, from the weights each font family names in `preload`, and the static shell and the runtime emit `<link rel="preload" as="font">` for those files alone; every other font loads when text first uses it. `collectFrontendAssetLinks` takes the list as `fontPreloadFiles`, and an empty list preloads no font. A `@trebired/frontend` that reports no list keeps the earlier behaviour of preloading every font file the stylesheets reference.
+
 This is contract-driven, not path-driven: the bundler watches whatever the installed `@trebired/frontend` reports. A version that does not report `dependencies` still works, with the config file alone watched, as before.
 
 During browser, node, and neutral builds, the bundler rewrites the local translator call to a normal `createTranslator()` call with static sibling imports for the configured language files. Message-file parsing and key validation come from `@trebired/i18n/checker`, so the same static TypeScript grammar is used by the CLI and the bundler. The source tree does not need local `i18n/index.ts` files, JSON dictionaries, app-wide registries, or checked-in generated source.

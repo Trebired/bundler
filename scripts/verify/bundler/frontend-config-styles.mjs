@@ -68,7 +68,23 @@ function assertFrontendConfigFontLinks(context, result) {
   assert.ok(rendered.fontPreloads.includes('type="font/woff2"'));
   assert.ok(frontendLinks.fontPreloads.some((item) => item.href.endsWith(".woff2")));
   assert.ok(frontendLinks.tags.fontPreloads.includes('rel="preload"'));
+  assertDeclaredFontPreloads(context, result, frontendLinks.fontPreloads);
   assertFrontendCssOrder(context);
+}
+
+function assertDeclaredFontPreloads(context, result, all) {
+  const name = (href) => href.split("/").pop();
+  const first = name(all[0].href).replace(/-[A-Za-z0-9]+\.woff2$/u, "");
+  const declared = context.collectFrontendAssetLinks({
+      collect: { publicPath: "/" },
+      fontPreloadFiles: [first],
+      manifest: result.assetManifest,
+  });
+  assert.deepEqual(declared.fontPreloads.map((item) => name(item.href)), [name(all[0].href)],
+  "with a declared list only the listed font files are preloaded");
+  const none = context.collectFrontendAssetLinks({ collect: { publicPath: "/" }, fontPreloadFiles: [], manifest: result.assetManifest });
+  assert.deepEqual(none.fontPreloads, [], "an empty declared list preloads no fonts");
+  assert.ok(none.assets.some((item) => item.endsWith(".woff2")), "fonts stay assets when they are not preloaded");
 }
 
 function assertFrontendCssOrder(context) {

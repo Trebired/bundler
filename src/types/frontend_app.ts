@@ -133,6 +133,7 @@ type BundlerRelatedClientEntryMapOptions = {
 
 type BundlerFrontendAssetLinksOptions = {
   collect?: BundlerCollectAssetLinksOptions;
+  fontPreloadFiles?: readonly string[] | null;
   globalEntryIds?: readonly string[];
   globalStyleRuleKey?: string;
   manifest: BundlerAssetManifest;
@@ -164,6 +165,7 @@ type BundlerFrontendFaviconResult = {
 type BundlerFrontendBuildResult = {
   client?: BundlerBuildResult;
   favicon?: BundlerFrontendFaviconResult;
+  fontPreloadFiles?: string[] | null;
   globalClientEntries: string[];
   nodeModules?: BundlerSsrNodeModulesResult;
   publicDirCopied: boolean;
@@ -186,6 +188,7 @@ type BundlerFrontendRuntimeConfig = BundlerFrontendAppBundlerConfig& {
 type BundlerFrontendRuntimeState = {
   client?: BundlerBuildResult;
   clientManifest?: BundlerAssetManifest;
+  fontPreloadFiles?: string[] | null;
   globalClientEntries: string[];
   nodeModules?: BundlerSsrNodeModulesResult;
   relatedClientEntryMap: Record<string, string[]>;

@@ -25,7 +25,7 @@ function collectFrontendAssetLinks(options: BundlerFrontendAssetLinksOptions): B
     }));
   }
 
-  const links = finalizeAssetLinks(state);
+  const links = finalizeAssetLinks(state, options.fontPreloadFiles);
   return options.renderTags ? { ...links, tags: renderAssetLinkTags(links) } : links;
 }
 
@@ -98,16 +98,25 @@ function addStyleLink(
   state.styles.push(value);
 }
 
-function finalizeAssetLinks(state: ReturnType<typeof createAssetLinkState>): BundlerCollectedAssetLinks {
+function finalizeAssetLinks(
+  state: ReturnType<typeof createAssetLinkState>,
+  fontPreloadFiles?: readonly string[] | null,
+): BundlerCollectedAssetLinks {
+  const fontPreloads = sortFontPreloadLinks(state.fontPreloads.values());
   return {
     assets: sorted(state.assets),
     entryKeys: sorted(state.entryKeys),
-    fontPreloads: sortFontPreloadLinks(state.fontPreloads.values()),
+    fontPreloads: fontPreloadFiles ? fontPreloads.filter((link) => declaredFontPreload(link.href, fontPreloadFiles)) : fontPreloads,
     missing: sorted(state.missing),
     outputs: sorted(state.outputs),
     scripts: sorted(state.scripts),
     styles: state.styles.slice(),
   };
+}
+
+function declaredFontPreload(href: string, files: readonly string[]): boolean {
+  const name = href.split("?")[0].split("/").pop() || "";
+  return files.some((file) => name.startsWith(`${file}-`) || name.startsWith(`${file}.`));
 }
 
 function sorted(values: Iterable<string>): string[] {

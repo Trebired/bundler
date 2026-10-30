@@ -14,7 +14,7 @@ import { resolveAssetManifestEntryOutputPath } from "./manifest.js";
 import { prepareSsrNodeModules } from "./node_modules.js";
 import { applyProjectConfigsToFrontendBundlerOptions } from "./project-config.js";
 import { buildRelatedClientEntryMap } from "./related.js";
-import { resolveFrontendFavicon } from "#d0ppiu0440kk";
+import { resolveFrontendFavicon, resolveFrontendFontPreloads } from "#d0ppiu0440kk";
 import { pathExists } from "#47cd321d28f1";
 
 async function buildFrontendApp(
@@ -28,6 +28,7 @@ async function buildFrontendApp(
   const clientResult = target !== "ssr" ? await bundle(client) : undefined;
   const publicDirCopied = clientResult ? await copyPublicDir(config) : false;
   const favicon = clientResult ? await emitFaviconAssets(config) : undefined;
+  const fontPreloadFiles = clientResult ? await resolveFrontendFontPreloads(config.rootDir) : undefined;
   const ssrResult = target !== "client" && ssr ? await bundle(ssr) : undefined;
   const relatedClientEntryMap = await resolveBuildRelatedClientEntryMap(config, ssrResult);
   const ssrEntryOutput = resolveBuildSsrEntryOutput(config, ssrResult);
@@ -37,6 +38,7 @@ async function buildFrontendApp(
   return {
     client: clientResult,
     favicon,
+    fontPreloadFiles,
     globalClientEntries,
     nodeModules,
     publicDirCopied,

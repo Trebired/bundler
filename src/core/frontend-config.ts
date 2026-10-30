@@ -17,12 +17,14 @@ type LoadedFrontendConfig = {
   config: unknown;
   configPath: string | null;
   dependencies?: readonly string[];
+  fontPreloads?: readonly string[];
   generatedScss?: string;
 };
 
 type FrontendConfigApi = {
   findConfig?: (startDir?: string, boundaryDir?: string) => Promise<string|null>;
   loadConfig?: (projectRoot?: string, options?: Record<string, unknown>) => Promise<LoadedFrontendConfig>;
+  generateFontPreloads?: (config: unknown) => string[];
   generateFrontendScss?: (config: unknown) => string;
   generateStaticIconsModule?: (
     config: unknown,
@@ -220,6 +222,14 @@ async function resolveFrontendFavicon(
   return generated || empty;
 }
 
+async function resolveFrontendFontPreloads(rootDir: string): Promise<string[]|null> {
+  const api = await loadFrontendConfigApi(rootDir);
+  if (typeof api?.loadConfig !== "function") return null;
+  const loaded = await api.loadConfig(rootDir, { defaultIfMissing: true, searchFrom: rootDir });
+  if (Array.isArray(loaded.fontPreloads)) return [...loaded.fontPreloads];
+  return typeof api.generateFontPreloads === "function" ? api.generateFontPreloads(loaded.config) : null;
+}
+
 async function resolveFrontendIconMode(rootDir: string): Promise<string> {
   const api = await loadFrontendConfigApi(rootDir);
   if (typeof api?.loadConfig !== "function") return "server";
@@ -299,6 +309,7 @@ function createEmptyResolvedDiscovery(): ResolvedDiscovery {
 
 export {
   resolveFrontendFavicon,
+  resolveFrontendFontPreloads,
   resolveFrontendIconMode,
   resolveFrontendStaticIcons,
   FRONTEND_CONFIG_PATH,

@@ -13,7 +13,7 @@ import type {
   BundlerStaticShellResult,
   BundlerStaticShellRoute,
 } from "#3c8d8166992a";
-import { resolveFrontendFavicon } from "#d0ppiu0440kk";
+import { resolveFrontendFavicon, resolveFrontendFontPreloads } from "#d0ppiu0440kk";
 import { collectFrontendAssetLinks } from "./assets.js";
 import { createFrontendAppBundlerOptions } from "./config.js";
 
@@ -25,11 +25,15 @@ async function buildStaticShell(
   if (!manifest) throw new Error("bundler-static-shell-client-manifest-missing");
 
   const favicon = options.build.favicon || await emitShellFavicon(config);
+  const fontPreloadFiles = options.build.fontPreloadFiles !== undefined
+  ? options.build.fontPreloadFiles
+  : await resolveFrontendFontPreloads(config.rootDir);
 
   const files: BundlerStaticShellFile[] = [];
   for (const route of resolveShellRoutes(options)) {
     const assetLinks = collectFrontendAssetLinks({
         collect: { publicPath: options.publicPath ?? client.publicPath },
+        fontPreloadFiles,
         globalEntryIds: options.build.globalClientEntries,
         globalStyleRuleKey: config.globalStyleRuleKey,
         manifest,

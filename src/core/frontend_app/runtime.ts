@@ -26,6 +26,7 @@ import {
 import { prepareSsrNodeModules } from "./node_modules.js";
 import { buildRelatedClientEntryMap } from "./related.js";
 import { resolveRuntimeLogger, timeRuntimeStep } from "./runtime/logging.js";
+import { resolveFrontendFontPreloads } from "#d0ppiu0440kk";
 
 type RuntimeSessionState = {
   clientBuild?: BundlerBuildResult;
@@ -129,7 +130,8 @@ async function ensureProductionRuntime(state: RuntimeSessionState): Promise<Bund
           ssrManifest ? prepareRuntimeSsrNodeModules(state) : undefined,
       ]);
       const ssrModule = ssrManifest ? await importSsrModule(state, ssrManifest) : undefined;
-      state.runtime = { clientManifest, globalClientEntries, nodeModules, relatedClientEntryMap, ssrManifest, ssrModule };
+      const fontPreloadFiles = await resolveFrontendFontPreloads(state.config.rootDir);
+      state.runtime = { clientManifest, fontPreloadFiles, globalClientEntries, nodeModules, relatedClientEntryMap, ssrManifest, ssrModule };
       return state.runtime;
   });
 }
@@ -149,6 +151,7 @@ async function updateRuntimeFromBuilds(
   state.runtime = {
     client,
     clientManifest: client.assetManifest,
+    fontPreloadFiles: await resolveFrontendFontPreloads(state.config.rootDir),
     globalClientEntries,
     nodeModules,
     relatedClientEntryMap,
@@ -291,6 +294,7 @@ function buildRuntimeAssetLinksSync(
   if (!runtime.clientManifest) throw new Error("bundler-frontend-runtime-client-manifest-missing");
   return collectFrontendAssetLinks({
       collect: { publicPath: state.config.clientOptions.publicPath },
+      fontPreloadFiles: runtime.fontPreloadFiles,
       globalEntryIds: runtime.globalClientEntries,
       globalStyleRuleKey: state.config.globalStyleRuleKey,
       manifest: runtime.clientManifest,
