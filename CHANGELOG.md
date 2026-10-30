@@ -4,6 +4,10 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.19.0
+
+- Changed font preloading to the files the frontend config lists. The page shell preloaded every font file any stylesheet referenced, so a site with two families in a few weights and two subsets got a dozen or more preloads, most of them unused on the first screen and each reported by the browser as an unused preload. With `@trebired/frontend` 29.6.0 the static shell and the runtime preload only the files from the families' `preload` weights, which the build reads once from the config. `collectFrontendAssetLinks` takes the list as `fontPreloadFiles`. A frontend that reports no list keeps every font preloaded as before.
+
 ## 5.18.2
 
 - Fixed a build deleting the data snapshots. Cleaning the output directory removed everything in it, so with `clientOutDir: "dist"` and the default data `dir` of `dist/data` every build wiped the files the next one falls back on when a source cannot be reached. The clean step now keeps the data directory when it lies inside the output directory and removes everything else.
