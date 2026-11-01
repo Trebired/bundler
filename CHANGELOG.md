@@ -4,6 +4,11 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.19.1
+
+- Raised the dependency ranges to the current releases: `@trebired/i18n` to `^0.7.3`, `@trebired/logger` to `^3.0.3`, `@trebired/logger-adapter` to `^0.8.2`, `@trebired/result` to `^1.4.1`, `@trebired/utils` to `^0.9.7`.
+- Moved the repository's own Code Discipline config to `@trebired/code-discipline` 8 and the named preset `@trebired/configs/code-discipline/preset_01` from `@trebired/configs` 0.6.0.
+
 ## 5.19.0
 
 - Changed font preloading to the files the frontend config lists. The page shell preloaded every font file any stylesheet referenced, so a site with two families in a few weights and two subsets got a dozen or more preloads, most of them unused on the first screen and each reported by the browser as an unused preload. With `@trebired/frontend` 29.6.0 the static shell and the runtime preload only the files from the families' `preload` weights, which the build reads once from the config. `collectFrontendAssetLinks` takes the list as `fontPreloadFiles`. A frontend that reports no list keeps every font preloaded as before.
