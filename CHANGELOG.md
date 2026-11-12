@@ -4,6 +4,10 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.19.2
+
+- Raised the `@package/i18n` alias to `@trebired/i18n` `^0.8.0`. With the alias a minor behind, an app's `trebired-i18n` command could resolve to the older copy and skip the 0.8.0 key check.
+
 ## 5.19.1
 
 - Raised the dependency ranges to the current releases: `@trebired/i18n` to `^0.7.3`, `@trebired/logger` to `^3.0.3`, `@trebired/logger-adapter` to `^0.8.2`, `@trebired/result` to `^1.4.1`, `@trebired/utils` to `^0.9.7`.
