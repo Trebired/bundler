@@ -4,6 +4,10 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.19.3
+
+- Fixed local translators in code the server imports without a bundle. Only bundles bound `createLocalTranslator`, so a component that a backend route imported directly and rendered to HTML threw `i18n-local-translator-unbound`, and the route answered 500. `registerRuntimeI18n()` from the new `@trebired/bundler/runtime` entry binds them as Bun loads the project's files, using the project's i18n config. Call it once at process start, before importing those modules.
+
 ## 5.19.2
 
 - Raised the `@package/i18n` alias to `@trebired/i18n` `^0.8.0`. With the alias a minor behind, an app's `trebired-i18n` command could resolve to the older copy and skip the 0.8.0 key check.

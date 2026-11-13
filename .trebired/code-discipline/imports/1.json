@@ -51,6 +51,7 @@
   "#dcywsmusyili": "./src/types/related_entries.ts",
   "#df3icj7pr6k8": "./src/core/discovery_watch/runtime.ts",
   "#dg8wh29x5weu": "./src/types/import_graph.ts",
+  "#dyycgnxycjt1": "./src/runtime/index.ts",
   "#eur6lfnnsefs": "./src/cli/run.ts",
   "#exf04w6hswui": "./src/core/frontend_app/node_modules.ts",
   "#f4htfd7ivemk": "./src/types/precompression.ts",
@@ -113,6 +114,7 @@
   "#yshi2x7kqd3f": "./src/core/attribution.ts",
   "#yxnf8p9y0waa": "./scripts/verify/frontend/app.mjs",
   "#z1hxysbp7ydt": "./src/config/index.ts",
+  "#z3n3npu3s6fg": "./src/runtime/i18n.ts",
   "#ze7c8hijtyk0": "./src/core/discovery/scan.ts",
   "#zfcitd9jrekg": "./scripts/verify/bundler/attribution.mjs",
   "#zjbdgm10truc": "./src/plugins/scss/syntax.ts"

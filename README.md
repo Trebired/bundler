@@ -118,6 +118,17 @@ export default defineMessages({
 });
 ```
 
+Code that the server imports directly, without a bundle, needs the same binding. A backend route that renders a component to HTML is the usual case. Register the runtime binder once at process start, before importing any module that uses local translators:
+
+```ts
+import { registerRuntimeI18n } from "@trebired/bundler/runtime";
+
+await registerRuntimeI18n({ rootDir: projectRoot });
+await import("./server.js");
+```
+
+It reads the i18n options from the project's config the way a build does, then binds every local translator in the project's own files as Bun loads them. Files under `node_modules` are left alone. `i18n` takes the same options as `bundle()` and overrides the project config. When i18n is off, nothing is registered and the result reports `enabled: false`. A module imported before the call stays unbound, so `createLocalTranslator` throws `i18n-local-translator-unbound` there.
+
 ### Frontend Config CSS
 
 When a browser build can resolve `@trebired/frontend/config`, the bundler loads `.trebired/frontend/config.ts` from the project root, asks `@trebired/frontend` to normalize it, compiles the config-derived SCSS through an internal virtual entry, and emits normal bundled CSS. Projects configure package-owned frontend CSS through that structured config instead of importing package Sass paths directly.
@@ -964,6 +975,8 @@ type BundlerOptions = {
 - `createStaticAssetMiddleware()` adapts package static assets to Express-like middleware.
 - `serveStaticAsset()` returns the framework-neutral static response object used by both adapters.
 - `collectFrontendAssetLinks()` and `renderAssetLinkTags()` expose the asset-link collection used by the shell helper.
+
+`@trebired/bundler/runtime` exports `registerRuntimeI18n()`, which binds local translators in modules Bun loads without a bundle. See [Colocated I18n](#colocated-i18n).
 
 ## CLI
 

@@ -25,6 +25,7 @@ async function verifyI18nPlugin() {
   await verifyLocalTranslatorLogging();
   await verifyBuildFailures();
   await verifyExistingBuildPath();
+  await verifyRuntimeBinding();
   log.info("verify.i18n", "Bundler i18n verification succeeded.");
 }
 
@@ -127,6 +128,23 @@ async function verifyExistingBuildPath() {
   });
   const output = await importJavaScriptOutput(result.outputs);
   assert.equal(output.value, 42);
+}
+
+async function verifyRuntimeBinding() {
+  const fixture = await createRuntimeFixture("runtime", "component.server.ts");
+  const runner = path.join(fixture, "run.mjs");
+  await fs.writeFile(runner, [
+      `import { registerRuntimeI18n } from ${JSON.stringify(path.join(rootDir, "dist", "runtime", "index.js"))};`,
+      "const off = await registerRuntimeI18n({ i18n: false, rootDir: import.meta.dir });",
+      "const on = await registerRuntimeI18n({ i18n: true, rootDir: import.meta.dir });",
+      "const again = await registerRuntimeI18n({ i18n: true, rootDir: import.meta.dir });",
+      `const feature = await import(${JSON.stringify(path.join(fixture, "src", "feature", "component.server.ts"))});`,
+      "console.log(JSON.stringify({ again: again.enabled, off: off.enabled, on: on.enabled, text: feature.render('cs') }));",
+    ].join("\n"));
+  const run = Bun.spawnSync([process.execPath, runner], { cwd: fixture, stderr: "pipe", stdout: "pipe" });
+  assert.equal(run.exitCode, 0, run.stderr.toString());
+  const result = JSON.parse(run.stdout.toString().trim().split("\n").pop());
+  assert.deepEqual(result, { again: true, off: false, on: true, text: "Titulek Ada|Vnoreno|Plocha" });
 }
 
 async function runBundle(fixture, args) {

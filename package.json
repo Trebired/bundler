@@ -8,7 +8,7 @@
     }
   },
   "name": "@trebired/bundler",
-  "version": "5.19.2",
+  "version": "5.19.3",
   "description": "Discover-only esbuild bundler wrapper with SCSS support, watch mode, and runtime asset manifests.",
   "type": "module",
   "private": false,
@@ -39,6 +39,10 @@
     "./namespace": {
       "import": "./dist/config/namespace.js",
       "types": "./dist/config/namespace.d.ts"
+    },
+    "./runtime": {
+      "import": "./dist/runtime/index.js",
+      "types": "./dist/runtime/index.d.ts"
     }
   },
   "files": [
