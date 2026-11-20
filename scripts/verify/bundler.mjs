@@ -332,6 +332,7 @@ async function verifyRelatedEntries() {
       "src/features/card.client.scss",
       "src/pages/home.client.defer.ts",
       "src/pages/home.client.tsx",
+      "src/pages/panel.client.tsx",
   ]);
   assert.equal(frontend.entries.includes("src/pages/home.client.defer.ts"), true);
 }
@@ -343,9 +344,11 @@ async function writeRelatedFixture(fixture) {
           paths: { "#feature/*": ["src/features/*"] },
         },
       }, null, 2));
-  await writeFixtureFile(fixture, "src/pages/home.tsx", "import '#feature/card';\nexport default 'home';\n");
+  await writeFixtureFile(fixture, "src/pages/home.tsx", "import '#feature/card';\nimport './panel.js';\nexport default 'home';\n");
   await writeFixtureFile(fixture, "src/pages/home.client.tsx", "export const client = true;\n");
   await writeFixtureFile(fixture, "src/pages/home.client.defer.ts", "export const deferred = true;\n");
+  await writeFixtureFile(fixture, "src/pages/panel.tsx", "export const panel = true;\n");
+  await writeFixtureFile(fixture, "src/pages/panel.client.tsx", "export const panelClient = true;\n");
   await writeFixtureFile(fixture, "src/features/card.ts", "export const card = true;\n");
   await writeFixtureFile(fixture, "src/features/card.client.scss", ".card { color: red; }\n");
 }

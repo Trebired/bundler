@@ -4,6 +4,10 @@ All notable changes to `@trebired/bundler` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.19.4
+
+- Fixed client files missing from pages whose import chain uses TypeScript's `.js` import style. The import graph resolved `./card.js` only as a file named `card.js`, so it lost the edge to `card.tsx` and every client file reached through it. A page then loaded without that script and its buttons did nothing. A `.js`, `.jsx`, `.mjs` or `.cjs` import now also resolves to the matching `.ts`, `.tsx`, `.mts` or `.cts` source.
+
 ## 5.19.3
 
 - Fixed local translators in code the server imports without a bundle. Only bundles bound `createLocalTranslator`, so a component that a backend route imported directly and rendered to HTML threw `i18n-local-translator-unbound`, and the route answered 500. `registerRuntimeI18n()` from the new `@trebired/bundler/runtime` entry binds them as Bun loads the project's files, using the project's i18n config. Call it once at process start, before importing those modules.

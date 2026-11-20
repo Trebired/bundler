@@ -14,9 +14,26 @@ import {
 } from "./shared.js";
 import type { LoadedTsconfig } from "./shared.js";
 
+const SOURCE_EXTENSIONS_FOR_OUTPUT: Record<string, string[]> = {
+  ".cjs": [".cts"],
+  ".js": [".ts", ".tsx"],
+  ".jsx": [".tsx"],
+  ".mjs": [".mts"],
+};
+
+function sourceCandidatesForOutput(baseAbs: string, extensions: string[]) {
+  const outputExtension = path.extname(baseAbs);
+  const sourceExtensions = SOURCE_EXTENSIONS_FOR_OUTPUT[outputExtension] || [];
+  const stem = baseAbs.slice(0, baseAbs.length - outputExtension.length);
+  return sourceExtensions
+  .filter((extension) => extensions.includes(extension))
+  .map((extension) => `${stem}${extension}`);
+}
+
 function resolveFileCandidate(baseAbs: string, extensions: string[]): string {
   const candidates = [
     baseAbs,
+    ...sourceCandidatesForOutput(baseAbs, extensions),
     ...extensions.map((extension) => `${baseAbs}${extension}`),
     ...extensions.map((extension) => path.join(baseAbs, `index${extension}`)),
   ];
